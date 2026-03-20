@@ -1,6 +1,7 @@
 "use client";
 
 type Status = "online" | "ready" | "standby" | "planned";
+type Tier = "control" | "active" | "planned";
 
 interface Agent {
   emoji: string;
@@ -9,92 +10,84 @@ interface Agent {
   description: string;
   tags: string[];
   status: Status;
-  tier: 1 | 2 | 3;
+  tier: Tier;
 }
 
 const agents: Agent[] = [
   {
     emoji: "🦞",
     name: "Schellie",
-    role: "Orchestrator",
-    description: "Coordinates all agents, routes tasks, interfaces with Lance. The brain of the operation.",
-    tags: ["Orchestration", "Routing", "Strategy"],
+    role: "Master Orchestrator",
+    description: "Control plane. Receives objectives, defines missions, assigns agents, writes specs, directs GBR. Does not write code.",
+    tags: ["Orchestration", "Specs", "Missions"],
     status: "online",
-    tier: 1,
+    tier: "control",
   },
   {
     emoji: "🐟",
     name: "Nemo",
-    role: "Execution Sandbox",
-    description: "Heavy execution inside OpenShell. Code runner, DB ops, schema migrations.",
-    tags: ["Code", "Database", "Secure Sandbox"],
+    role: "Pv1 Discovery",
+    description: "Reads legacy Pv1 code and database read-only. Produces schema inventories, domain groupings, and dependency maps.",
+    tags: ["Discovery", "Read-Only", "Pv1"],
     status: "ready",
-    tier: 2,
+    tier: "active",
   },
   {
-    emoji: "💬",
-    name: "Shelley",
-    role: "AI Sales Counselor",
-    description: "Buyer conversations, competitive intel, AI-powered personalized follow-ups.",
-    tags: ["Conversations", "AI Nurture", "CRM"],
+    emoji: "🐠",
+    name: "Gill",
+    role: "Workflow & Rules",
+    description: "Maps business processes. Extracts funnel stages, state transitions, and business rules from Pv1.",
+    tags: ["Workflow", "Rules", "Logic"],
     status: "standby",
-    tier: 2,
+    tier: "active",
   },
   {
-    emoji: "🔍",
-    name: "Competitive Analysis",
-    role: "Research Agent",
-    description: "Sweeps competitor communities, pricing, incentives. Feeds Shelley's knowledge base.",
-    tags: ["Research", "Intel", "Automation"],
+    emoji: "🐡",
+    name: "Dory",
+    role: "Memory & Normalization",
+    description: "Maintains system consistency. Produces canonical definitions, entity mappings, and terminology alignment.",
+    tags: ["Memory", "Canonical", "Mapping"],
     status: "standby",
-    tier: 2,
+    tier: "active",
   },
   {
-    emoji: "🗺️",
-    name: "Pv1 Discovery",
-    role: "Codebase Analyst",
-    description: "Maps the Pv1 codebase, DB schema, and business logic.",
-    tags: ["Discovery", "Analysis"],
-    status: "planned",
-    tier: 3,
+    emoji: "🦀",
+    name: "Jacques",
+    role: "Data Normalization",
+    description: "Structures external data sources — Rilla, Zoom, Outlook, Twilio — into a unified event and engagement model.",
+    tags: ["Data", "Events", "Ingestion"],
+    status: "standby",
+    tier: "active",
   },
   {
-    emoji: "🏗️",
-    name: "Schema Migration",
-    role: "DB Architect",
-    description: "Translates Pv1 schema to Pv2 canonical design. Runs DDL.",
-    tags: ["Schema", "Migration"],
+    emoji: "🐬",
+    name: "Destiny",
+    role: "AI Layer Design",
+    description: "Defines intelligence capabilities: lead scoring models, automation triggers, buying signal detection, recommendations.",
+    tags: ["AI Design", "Scoring", "Signals"],
     status: "planned",
-    tier: 3,
+    tier: "planned",
   },
   {
-    emoji: "⚡",
-    name: "Code Builder",
-    role: "Pv2 Developer",
-    description: "Generates services, APIs, UI components, and tests.",
-    tags: ["TypeScript", "Next.js"],
+    emoji: "🐙",
+    name: "Hank",
+    role: "Execution Planning",
+    description: "Converts strategy into build steps. Produces MVP scope, backlog, and build sequence for GBR.",
+    tags: ["Planning", "Backlog", "MVP"],
     status: "planned",
-    tier: 3,
-  },
-  {
-    emoji: "🧪",
-    name: "QA Parity",
-    role: "Quality Agent",
-    description: "Compares Pv1 vs Pv2 behavior, regression analysis.",
-    tags: ["QA", "Testing"],
-    status: "planned",
-    tier: 3,
-  },
-  {
-    emoji: "🧠",
-    name: "AI Feature",
-    role: "Intelligence Layer",
-    description: "Buying signals, next-best-action, lead summaries.",
-    tags: ["AI", "Insights"],
-    status: "planned",
-    tier: 3,
+    tier: "planned",
   },
 ];
+
+const gbr = {
+  emoji: "🪸",
+  name: "GBR",
+  fullName: "Great Barrier Reef",
+  role: "Execution Sandbox",
+  description: "The system's hands. Runs inside OpenShell. Executes specs from Schellie — plans, generates code, builds, self-repairs, commits. No outbound network. LLM relay via Schellie → Spark.",
+  tags: ["Execution", "OpenShell", "Build", "Commit"],
+  status: "ready" as Status,
+};
 
 const statusMap: Record<Status, { label: string; dot: string; text: string }> = {
   online:  { label: "Online",  dot: "bg-[#00c853]", text: "text-[#00c853]" },
@@ -121,17 +114,26 @@ const stats = [
   { label: "Tasks Pending",  value: "0" },
 ];
 
+const execModel = [
+  { step: "1", label: "Mission defined" },
+  { step: "2", label: "Agent(s) assigned" },
+  { step: "3", label: "Outputs collected" },
+  { step: "4", label: "Findings synthesized" },
+  { step: "5", label: "SPEC written" },
+  { step: "6", label: "SPEC → GBR" },
+  { step: "7", label: "GBR executes" },
+  { step: "8", label: "Review + iterate" },
+];
+
 function AgentCard({ agent }: { agent: Agent }) {
   const s = statusMap[agent.status];
   const isPlanned = agent.status === "planned";
   return (
-    <div
-      className={`rounded-lg border p-4 flex flex-col gap-3 transition-colors ${
-        isPlanned
-          ? "border-[#1f1f1f] bg-[#0d0d0d]"
-          : "border-[#1f1f1f] bg-[#111111] hover:border-[#2a2a2a]"
-      }`}
-    >
+    <div className={`rounded-lg border p-4 flex flex-col gap-3 transition-colors ${
+      isPlanned
+        ? "border-[#1f1f1f] bg-[#0d0d0d]"
+        : "border-[#1f1f1f] bg-[#111111] hover:border-[#2a2a2a]"
+    }`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2.5">
           <div className={`w-9 h-9 rounded-md flex items-center justify-center text-lg ${isPlanned ? "bg-[#161616]" : "bg-[#1a1a1a]"}`}>
@@ -152,14 +154,42 @@ function AgentCard({ agent }: { agent: Agent }) {
       </p>
       <div className="flex flex-wrap gap-1.5">
         {agent.tags.map((tag) => (
-          <span
-            key={tag}
-            className={`text-[11px] px-2 py-0.5 rounded-md border ${
-              isPlanned
-                ? "border-[#1f1f1f] text-[#444] bg-transparent"
-                : "border-[#2a2a2a] text-[#888] bg-[#161616]"
-            }`}
-          >
+          <span key={tag} className={`text-[11px] px-2 py-0.5 rounded-md border ${
+            isPlanned
+              ? "border-[#1f1f1f] text-[#444] bg-transparent"
+              : "border-[#2a2a2a] text-[#888] bg-[#161616]"
+          }`}>
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GBRCard() {
+  const s = statusMap[gbr.status];
+  return (
+    <div className="rounded-lg border border-[#2a2a2a] bg-[#111111] p-5 hover:border-[#333] transition-colors">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-md bg-[#1a1a1a] flex items-center justify-center text-xl">
+            {gbr.emoji}
+          </div>
+          <div>
+            <div className="font-semibold text-[13px] text-[#ededed]">{gbr.name} <span className="text-[#555] font-normal">— {gbr.fullName}</span></div>
+            <div className="text-[11px] text-[#666]">{gbr.role}</div>
+          </div>
+        </div>
+        <div className={`flex items-center gap-1.5 text-[11px] font-medium ${s.text}`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+          {s.label}
+        </div>
+      </div>
+      <p className="text-[12px] text-[#a1a1a1] leading-relaxed mb-3">{gbr.description}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {gbr.tags.map((tag) => (
+          <span key={tag} className="text-[11px] px-2 py-0.5 rounded-md border border-[#2a2a2a] text-[#888] bg-[#161616]">
             {tag}
           </span>
         ))}
@@ -174,24 +204,25 @@ export default function Page() {
     weekday: "short", month: "short", day: "numeric", year: "numeric",
   });
 
-  const tier1 = agents.filter((a) => a.tier === 1);
-  const tier2 = agents.filter((a) => a.tier === 2);
-  const tier3 = agents.filter((a) => a.tier === 3);
+  const controlAgents = agents.filter((a) => a.tier === "control");
+  const activeAgents = agents.filter((a) => a.tier === "active");
+  const plannedAgents = agents.filter((a) => a.tier === "planned");
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
 
       {/* Sidebar */}
       <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a]">
-        {/* Logo */}
         <div className="px-4 py-4 border-b border-[#1f1f1f]">
           <div className="flex items-center gap-2">
             <span className="text-base">🦞</span>
-            <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+            <div>
+              <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+              <div className="text-[10px] text-[#555]">HBx AI Factory</div>
+            </div>
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {navItems.map((item) => (
             <button
@@ -208,16 +239,15 @@ export default function Page() {
           ))}
         </nav>
 
-        {/* User */}
         <div className="px-3 py-3 border-t border-[#1f1f1f]">
           <div className="flex items-center gap-2.5">
             <div className="relative flex-shrink-0">
               <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a]" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
             </div>
             <div className="min-w-0">
               <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
-              <div className="text-[11px] text-[#555] truncate">Mission Control</div>
+              <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
             </div>
           </div>
         </div>
@@ -229,7 +259,7 @@ export default function Page() {
         {/* Top bar */}
         <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-[14px] font-semibold text-[#ededed]">Overview</h1>
+            <h1 className="text-[14px] font-semibold text-[#ededed]">Mission Control</h1>
             <span className="text-[#444] text-[12px]">{dateStr}</span>
           </div>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-[#ededed] text-[#0a0a0a] hover:bg-white transition-colors">
@@ -237,7 +267,7 @@ export default function Page() {
           </button>
         </div>
 
-        <div className="px-6 py-6 space-y-8 max-w-[1200px]">
+        <div className="px-6 py-6 space-y-8 max-w-[1400px]">
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-3">
@@ -249,56 +279,90 @@ export default function Page() {
             ))}
           </div>
 
-          {/* Agents */}
+          {/* Execution Model */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-[13px] font-semibold text-[#ededed]">Execution Model</h2>
+              <span className="text-[11px] text-[#555]">SPEC → GBR → Build → Commit</span>
+            </div>
+            <div className="flex items-center gap-0 overflow-x-auto pb-1">
+              {execModel.map((step, i) => (
+                <div key={step.step} className="flex items-center">
+                  <div className="flex items-center gap-1.5 bg-[#111111] border border-[#1f1f1f] rounded-md px-3 py-2 whitespace-nowrap">
+                    <span className="text-[10px] font-medium text-[#555]">{step.step}</span>
+                    <span className="text-[11px] text-[#888]">{step.label}</span>
+                  </div>
+                  {i < execModel.length - 1 && (
+                    <div className="text-[#333] px-1 text-[11px]">→</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Agent Roster */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-[14px] font-semibold text-[#ededed]">Agent Roster</h2>
-                <p className="text-[12px] text-[#555] mt-0.5">9 agents · 2 security tiers · OpenShell sandbox</p>
+                <p className="text-[12px] text-[#555] mt-0.5">7 agents + GBR execution layer · OpenShell sandboxed</p>
               </div>
             </div>
 
-            {/* Tier 1 */}
+            {/* Control Plane */}
             <div className="mb-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Tier 1 — Mission Control</span>
+                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Control Plane</span>
                 <div className="flex-1 h-px bg-[#1f1f1f]" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="col-span-1">
-                  <AgentCard agent={tier1[0]} />
+                  <AgentCard agent={controlAgents[0]} />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-start pl-[68px] py-1">
+            <div className="flex justify-start pl-[52px] py-1">
               <div className="w-px h-4 bg-[#2a2a2a]" />
             </div>
 
-            {/* Tier 2 Active */}
+            {/* Active Agents */}
             <div className="mb-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Tier 2 — Active</span>
+                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Analysis Agents</span>
                 <div className="flex-1 h-px bg-[#1f1f1f]" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {tier2.map((a) => <AgentCard key={a.name} agent={a} />)}
+              <div className="grid grid-cols-4 gap-3">
+                {activeAgents.map((a) => <AgentCard key={a.name} agent={a} />)}
               </div>
             </div>
 
-            <div className="flex justify-start pl-[68px] py-1">
+            <div className="flex justify-start pl-[52px] py-1">
               <div className="w-px h-4 bg-[#2a2a2a]" />
             </div>
 
-            {/* Tier 2 Planned */}
-            <div>
+            {/* Planned Agents */}
+            <div className="mb-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Tier 2 — Planned</span>
+                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Planned Agents</span>
                 <div className="flex-1 h-px bg-[#1f1f1f]" />
               </div>
-              <div className="grid grid-cols-5 gap-3">
-                {tier3.map((a) => <AgentCard key={a.name} agent={a} />)}
+              <div className="grid grid-cols-4 gap-3">
+                {plannedAgents.map((a) => <AgentCard key={a.name} agent={a} />)}
               </div>
+            </div>
+
+            <div className="flex justify-start pl-[52px] py-1">
+              <div className="w-px h-4 bg-[#2a2a2a]" />
+            </div>
+
+            {/* GBR */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium text-[#444] uppercase tracking-widest">Execution Layer</span>
+                <div className="flex-1 h-px bg-[#1f1f1f]" />
+              </div>
+              <GBRCard />
             </div>
           </div>
 

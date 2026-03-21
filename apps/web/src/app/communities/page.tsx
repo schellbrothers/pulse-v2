@@ -496,8 +496,11 @@ function CommunitiesInner() {
             <div
               style={{
                 overflowX: "auto",
+                overflowY: "auto",
+                maxHeight: "calc(100vh - 140px)",
                 borderRadius: 8,
                 border: "1px solid #1f1f1f",
+                position: "relative",
               }}
             >
               <table
@@ -508,7 +511,7 @@ function CommunitiesInner() {
                   borderCollapse: "collapse",
                 }}
               >
-                <thead>
+                <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                   <tr style={{ backgroundColor: "#0d0d0d" }}>
                     {(
                       [

@@ -1,0 +1,15 @@
+{
+  "model": "qwen2.5-coder:32b",
+  "max_retries": 5,
+  "timeout": 600,
+  "locked_files": [
+    "src/app/globals.css",
+    "src/app/layout.tsx",
+    "postcss.config.js",
+    "tsconfig.json",
+    "next.config.js",
+    "package.json",
+    "tailwind.config.js"
+  ],
+  "framework_instructions": "- Next.js 15 with Tailwind CSS v3.\n- Use 'use client' for interactive components.\n- Export pages as export default function PageName() not arrow functions.\n- Only import packages already in package.json. Do NOT add new dependencies.\n- Vercel design system: dark theme #0a0a0a bg, #ededed text, monochrome palette, minimal styling.\n- No rainbow colors. No colored tag backgrounds. Status dots only for status indicators."
+}

@@ -177,12 +177,18 @@ export default function CommunitiesPage() {
     return sortDir === "asc" ? " ↑" : " ↓";
   }
 
-  // Nav items
+  // Nav items — matches dashboard
   const navItems = [
-    { label: "Dashboard",   href: "/" },
-    { label: "Status",      href: "/status" },
-    { label: "Communities", href: "/communities" },
-    { label: "Divisions",   href: "/divisions" },
+    { icon: "▤", label: "Overview",      href: "/"            },
+    { icon: "⊡", label: "Agents",        href: "#"            },
+    { icon: "✓", label: "Tasks",         href: "#"            },
+    { icon: "⊕", label: "Leads",         href: "#"            },
+    { icon: "⌂", label: "Communities",   href: "/communities" },
+    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+    { icon: "◷", label: "Calendar",      href: "#"            },
+    { icon: "◉", label: "Notifications", href: "#"            },
+    { icon: "⚙", label: "Settings",      href: "#"            },
+    { icon: "◈", label: "Status",        href: "/status"      },
   ];
 
   return (
@@ -190,73 +196,50 @@ export default function CommunitiesPage() {
       style={{ backgroundColor: "#0a0a0a", color: "#ededed", minHeight: "100vh" }}
       className="flex"
     >
-      {/* ------------------------------------------------------------------ */}
-      {/* Sidebar                                                              */}
-      {/* ------------------------------------------------------------------ */}
-      <aside
-        style={{
-          width: 220,
-          flexShrink: 0,
-          backgroundColor: "#111111",
-          borderRight: "1px solid #1f1f1f",
-        }}
-        className="flex flex-col h-screen sticky top-0"
-      >
-        {/* Logo / brand */}
-        <div
-          style={{
-            padding: "20px 20px 16px",
-            borderBottom: "1px solid #1f1f1f",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#ededed",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            HBx
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: "#555555",
-              display: "block",
-              marginTop: 2,
-            }}
-          >
-            Pulse v2
-          </span>
+      {/* Sidebar — matches dashboard exactly */}
+      <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
+        {/* Brand */}
+        <div className="px-4 py-4 border-b border-[#1f1f1f]">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🦞</span>
+            <div>
+              <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+              <div className="text-[10px] text-[#555]">HBx AI Factory</div>
+            </div>
+          </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ padding: "12px 10px", flex: 1 }}>
-          {navItems.map((item) => {
-            const isActive = item.href === "/communities";
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: "block",
-                  padding: "7px 12px",
-                  marginBottom: 2,
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: isActive ? 500 : 400,
-                  color: isActive ? "#ededed" : "#a1a1a1",
-                  backgroundColor: isActive ? "#1a1a1a" : "transparent",
-                  textDecoration: "none",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-2 py-3 space-y-0.5">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
+                item.href === "/communities"
+                  ? "bg-[#1a1a1a] text-[#ededed]"
+                  : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
+              }`}
+            >
+              <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
         </nav>
+
+        {/* Footer */}
+        <div className="px-3 py-3 border-t border-[#1f1f1f]">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
+              <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
+            </div>
+          </div>
+        </div>
       </aside>
 
       {/* ------------------------------------------------------------------ */}

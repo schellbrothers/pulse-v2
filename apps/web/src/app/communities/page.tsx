@@ -78,7 +78,8 @@ const COMMUNITIES: Community[] = [
 // Helper components & constants
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -130,9 +131,11 @@ type SortCol = "name" | "division" | "status" | "city" | "price_from" | "hoa_fee
 // Main page
 // ---------------------------------------------------------------------------
 
-export default function CommunitiesPage() {
+function CommunitiesInner() {
+  const searchParams = useSearchParams();
+  const initialDivision = searchParams.get("division") ?? "all";
   const [view, setView] = useState<"card" | "table">("card");
-  const [divisionFilter, setDivisionFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState(initialDivision);
   const [selected, setSelected] = useState<Community | null>(null);
   const [sortCol, setSortCol] = useState<SortCol>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -830,5 +833,13 @@ export default function CommunitiesPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function CommunitiesPage() {
+  return (
+    <Suspense>
+      <CommunitiesInner />
+    </Suspense>
   );
 }

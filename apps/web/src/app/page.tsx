@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 type Status = "online" | "ready" | "standby" | "planned";
 type Tier = "control" | "active" | "role" | "planned";
 
@@ -91,14 +93,15 @@ const statusMap: Record<Status, { label: string; dot: string; text: string }> = 
 };
 
 const navItems = [
-  { icon: "▤", label: "Overview",      active: true },
-  { icon: "⊡", label: "Agents" },
-  { icon: "✓", label: "Tasks" },
-  { icon: "⊕", label: "Leads" },
-  { icon: "⌂", label: "Communities" },
-  { icon: "◷", label: "Calendar" },
-  { icon: "◉", label: "Notifications" },
-  { icon: "⚙", label: "Settings" },
+  { icon: "▤", label: "Overview",      href: "/" },
+  { icon: "⊡", label: "Agents",        href: "#" },
+  { icon: "✓", label: "Tasks",         href: "#" },
+  { icon: "⊕", label: "Leads",         href: "#" },
+  { icon: "⌂", label: "Communities",   href: "#" },
+  { icon: "◷", label: "Calendar",      href: "#" },
+  { icon: "◉", label: "Notifications", href: "#" },
+  { icon: "⚙", label: "Settings",      href: "#" },
+  { icon: "◈", label: "Status",        href: "/status" },
 ];
 
 const stats = [
@@ -228,17 +231,18 @@ export default function Page() {
 
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {navItems.map((item) => (
-            <button
+            <Link
               key={item.label}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors text-left ${
-                item.active
+              href={item.href}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
+                item.label === "Overview"
                   ? "bg-[#1a1a1a] text-[#ededed]"
                   : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
               }`}
             >
               <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
               {item.label}
-            </button>
+            </Link>
           ))}
         </nav>
 

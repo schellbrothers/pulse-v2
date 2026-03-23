@@ -58,29 +58,65 @@ const navItems = [
   { icon: "⊕", label: "Leads",         href: "#"            },
   { icon: "⌂", label: "Communities",   href: "/communities" },
   { icon: "◫", label: "Lots",          href: "/lots"        },
-    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
   { icon: "◷", label: "Calendar",      href: "#"            },
   { icon: "◉", label: "Notifications", href: "#"            },
   { icon: "⚙", label: "Settings",      href: "#"            },
   { icon: "◈", label: "Status",        href: "/status"      },
 ];
 
-const STATUS_STYLES: Record<string, string> = {
-  "active":      "bg-[#1a2a1a] text-[#00c853] border border-[#1f3f1f]",
-  "now-selling": "bg-[#1a1f2e] text-[#0070f3] border border-[#1a2a3f]",
-  "coming-soon": "bg-[#2a2a1a] text-[#f5a623] border border-[#3f3a1f]",
-  "last-chance": "bg-[#2a1a1a] text-[#ff6b6b] border border-[#3f1f1f]",
-  "sold-out":    "bg-[#1a1a1a] text-[#555]    border border-[#2a2a2a]",
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function statusBadge(status: string | null) {
-  const key = status ?? "";
-  const cls = STATUS_STYLES[key] ?? "bg-[#1a1a1a] text-[#666] border border-[#2a2a2a]";
+// Derive binary status and tag from the raw status value
+function getStatusAndTag(status: string | null): { isActive: boolean; tag: string | null } {
+  switch (status) {
+    case "active":       return { isActive: true,  tag: null };
+    case "now-selling":  return { isActive: true,  tag: "Now Selling" };
+    case "last-chance":  return { isActive: true,  tag: "Last Chance" };
+    case "coming-soon":  return { isActive: false, tag: "Coming Soon" };
+    case "sold-out":     return { isActive: false, tag: "Sold Out" };
+    default:             return { isActive: false, tag: null };
+  }
+}
+
+function StatusBadge({ status }: { status: string | null }) {
+  const { isActive } = getStatusAndTag(status);
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide ${cls}`}>
-      {status ?? "unknown"}
+    <span style={{
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 4,
+      backgroundColor: isActive ? "#1a2a1a" : "#1a1a1a",
+      color: isActive ? "#00c853" : "#555",
+      border: `1px solid ${isActive ? "#1f3f1f" : "#2a2a2a"}`,
+      fontWeight: 500,
+    }}>
+      {isActive ? "Active" : "Not Active"}
+    </span>
+  );
+}
+
+function TagBadge({ status }: { status: string | null }) {
+  const { tag } = getStatusAndTag(status);
+  if (!tag) return null;
+  const styles: Record<string, { bg: string; text: string; border: string }> = {
+    "Now Selling":  { bg: "#1a1f2e", text: "#0070f3", border: "#1a2a3f" },
+    "Last Chance":  { bg: "#2a1a1a", text: "#ff6b6b", border: "#3f1f1f" },
+    "Coming Soon":  { bg: "#2a2a1a", text: "#f5a623", border: "#3f3a1f" },
+    "Sold Out":     { bg: "#1a1a1a", text: "#555",    border: "#2a2a2a" },
+  };
+  const s = styles[tag] ?? { bg: "#1a1a1a", text: "#555", border: "#2a2a2a" };
+  return (
+    <span style={{
+      fontSize: 11,
+      padding: "2px 8px",
+      borderRadius: 4,
+      backgroundColor: s.bg,
+      color: s.text,
+      border: `1px solid ${s.border}`,
+      fontWeight: 500,
+    }}>
+      {tag}
     </span>
   );
 }
@@ -131,6 +167,8 @@ function CommunitiesInner(props: Props) {
   const [divisionFilter, setDivisionFilter] = useState<string>(
     searchParams.get("division") ?? "all"
   );
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
   const [selected, setSelected] = useState<Community | null>(null);
   const [sortCol, setSortCol] = useState<keyof Community>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -157,6 +195,19 @@ function CommunitiesInner(props: Props) {
 
   const rows = communities
     .filter(c => divisionFilter === "all" || c.division_slug === divisionFilter)
+    .filter(c => {
+      if (tagFilter === "all") return true;
+      const { tag } = getStatusAndTag(c.status);
+      if (tagFilter === "active") return getStatusAndTag(c.status).isActive;
+      if (tagFilter === "not-active") return !getStatusAndTag(c.status).isActive;
+      return tag === tagFilter;
+    })
+    .filter(c => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "active") return getStatusAndTag(c.status).isActive;
+      if (statusFilter === "not-active") return !getStatusAndTag(c.status).isActive;
+      return true;
+    })
     .sort((a, b) => {
       const av = (a as unknown as Record<string, unknown>)[sortCol as string] ?? "";
       const bv = (b as unknown as Record<string, unknown>)[sortCol as string] ?? "";
@@ -272,6 +323,30 @@ function CommunitiesInner(props: Props) {
           ))}
         </select>
 
+        {/* Status filter */}
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="bg-[#111] border border-[#2a2a2a] text-[#a1a1a1] text-[12px] rounded px-3 py-1.5 outline-none"
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="not-active">Not Active</option>
+        </select>
+
+        {/* Tag filter */}
+        <select
+          value={tagFilter}
+          onChange={e => setTagFilter(e.target.value)}
+          className="bg-[#111] border border-[#2a2a2a] text-[#a1a1a1] text-[12px] rounded px-3 py-1.5 outline-none"
+        >
+          <option value="all">All Tags</option>
+          <option value="Now Selling">Now Selling</option>
+          <option value="Last Chance">Last Chance</option>
+          <option value="Coming Soon">Coming Soon</option>
+          <option value="Sold Out">Sold Out</option>
+        </select>
+
         {/* View toggle */}
         <div style={{ display: "flex", gap: 2, background: "#1a1a1a", borderRadius: 8, padding: 3, border: "1px solid #2a2a2a" }}>
           {(["card", "table"] as const).map((v, i) => (
@@ -324,7 +399,10 @@ function CommunitiesInner(props: Props) {
               }}>
                 {c.division_name || c.division_slug}
               </span>
-              {c.status && statusBadge(c.status)}
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <StatusBadge status={c.status} />
+                <TagBadge status={c.status} />
+              </div>
             </div>
 
             {/* Name */}
@@ -405,7 +483,16 @@ function CommunitiesInner(props: Props) {
   const columns: { label: string; col: SortableCol; render?: (c: Community) => React.ReactNode }[] = [
     { label: "Name",          col: "name",          render: c => <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>{c.name}</span> },
     { label: "Division",      col: "division_name",  render: c => c.division_name || c.division_slug },
-    { label: "Status",        col: "status",         render: c => statusBadge(c.status) },
+    { label: "Status",        col: "status",         render: c => (
+      <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
+        <StatusBadge status={c.status} />
+      </td>
+    )},
+    { label: "Tag",           col: "status",         render: c => (
+      <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
+        <TagBadge status={c.status} />
+      </td>
+    )},
     { label: "Location",      col: "city",           render: c => [c.city, c.state].filter(Boolean).join(", ") || "—" },
     { label: "Price From",    col: "price_from",     render: c => formatPrice(c.price_from) },
     { label: "HOA",           col: "hoa_fee",        render: c => formatHoa(c.hoa_fee, c.hoa_period) },
@@ -454,17 +541,33 @@ function CommunitiesInner(props: Props) {
               onMouseEnter={e => (e.currentTarget.style.background = "#161616")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             >
-              {columns.map((col, i) => (
-                <td
-                  key={col.label}
-                  style={{
-                    ...tdStyle,
-                    ...(i === 0 ? { position: "sticky", left: 0, background: "#0d0d0d", zIndex: 1, fontWeight: 500, color: "#ededed", fontSize: 13 } : {}),
-                  }}
-                >
-                  {col.render ? col.render(c) : String((c as unknown as Record<string, unknown>)[col.col] ?? "—")}
-                </td>
-              ))}
+              {columns.map((col, i) => {
+                const rendered = col.render ? col.render(c) : String((c as unknown as Record<string, unknown>)[col.col] ?? "—");
+                // Status and Tag columns return a full <td> from render; unwrap or wrap appropriately
+                if (col.label === "Status" || col.label === "Tag") {
+                  return (
+                    <td
+                      key={col.label}
+                      style={{ ...tdStyle, padding: "6px 12px", whiteSpace: "nowrap" }}
+                    >
+                      {col.label === "Status"
+                        ? <StatusBadge status={c.status} />
+                        : <TagBadge status={c.status} />}
+                    </td>
+                  );
+                }
+                return (
+                  <td
+                    key={col.label}
+                    style={{
+                      ...tdStyle,
+                      ...(i === 0 ? { position: "sticky", left: 0, background: "#0d0d0d", zIndex: 1, fontWeight: 500, color: "#ededed", fontSize: 13 } : {}),
+                    }}
+                  >
+                    {rendered}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
@@ -499,7 +602,7 @@ function CommunitiesInner(props: Props) {
           display: "flex", alignItems: "flex-start", justifyContent: "space-between",
         }}>
           <div>
-            <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{
                 background: "#1a1a2e", color: "#818cf8", border: "1px solid #2a2a4a",
                 borderRadius: 6, fontSize: 10, fontWeight: 600, padding: "2px 8px",
@@ -507,7 +610,8 @@ function CommunitiesInner(props: Props) {
               }}>
                 {selected.division_name || selected.division_slug}
               </span>
-              {selected.status && statusBadge(selected.status)}
+              <StatusBadge status={selected.status} />
+              <TagBadge status={selected.status} />
             </div>
             <h2 style={{ color: "#ededed", fontSize: 16, fontWeight: 600, margin: 0 }}>
               {selected.name}
@@ -538,6 +642,16 @@ function CommunitiesInner(props: Props) {
             <Row label="Location" value={[selected.city, selected.state].filter(Boolean).join(", ") || null} />
             <Row label="Region"   value={selected.region} />
             <Row label="Timezone" value={selected.timezone} />
+            <Row
+              label="Status"
+              value={getStatusAndTag(selected.status).isActive ? "Active" : "Not Active"}
+            />
+            {getStatusAndTag(selected.status).tag && (
+              <Row
+                label="Tag"
+                value={getStatusAndTag(selected.status).tag}
+              />
+            )}
           </Section>
 
           <Section title="Pricing">

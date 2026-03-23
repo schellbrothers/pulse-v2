@@ -93,14 +93,15 @@ export default async function DivisionsPage() {
       timezone:         d.timezone,
       state_codes:      d.state_codes ?? [],
       is_active:        d.is_active,
-      community_count:  comms.length,
-      // Active = active | now-selling | last-chance
+      community_count: comms.filter((c: CommunityRef) => c.status !== "sold-out").length,
+      // Exclude sold-out from main counts — they are tracked separately
+      sold_out_count: comms.filter((c: CommunityRef) => c.status === "sold-out").length,
+      // Active = active | now-selling | last-chance (not sold-out)
       active_count: comms.filter((c: CommunityRef) =>
         ["active", "now-selling", "last-chance"].includes(c.status ?? "")
       ).length,
-      // Coming Soon = not active, still being marketed
+      // Coming Soon = coming-soon only
       coming_soon_count: comms.filter((c: CommunityRef) => c.status === "coming-soon").length,
-      sold_out_count: comms.filter((c: CommunityRef) => c.status === "sold-out").length,
       price_min:        prices.length ? Math.min(...prices) : null,
       price_max:        prices.length ? Math.max(...prices) : null,
     };

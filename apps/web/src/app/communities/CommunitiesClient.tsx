@@ -79,6 +79,16 @@ function getStatusAndTag(status: string | null): { isActive: boolean; tag: strin
   }
 }
 
+function StatItem({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{ fontSize: 11, color: "#555" }}>{label}:</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color }}>{value.toLocaleString()}</span>
+    </div>
+  );
+}
+
+
 function StatusBadge({ status }: { status: string | null }) {
   const { isActive } = getStatusAndTag(status);
   return (
@@ -215,6 +225,14 @@ function CommunitiesInner(props: Props) {
         ? String(av).localeCompare(String(bv), undefined, { numeric: true })
         : String(bv).localeCompare(String(av), undefined, { numeric: true });
     });
+
+  // Stats for the stats bar (based on filtered rows, excluding sold-out from total)
+  const stats = {
+    total: rows.filter(c => c.status !== "sold-out").length,
+    active: rows.filter(c => ["active","now-selling","last-chance"].includes(c.status ?? "")).length,
+    comingSoon: rows.filter(c => c.status === "coming-soon").length,
+    soldOut: rows.filter(c => c.status === "sold-out").length,
+  };
 
   const sortArrow = (col: keyof Community) =>
     sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
@@ -704,6 +722,17 @@ function CommunitiesInner(props: Props) {
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {topBar}
+        {/* Stats bar — same pattern as Lots page */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 20,
+          padding: "6px 24px", backgroundColor: "#0d0d0d",
+          borderBottom: "1px solid #1a1a1a", flexShrink: 0,
+        }}>
+          <StatItem label="Total" value={stats.total} color="#666" />
+          <StatItem label="Active" value={stats.active} color="#00c853" />
+          <StatItem label="Coming Soon" value={stats.comingSoon} color="#f5a623" />
+          <StatItem label="Sold Out" value={stats.soldOut} color="#555" />
+        </div>
         <div style={{ flex: 1, overflow: "auto" }}>
           {view === "card" ? cardView : tableView}
         </div>

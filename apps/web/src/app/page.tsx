@@ -104,7 +104,8 @@ const navItems = [
   { icon: "◷", label: "Calendar",      href: "#" },
   { icon: "◉", label: "Notifications", href: "#" },
   { icon: "⚙", label: "Settings",      href: "#" },
-  { icon: "◈", label: "Status",        href: "/status" },
+  { icon: "◈", label: "Status",        href: "/status"      },
+    { icon: "◧", label: "Docs",          href: "/docs"        },
 ];
 
 const stats = [

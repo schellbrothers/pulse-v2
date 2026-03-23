@@ -125,6 +125,12 @@ export default function DocsClient({ docs }: Props) {
   const [newCategory, setNewCategory] = useState("company");
   const [newContent, setNewContent] = useState("# Document Title\n\nWrite your content here...");
   const [saving, setSaving] = useState(false);
+  // Edit mode state
+  const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState("company");
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const filtered = docs
     .filter((d) => categoryFilter === "all" || d.category === categoryFilter)
@@ -161,6 +167,35 @@ export default function DocsClient({ docs }: Props) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleEditDoc() {
+    if (!editingDoc || !editTitle.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/docs/${editingDoc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle, category: editCategory, content: editContent }),
+      });
+      if (res.ok) {
+        setEditingDoc(null);
+        setSelectedDoc(null);
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  function openEdit(doc: Doc) {
+    setEditTitle(doc.title);
+    setEditCategory(doc.category);
+    setEditContent(doc.content);
+    setEditingDoc(doc);
+    setSelectedDoc(null);
   }
 
   return (
@@ -313,12 +348,20 @@ export default function DocsClient({ docs }: Props) {
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedDoc(null)}
-                className="text-[#555] hover:text-[#ededed] text-[22px] leading-none flex-shrink-0"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => selectedDoc && openEdit(selectedDoc)}
+                  className="text-[11px] px-3 py-1.5 rounded-md border border-[#2a2a2a] text-[#a1a1a1] hover:text-[#ededed] hover:border-[#3a3a3a] transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setSelectedDoc(null)}
+                  className="text-[#555] hover:text-[#ededed] text-[22px] leading-none flex-shrink-0"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -343,6 +386,55 @@ export default function DocsClient({ docs }: Props) {
       )}
 
       {/* New Document slide-over */}
+      {/* Edit Document Slide-over */}
+      {editingDoc && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setEditingDoc(null)} />
+          <div className="fixed right-0 top-0 h-full w-[520px] bg-[#0f0f0f] border-l border-[#1f1f1f] z-50 flex flex-col">
+            <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-[18px]">✏️</div>
+                <div>
+                  <div className="text-[14px] font-semibold text-[#ededed]">Edit Document</div>
+                  <div className="text-[11px] text-[#555]">{editingDoc.title}</div>
+                </div>
+              </div>
+              <button onClick={() => setEditingDoc(null)} className="text-[#555] hover:text-[#ededed] text-[20px] leading-none">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+              <div>
+                <label className="text-[11px] text-[#555] uppercase tracking-widest mb-2 block">Title</label>
+                <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3 text-[13px] text-[#ededed] outline-none focus:border-[#3a3a3a]" />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#555] uppercase tracking-widest mb-2 block">Category</label>
+                <select value={editCategory} onChange={e => setEditCategory(e.target.value)}
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3 text-[13px] text-[#a1a1a1] outline-none">
+                  <option value="company">Company</option>
+                  <option value="platform">Platform</option>
+                  <option value="data">Data</option>
+                  <option value="technical">Technical</option>
+                  <option value="processes">Processes</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#555] uppercase tracking-widest mb-2 block">Content (Markdown)</label>
+                <textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={18}
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3 text-[12px] text-[#a1a1a1] font-mono outline-none focus:border-[#3a3a3a] resize-none" />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-[#1f1f1f]">
+              <button onClick={handleEditDoc} disabled={!editTitle.trim() || editSaving}
+                className="w-full flex items-center justify-center bg-[#ededed] text-[#0a0a0a] rounded-lg py-3 text-[13px] font-semibold hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                {editSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {showNewDoc && (
         <>
           <div

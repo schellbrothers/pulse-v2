@@ -175,6 +175,8 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
   const [search, setSearch] = useState("");
   const [sortCol, setSortCol] = useState("division_raw");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [pageSize, setPageSize] = useState(250);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Reset community when division changes
   useEffect(() => {
@@ -236,6 +238,11 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
         return sortDir === "asc" ? cmp : -cmp;
       });
   }, [lots, divisionFilter, communityFilter, statusFilter, availableOnly, search, sortCol, sortDir]);
+
+  const totalPages = Math.ceil(rows.length / pageSize);
+  const paginatedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  React.useEffect(() => { setCurrentPage(1); }, [divisionFilter, communityFilter, statusFilter, availableOnly, search]);
 
   // Stats
   const stats = useMemo(() => {
@@ -398,6 +405,32 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
           <StatItem label="Quick Delivery" value={stats.quickDelivery} color="#0070f3" />
           <StatItem label="Future" value={stats.future} color="#f5a623" />
           <StatItem label="Sold" value={stats.sold} color="#444" />
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, color: "#555" }}>
+              {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, rows.length)} of {rows.length}
+            </span>
+            <select
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              style={{ background: "#111", border: "1px solid #2a2a2a", color: "#a1a1a1", fontSize: 11, borderRadius: 4, padding: "3px 8px", outline: "none" }}
+            >
+              <option value={100}>100 / page</option>
+              <option value={250}>250 / page</option>
+              <option value={500}>500 / page</option>
+              <option value={9999}>All</option>
+            </select>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{ background: "#111", border: "1px solid #2a2a2a", color: currentPage === 1 ? "#333" : "#a1a1a1", fontSize: 12, borderRadius: 4, padding: "3px 8px", cursor: currentPage === 1 ? "default" : "pointer" }}
+            >←</button>
+            <span style={{ fontSize: 11, color: "#555" }}>{currentPage}/{totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{ background: "#111", border: "1px solid #2a2a2a", color: currentPage === totalPages ? "#333" : "#a1a1a1", fontSize: 12, borderRadius: 4, padding: "3px 8px", cursor: currentPage === totalPages ? "default" : "pointer" }}
+            >→</button>
+          </div>
         </div>
 
         {/* Table */}
@@ -475,7 +508,7 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
                   </td>
                 </tr>
               ) : (
-                rows.map((lot) => {
+                paginatedRows.map((lot) => {
                   const statusStyle = lot.lot_status ? STATUS_STYLES[lot.lot_status] : null;
                   return (
                     <tr

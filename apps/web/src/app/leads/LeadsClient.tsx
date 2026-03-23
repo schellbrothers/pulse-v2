@@ -47,12 +47,11 @@ const navItems = [
   { icon: "⊕", label: "Leads",         href: "/leads"       },
   { icon: "⌂", label: "Communities",   href: "/communities" },
   { icon: "◫", label: "Lots",          href: "/lots"        },
-  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
   { icon: "◷", label: "Calendar",      href: "#"            },
   { icon: "◉", label: "Notifications", href: "#"            },
   { icon: "⚙", label: "Settings",      href: "#"            },
   { icon: "◈", label: "Status",        href: "/status"      },
-    { icon: "◧", label: "Docs",          href: "/docs"        },
 ];
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ function StageBadge({ stage }: { stage: string }) {
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontSize: 10, color: "#444", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <span style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "0.05em" }}>
         {label}
       </span>
       <span style={{ fontSize: 12, color: "#a1a1a1" }}>{children}</span>
@@ -127,8 +126,8 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div
       style={{
-        fontSize: 10,
-        color: "#444",
+        fontSize: 11,
+        color: "#555",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         fontWeight: 600,
@@ -154,7 +153,6 @@ function SlideOver({
   onClose: () => void;
 }) {
   const community = communities.find((c) => c.id === lead.community_id);
-  const cfg = stageConfig(lead.stage);
 
   return (
     <>
@@ -528,11 +526,13 @@ function TableView({
   });
 
   const thStyle: React.CSSProperties = {
-    padding: "8px 12px",
+    padding: "6px 12px",
     textAlign: "left",
     fontSize: 11,
-    color: "#555",
+    color: "#666",
     fontWeight: 500,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
     backgroundColor: "#0a0a0a",
     whiteSpace: "nowrap",
     cursor: "pointer",
@@ -541,7 +541,7 @@ function TableView({
   };
 
   const tdStyle: React.CSSProperties = {
-    padding: "10px 12px",
+    padding: "6px 12px",
     fontSize: 12,
     color: "#a1a1a1",
     borderBottom: "1px solid #111111",
@@ -560,7 +560,7 @@ function TableView({
       style={{
         overflowX: "auto",
         overflowY: "auto",
-        maxHeight: "calc(100vh - 140px)",
+        maxHeight: "calc(100vh - 120px)",
         position: "relative",
       }}
     >
@@ -634,6 +634,7 @@ function TableView({
                     backgroundColor: "inherit",
                     color: "#ededed",
                     fontWeight: 500,
+                    fontSize: 13,
                     zIndex: 1,
                   }}
                 >
@@ -687,7 +688,7 @@ function CardView({
               backgroundColor: "#111111",
               borderRadius: 8,
               border: "1px solid #1f1f1f",
-              padding: 16,
+              padding: 12,
               cursor: "pointer",
               transition: "border-color 0.15s",
               display: "flex",
@@ -825,60 +826,116 @@ export default function LeadsClient({ leads, communities }: Props) {
   });
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden" style={{ color: "#ededed" }}>
+    <div style={{ display: "flex", height: "100vh", backgroundColor: "#0a0a0a", color: "#ededed" }}>
       {/* ── Sidebar ── */}
-      <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
+      <aside
+        style={{
+          width: 220,
+          backgroundColor: "#0a0a0a",
+          borderRight: "1px solid #1f1f1f",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+        }}
+      >
         {/* Brand */}
-        <div className="px-4 py-4 border-b border-[#1f1f1f]">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🦞</span>
+        <div
+          style={{
+            padding: "20px 16px 16px",
+            borderBottom: "1px solid #1a1a1a",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🦞</span>
             <div>
-              <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
-              <div className="text-[10px] text-[#555]">HBx AI Factory</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed", lineHeight: 1.2 }}>
+                Pulse v2
+              </div>
+              <div style={{ fontSize: 10, color: "#444" }}>HBx AI Factory</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-3 space-y-0.5">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
-                item.href === "/leads"
-                  ? "bg-[#1a1a1a] text-[#ededed]"
-                  : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
-              }`}
-            >
-              <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+        <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
+          {navItems.map((item) => {
+            const isActive = item.href === "/leads";
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "7px 16px",
+                  fontSize: 12,
+                  color: isActive ? "#ededed" : "#555",
+                  backgroundColor: isActive ? "#111111" : "transparent",
+                  textDecoration: "none",
+                  transition: "color 0.15s, background-color 0.15s",
+                  borderLeft: isActive ? "2px solid #ededed" : "2px solid transparent",
+                }}
+              >
+                <span style={{ fontSize: 14, width: 18, textAlign: "center" }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-3 border-t border-[#1f1f1f]">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex-shrink-0">
-              <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
-              <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
-            </div>
+        <div
+          style={{
+            padding: "12px 16px",
+            borderTop: "1px solid #1a1a1a",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <div style={{ position: "relative" }}>
+            <span style={{ fontSize: 20 }}>🦞</span>
+            <span
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 8,
+                height: 8,
+                backgroundColor: "#00c853",
+                borderRadius: "50%",
+                border: "1.5px solid #0a0a0a",
+              }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "#ededed" }}>Schellie</div>
+            <div style={{ fontSize: 10, color: "#444" }}>Orchestrator · Online</div>
           </div>
         </div>
       </aside>
 
       {/* ── Main ── */}
-      <main className="flex-1 overflow-y-auto">
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
+        <div
+          style={{
+            padding: "10px 24px",
+            borderBottom: "1px solid #1a1a1a",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexShrink: 0,
+          }}
+        >
           {/* Title + count */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 16, fontWeight: 600, color: "#ededed" }}>Leads</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>Leads</span>
             <span
               style={{
                 fontSize: 11,
@@ -906,7 +963,7 @@ export default function LeadsClient({ leads, communities }: Props) {
                 border: "1px solid #2a2a2a",
                 borderRadius: 4,
                 fontSize: 12,
-                padding: "6px 12px",
+                padding: "4px 10px",
                 color: "#a1a1a1",
                 outline: "none",
                 width: 180,

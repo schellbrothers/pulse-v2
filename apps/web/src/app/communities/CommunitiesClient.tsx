@@ -55,15 +55,14 @@ const navItems = [
   { icon: "▤", label: "Overview",      href: "/"            },
   { icon: "⊡", label: "Agents",        href: "#"            },
   { icon: "✓", label: "Tasks",         href: "#"            },
-  { icon: "⊕", label: "Leads",         href: "/leads"       },
+  { icon: "⊕", label: "Leads",         href: "#"            },
   { icon: "⌂", label: "Communities",   href: "/communities" },
   { icon: "◫", label: "Lots",          href: "/lots"        },
-  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
   { icon: "◷", label: "Calendar",      href: "#"            },
   { icon: "◉", label: "Notifications", href: "#"            },
   { icon: "⚙", label: "Settings",      href: "#"            },
   { icon: "◈", label: "Status",        href: "/status"      },
-    { icon: "◧", label: "Docs",          href: "/docs"        },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -101,7 +100,7 @@ function formatHoa(fee: number | null, period: string | null) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h3 style={{ color: "#888", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+      <h3 style={{ color: "#555", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
         {title}
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -115,7 +114,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <span style={{ color: "#666", fontSize: 13 }}>{label}</span>
-      <span style={{ color: "#e0e0e0", fontSize: 13, fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>
+      <span style={{ color: "#a1a1a1", fontSize: 12, textAlign: "right", maxWidth: "60%" }}>
         {value ?? "—"}
       </span>
     </div>
@@ -172,47 +171,75 @@ function CommunitiesInner(props: Props) {
   // ── Sidebar ────────────────────────────────────────────────────────────────
 
   const sidebar = (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
+    <aside
+      style={{
+        width: 220,
+        background: "#0a0a0a",
+        borderRight: "1px solid #1f1f1f",
+        height: "100vh",
+        position: "sticky",
+        top: 0,
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+      }}
+    >
       {/* Brand */}
-      <div className="px-4 py-4 border-b border-[#1f1f1f]">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🦞</span>
+      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #1f1f1f" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🦞</span>
           <div>
-            <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
-            <div className="text-[10px] text-[#555]">HBx AI Factory</div>
+            <div style={{ color: "#ededed", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Pulse v2</div>
+            <div style={{ color: "#555", fontSize: 11 }}>HBx AI Factory</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5">
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
-              item.href === "/communities"
-                ? "bg-[#1a1a1a] text-[#ededed]"
-                : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
-            }`}
-          >
-            <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
+      <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
+        {navItems.map(item => {
+          const isActive = item.href === "/communities";
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 10px",
+                borderRadius: 8,
+                textDecoration: "none",
+                background: isActive ? "#1a1a1a" : "transparent",
+                color: isActive ? "#ededed" : "#555",
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 400,
+                transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              <span style={{ fontSize: 14, width: 18, textAlign: "center" }}>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-[#1f1f1f]">
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-shrink-0">
-            <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
-            <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
-          </div>
+      <div style={{ padding: "14px 16px", borderTop: "1px solid #1f1f1f", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ position: "relative" }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%", background: "#1a1a1a",
+            border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+          }}>🦞</div>
+          <div style={{
+            position: "absolute", bottom: 0, right: 0,
+            width: 8, height: 8, borderRadius: "50%",
+            background: "#00c853", border: "2px solid #0a0a0a",
+          }} />
+        </div>
+        <div>
+          <div style={{ color: "#ededed", fontSize: 13, fontWeight: 600 }}>Schellie</div>
+          <div style={{ color: "#555", fontSize: 11 }}>Orchestrator · Online</div>
         </div>
       </div>
     </aside>
@@ -221,8 +248,12 @@ function CommunitiesInner(props: Props) {
   // ── Top bar ────────────────────────────────────────────────────────────────
 
   const topBar = (
-    <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
-      <h1 style={{ color: "#e0e0e0", fontSize: 18, fontWeight: 700, margin: 0 }}>Communities</h1>
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0 24px", height: 44, borderBottom: "1px solid #1f1f1f",
+      background: "#0d0d0d", flexShrink: 0,
+    }}>
+      <h1 style={{ color: "#ededed", fontSize: 14, fontWeight: 600, margin: 0 }}>Communities</h1>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* Division filter */}
@@ -230,8 +261,8 @@ function CommunitiesInner(props: Props) {
           value={divisionFilter}
           onChange={e => setDivisionFilter(e.target.value)}
           style={{
-            background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#e0e0e0",
-            borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer",
+            background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#ededed",
+            borderRadius: 8, padding: "4px 10px", fontSize: 13, cursor: "pointer",
             outline: "none",
           }}
         >
@@ -249,8 +280,8 @@ function CommunitiesInner(props: Props) {
               onClick={() => handleViewChange(v)}
               style={{
                 background: view === v ? "#2a2a2a" : "transparent",
-                border: "none", color: view === v ? "#e0e0e0" : "#555",
-                borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 16,
+                border: "none", color: view === v ? "#ededed" : "#555",
+                borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 14,
                 transition: "background 0.15s, color 0.15s",
               }}
             >
@@ -279,7 +310,7 @@ function CommunitiesInner(props: Props) {
             onClick={() => setSelected(c)}
             style={{
               background: "#111", border: "1px solid #1f1f1f", borderRadius: 12,
-              padding: 16, cursor: "pointer", transition: "border-color 0.15s",
+              padding: 12, cursor: "pointer", transition: "border-color 0.15s",
             }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "#333")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "#1f1f1f")}
@@ -297,7 +328,7 @@ function CommunitiesInner(props: Props) {
             </div>
 
             {/* Name */}
-            <div style={{ color: "#e0e0e0", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+            <div style={{ color: "#ededed", fontWeight: 500, fontSize: 13, marginBottom: 4 }}>
               {c.name}
               {c.is_55_plus && (
                 <span style={{ color: "#f5a623", fontSize: 10, fontWeight: 600, marginLeft: 6,
@@ -318,12 +349,12 @@ function CommunitiesInner(props: Props) {
             <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
               <div>
                 <div style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>From</div>
-                <div style={{ color: "#e0e0e0", fontSize: 14, fontWeight: 600 }}>{formatPrice(c.price_from)}</div>
+                <div style={{ color: "#ededed", fontSize: 14, fontWeight: 600 }}>{formatPrice(c.price_from)}</div>
               </div>
               {c.hoa_fee != null && (
                 <div>
                   <div style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>HOA</div>
-                  <div style={{ color: "#e0e0e0", fontSize: 14, fontWeight: 600 }}>{formatHoa(c.hoa_fee, c.hoa_period)}</div>
+                  <div style={{ color: "#ededed", fontSize: 14, fontWeight: 600 }}>{formatHoa(c.hoa_fee, c.hoa_period)}</div>
                 </div>
               )}
             </div>
@@ -358,21 +389,21 @@ function CommunitiesInner(props: Props) {
   // ── Table view ─────────────────────────────────────────────────────────────
 
   const thStyle: React.CSSProperties = {
-    background: "#111", color: "#555", fontSize: 11, fontWeight: 600,
-    textTransform: "uppercase", letterSpacing: "0.07em",
-    padding: "10px 14px", whiteSpace: "nowrap", cursor: "pointer",
+    background: "#111", color: "#666", fontSize: 11, fontWeight: 500,
+    textTransform: "uppercase", letterSpacing: "0.06em",
+    padding: "6px 12px", whiteSpace: "nowrap", cursor: "pointer",
     borderBottom: "1px solid #1f1f1f", userSelect: "none",
   };
 
   const tdStyle: React.CSSProperties = {
-    padding: "10px 14px", color: "#c0c0c0", fontSize: 13,
+    padding: "6px 12px", color: "#a1a1a1", fontSize: 13,
     borderBottom: "1px solid #161616", whiteSpace: "nowrap",
   };
 
   type SortableCol = keyof Community;
 
   const columns: { label: string; col: SortableCol; render?: (c: Community) => React.ReactNode }[] = [
-    { label: "Name",          col: "name",          render: c => <span style={{ color: "#e0e0e0", fontWeight: 600 }}>{c.name}</span> },
+    { label: "Name",          col: "name",          render: c => <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>{c.name}</span> },
     { label: "Division",      col: "division_name",  render: c => c.division_name || c.division_slug },
     { label: "Status",        col: "status",         render: c => statusBadge(c.status) },
     { label: "Location",      col: "city",           render: c => [c.city, c.state].filter(Boolean).join(", ") || "—" },
@@ -394,7 +425,7 @@ function CommunitiesInner(props: Props) {
 
   const tableView = (
     <div style={{
-      overflow: "auto", maxHeight: "calc(100vh - 140px)",
+      overflow: "auto", maxHeight: "calc(100vh - 120px)",
       position: "relative", margin: "0 24px 24px",
     }}>
       <table style={{ minWidth: 1400, borderCollapse: "collapse", width: "100%" }}>
@@ -428,7 +459,7 @@ function CommunitiesInner(props: Props) {
                   key={col.label}
                   style={{
                     ...tdStyle,
-                    ...(i === 0 ? { position: "sticky", left: 0, background: "#0d0d0d", zIndex: 1, fontWeight: 600, color: "#e0e0e0" } : {}),
+                    ...(i === 0 ? { position: "sticky", left: 0, background: "#0d0d0d", zIndex: 1, fontWeight: 500, color: "#ededed", fontSize: 13 } : {}),
                   }}
                 >
                   {col.render ? col.render(c) : String((c as unknown as Record<string, unknown>)[col.col] ?? "—")}
@@ -478,7 +509,7 @@ function CommunitiesInner(props: Props) {
               </span>
               {selected.status && statusBadge(selected.status)}
             </div>
-            <h2 style={{ color: "#e0e0e0", fontSize: 18, fontWeight: 700, margin: 0 }}>
+            <h2 style={{ color: "#ededed", fontSize: 16, fontWeight: 600, margin: 0 }}>
               {selected.name}
               {selected.is_55_plus && (
                 <span style={{ color: "#f5a623", fontSize: 11, fontWeight: 600, marginLeft: 8,
@@ -537,7 +568,7 @@ function CommunitiesInner(props: Props) {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {selected.amenities.split(",").map(a => a.trim()).filter(Boolean).map(a => (
                   <span key={a} style={{
-                    background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#aaa",
+                    background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1",
                     borderRadius: 6, fontSize: 12, padding: "3px 10px",
                   }}>
                     {a}
@@ -554,15 +585,15 @@ function CommunitiesInner(props: Props) {
   // ── Layout ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+    <div style={{ display: "flex", height: "100vh", background: "#0d0d0d", overflow: "hidden" }}>
       {sidebar}
 
-      <main className="flex-1 overflow-y-auto">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {topBar}
         <div style={{ flex: 1, overflow: "auto" }}>
           {view === "card" ? cardView : tableView}
         </div>
-      </main>
+      </div>
 
       {slideOver}
     </div>

@@ -335,7 +335,7 @@ export default function DocsClient({ docs }: Props) {
             className="fixed inset-0 bg-black/50 z-40"
             onClick={() => setSelectedDoc(null)}
           />
-          <div className="fixed right-0 top-0 h-full w-[600px] bg-[#0f0f0f] border-l border-[#1f1f1f] overflow-y-auto z-50 flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-[560px] bg-[#0f0f0f] border-l border-[#1f1f1f] overflow-y-auto z-50 flex flex-col">
             {/* Header */}
             <div className="px-8 py-5 border-b border-[#1f1f1f] flex items-start justify-between gap-4 sticky top-0 bg-[#0f0f0f] z-10">
               <div className="flex-1 min-w-0">
@@ -390,16 +390,16 @@ export default function DocsClient({ docs }: Props) {
       {editingDoc && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setEditingDoc(null)} />
-          <div className="fixed right-0 top-0 h-full w-[520px] bg-[#0f0f0f] border-l border-[#1f1f1f] z-50 flex flex-col">
-            <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-[18px]">✏️</div>
-                <div>
-                  <div className="text-[14px] font-semibold text-[#ededed]">Edit Document</div>
-                  <div className="text-[11px] text-[#555]">{editingDoc.title}</div>
+          <div className="fixed right-0 top-0 h-full w-[560px] bg-[#0f0f0f] border-l border-[#1f1f1f] z-50 flex flex-col">
+            <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="text-[16px] font-semibold text-[#ededed] truncate">{editTitle || editingDoc.title}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#1a1a1a] border border-[#2a2a2a] text-[#555]">{editCategory}</span>
+                  <span className="text-[11px] text-[#555]">Editing</span>
                 </div>
               </div>
-              <button onClick={() => setEditingDoc(null)} className="text-[#555] hover:text-[#ededed] text-[20px] leading-none">×</button>
+              <button onClick={() => setEditingDoc(null)} className="text-[#555] hover:text-[#ededed] text-[22px] leading-none flex-shrink-0">×</button>
             </div>
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               <div>
@@ -441,21 +441,16 @@ export default function DocsClient({ docs }: Props) {
             className="fixed inset-0 bg-black/50 z-40"
             onClick={() => setShowNewDoc(false)}
           />
-          <div className="fixed right-0 top-0 h-full w-[520px] bg-[#0f0f0f] border-l border-[#1f1f1f] z-50 flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-[560px] bg-[#0f0f0f] border-l border-[#1f1f1f] z-50 flex flex-col">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-[18px]">
-                  📄
-                </div>
-                <div>
-                  <div className="text-[14px] font-semibold text-[#ededed]">New Document</div>
-                  <div className="text-[11px] text-[#555]">Saved to Knowledge Base</div>
-                </div>
+            <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="text-[16px] font-semibold text-[#ededed]">New Document</div>
+                <div className="text-[11px] text-[#555] mt-0.5">Saved to Knowledge Base</div>
               </div>
               <button
                 onClick={() => setShowNewDoc(false)}
-                className="text-[#555] hover:text-[#ededed] text-[20px] leading-none"
+                className="text-[#555] hover:text-[#ededed] text-[22px] leading-none flex-shrink-0"
               >
                 ×
               </button>

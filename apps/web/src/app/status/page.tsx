@@ -33,7 +33,7 @@ const navItems = [
   { icon: "◉", label: "Notifications", href: "#"       },
   { icon: "⚙", label: "Settings",      href: "#"       },
   { icon: "◈", label: "Status",        href: "/status"      },
-    { icon: "📄", label: "Docs",          href: "/docs"        },
+    { icon: "◧", label: "Docs",          href: "/docs"        },
 ];
 
 const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: string }> = {

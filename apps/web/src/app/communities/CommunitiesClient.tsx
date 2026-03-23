@@ -55,10 +55,10 @@ const navItems = [
   { icon: "▤", label: "Overview",      href: "/"            },
   { icon: "⊡", label: "Agents",        href: "#"            },
   { icon: "✓", label: "Tasks",         href: "#"            },
-  { icon: "⊕", label: "Leads",         href: "#"            },
+  { icon: "⊕", label: "Leads",         href: "/leads"       },
   { icon: "⌂", label: "Communities",   href: "/communities" },
   { icon: "◫", label: "Lots",          href: "/lots"        },
-    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
   { icon: "◷", label: "Calendar",      href: "#"            },
   { icon: "◉", label: "Notifications", href: "#"            },
   { icon: "⚙", label: "Settings",      href: "#"            },
@@ -171,75 +171,47 @@ function CommunitiesInner(props: Props) {
   // ── Sidebar ────────────────────────────────────────────────────────────────
 
   const sidebar = (
-    <aside
-      style={{
-        width: 220,
-        background: "#0a0a0a",
-        borderRight: "1px solid #1f1f1f",
-        height: "100vh",
-        position: "sticky",
-        top: 0,
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 0,
-      }}
-    >
+    <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
       {/* Brand */}
-      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #1f1f1f" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🦞</span>
+      <div className="px-4 py-4 border-b border-[#1f1f1f]">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🦞</span>
           <div>
-            <div style={{ color: "#e0e0e0", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Pulse v2</div>
-            <div style={{ color: "#555", fontSize: 11 }}>HBx AI Factory</div>
+            <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+            <div className="text-[10px] text-[#555]">HBx AI Factory</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-        {navItems.map(item => {
-          const isActive = item.href === "/communities";
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 10px",
-                borderRadius: 8,
-                textDecoration: "none",
-                background: isActive ? "#1a1a1a" : "transparent",
-                color: isActive ? "#e0e0e0" : "#555",
-                fontSize: 13,
-                fontWeight: isActive ? 600 : 400,
-                transition: "background 0.15s, color 0.15s",
-              }}
-            >
-              <span style={{ fontSize: 14, width: 18, textAlign: "center" }}>{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-2 py-3 space-y-0.5">
+        {navItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
+              item.href === "/communities"
+                ? "bg-[#1a1a1a] text-[#ededed]"
+                : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
+            }`}
+          >
+            <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
+            {item.label}
+          </Link>
+        ))}
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: "14px 16px", borderTop: "1px solid #1f1f1f", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ position: "relative" }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: "50%", background: "#1a1a1a",
-            border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-          }}>🦞</div>
-          <div style={{
-            position: "absolute", bottom: 0, right: 0,
-            width: 8, height: 8, borderRadius: "50%",
-            background: "#00c853", border: "2px solid #0a0a0a",
-          }} />
-        </div>
-        <div>
-          <div style={{ color: "#e0e0e0", fontSize: 13, fontWeight: 600 }}>Schellie</div>
-          <div style={{ color: "#555", fontSize: 11 }}>Orchestrator · Online</div>
+      <div className="px-3 py-3 border-t border-[#1f1f1f]">
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
+            <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
+          </div>
         </div>
       </div>
     </aside>
@@ -248,11 +220,7 @@ function CommunitiesInner(props: Props) {
   // ── Top bar ────────────────────────────────────────────────────────────────
 
   const topBar = (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 24px", height: 60, borderBottom: "1px solid #1f1f1f",
-      background: "#0d0d0d", flexShrink: 0,
-    }}>
+    <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
       <h1 style={{ color: "#e0e0e0", fontSize: 18, fontWeight: 700, margin: 0 }}>Communities</h1>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -585,15 +553,15 @@ function CommunitiesInner(props: Props) {
   // ── Layout ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0d0d0d", overflow: "hidden" }}>
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       {sidebar}
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <main className="flex-1 overflow-y-auto">
         {topBar}
         <div style={{ flex: 1, overflow: "auto" }}>
           {view === "card" ? cardView : tableView}
         </div>
-      </div>
+      </main>
 
       {slideOver}
     </div>

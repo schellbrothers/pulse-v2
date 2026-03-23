@@ -85,112 +85,47 @@ type SortDir = "asc" | "desc";
 
 function Sidebar() {
   return (
-    <aside
-      style={{
-        width: "220px",
-        minWidth: "220px",
-        backgroundColor: "#0a0a0a",
-        borderRight: "1px solid #1f1f1f",
-        height: "100vh",
-        position: "sticky",
-        top: 0,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
+    <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
       {/* Brand */}
-      <div
-        style={{
-          padding: "20px 16px 16px",
-          borderBottom: "1px solid #1a1a1a",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "22px" }}>🦞</span>
+      <div className="px-4 py-4 border-b border-[#1f1f1f]">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🦞</span>
           <div>
-            <div style={{ color: "#ededed", fontSize: "14px", fontWeight: 600, lineHeight: 1.2 }}>
-              Pulse v2
-            </div>
-            <div style={{ color: "#555", fontSize: "11px", lineHeight: 1.3 }}>
-              HBx AI Factory
-            </div>
+            <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+            <div className="text-[10px] text-[#555]">HBx AI Factory</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
-        {navItems.map((item) => {
-          const isActive = item.href === "/lots";
-          return (
-            <Link
-              key={item.href + item.label}
-              href={item.href}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "9px 16px",
-                fontSize: "13px",
-                color: isActive ? "#ededed" : "#666",
-                backgroundColor: isActive ? "#161616" : "transparent",
-                borderLeft: isActive ? "2px solid #00c853" : "2px solid transparent",
-                textDecoration: "none",
-                transition: "background 0.15s, color 0.15s",
-              }}
-            >
-              <span style={{ fontSize: "14px", width: "18px", textAlign: "center" }}>
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-2 py-3 space-y-0.5">
+        {navItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
+              item.href === "/lots"
+                ? "bg-[#1a1a1a] text-[#ededed]"
+                : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
+            }`}
+          >
+            <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
+            {item.label}
+          </Link>
+        ))}
       </nav>
 
       {/* Footer */}
-      <div
-        style={{
-          padding: "12px 16px",
-          borderTop: "1px solid #1a1a1a",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-        }}
-      >
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              backgroundColor: "#1a1a1a",
-              border: "1px solid #2a2a2a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "16px",
-            }}
-          >
-            🦞
+      <div className="px-3 py-3 border-t border-[#1f1f1f]">
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
           </div>
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              width: "9px",
-              height: "9px",
-              borderRadius: "50%",
-              backgroundColor: "#00c853",
-              border: "2px solid #0a0a0a",
-            }}
-          />
-        </div>
-        <div>
-          <div style={{ color: "#ededed", fontSize: "13px", fontWeight: 500 }}>Schellie</div>
-          <div style={{ color: "#555", fontSize: "11px" }}>Orchestrator · Online</div>
+          <div className="min-w-0">
+            <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
+            <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
+          </div>
         </div>
       </div>
     </aside>
@@ -346,26 +281,14 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#0d0d0d", overflow: "hidden" }}>
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       <Sidebar />
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+      <main className="flex-1 overflow-y-auto">
 
         {/* Top bar */}
-        <div
-          style={{
-            padding: "14px 20px",
-            borderBottom: "1px solid #1a1a1a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            backgroundColor: "#0d0d0d",
-            flexShrink: 0,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
           {/* Title + count */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <h1 style={{ color: "#ededed", fontSize: "16px", fontWeight: 600, margin: 0 }}>
@@ -643,7 +566,7 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
             </tbody>
           </table>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

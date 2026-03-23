@@ -47,7 +47,7 @@ const navItems = [
   { icon: "⊕", label: "Leads",         href: "/leads"       },
   { icon: "⌂", label: "Communities",   href: "/communities" },
   { icon: "◫", label: "Lots",          href: "/lots"        },
-    { icon: "⊞", label: "Divisions",     href: "/divisions"   },
+  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
   { icon: "◷", label: "Calendar",      href: "#"            },
   { icon: "◉", label: "Notifications", href: "#"            },
   { icon: "⚙", label: "Settings",      href: "#"            },
@@ -824,113 +824,57 @@ export default function LeadsClient({ leads, communities }: Props) {
   });
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#0a0a0a", color: "#ededed" }}>
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden" style={{ color: "#ededed" }}>
       {/* ── Sidebar ── */}
-      <aside
-        style={{
-          width: 220,
-          backgroundColor: "#0a0a0a",
-          borderRight: "1px solid #1f1f1f",
-          height: "100vh",
-          position: "sticky",
-          top: 0,
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-        }}
-      >
+      <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
         {/* Brand */}
-        <div
-          style={{
-            padding: "20px 16px 16px",
-            borderBottom: "1px solid #1a1a1a",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🦞</span>
+        <div className="px-4 py-4 border-b border-[#1f1f1f]">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🦞</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed", lineHeight: 1.2 }}>
-                Pulse v2
-              </div>
-              <div style={{ fontSize: 10, color: "#444" }}>HBx AI Factory</div>
+              <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
+              <div className="text-[10px] text-[#555]">HBx AI Factory</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
-          {navItems.map((item) => {
-            const isActive = item.href === "/leads";
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "7px 16px",
-                  fontSize: 12,
-                  color: isActive ? "#ededed" : "#555",
-                  backgroundColor: isActive ? "#111111" : "transparent",
-                  textDecoration: "none",
-                  transition: "color 0.15s, background-color 0.15s",
-                  borderLeft: isActive ? "2px solid #ededed" : "2px solid transparent",
-                }}
-              >
-                <span style={{ fontSize: 14, width: 18, textAlign: "center" }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-2 py-3 space-y-0.5">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
+                item.href === "/leads"
+                  ? "bg-[#1a1a1a] text-[#ededed]"
+                  : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
+              }`}
+            >
+              <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: "12px 16px",
-            borderTop: "1px solid #1a1a1a",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            <span style={{ fontSize: 20 }}>🦞</span>
-            <span
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 8,
-                height: 8,
-                backgroundColor: "#00c853",
-                borderRadius: "50%",
-                border: "1.5px solid #0a0a0a",
-              }}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "#ededed" }}>Schellie</div>
-            <div style={{ fontSize: 10, color: "#444" }}>Orchestrator · Online</div>
+        <div className="px-3 py-3 border-t border-[#1f1f1f]">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
+              <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
+            </div>
           </div>
         </div>
       </aside>
 
       {/* ── Main ── */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <main className="flex-1 overflow-y-auto">
         {/* Top bar */}
-        <div
-          style={{
-            padding: "14px 24px",
-            borderBottom: "1px solid #1a1a1a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexShrink: 0,
-          }}
-        >
+        <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3 flex items-center justify-between">
           {/* Title + count */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: "#ededed" }}>Leads</span>

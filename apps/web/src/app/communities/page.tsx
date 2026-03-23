@@ -75,31 +75,15 @@ export default async function CommunitiesPage() {
 
   // Flatten the nested divisions join into flat fields
   const flatCommunities = (communities ?? []).map((c: RawCommunity) => ({
-    id:             c.id,
-    division_id:    c.division_id,
-    name:           c.name,
-    slug:           c.slug,
-    status:         c.status,
-    city:           c.city,
-    state:          c.state,
-    price_from:     c.price_from,
-    price_to:       c.price_to,
-    is_55_plus:     c.is_55_plus,
-    has_model:      c.has_model,
-    has_lotworks:   c.has_lotworks,
-    hoa_fee:        c.hoa_fee,
-    hoa_period:     c.hoa_period,
-    natural_gas:    c.natural_gas,
-    electric:       c.electric,
-    water:          c.water,
-    sewer:          c.sewer,
-    cable_internet: c.cable_internet,
-    trash:          c.trash,
-    amenities:      c.amenities,
+    // Spread all DB columns — includes all Heartbeat-enriched fields automatically
+    ...c,
+    // Flatten division join
     division_slug:  c.divisions?.slug     ?? "",
     division_name:  c.divisions?.name     ?? "",
     region:         c.divisions?.region   ?? "",
     timezone:       c.divisions?.timezone ?? "",
+    // Remove the nested object
+    divisions:      undefined,
   }));
 
   return (

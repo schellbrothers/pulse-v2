@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+
+export const revalidate = 60;
 
 type Status = "online" | "ready" | "standby" | "planned";
 type Tier = "control" | "active" | "role" | "planned";
@@ -260,7 +263,40 @@ export default async function Page() {
       }
     }
 
-    activity = [...ghItems, ...vItems]
+    // Supabase client for sync events
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+    );
+
+    let syncItems: ActivityItem[] = [];
+    try {
+      const { data: syncEvents } = await supabase
+        .from("sync_log")
+        .select("feed, status, rows_upserted, rows_total, synced_at")
+        .eq("status", "success")
+        .order("synced_at", { ascending: false })
+        .limit(10);
+
+      const FEED_LABELS: Record<string, string> = {
+        lots: "Lots Explorer", model_homes: "Model Homes",
+        zillow: "Zillow Feed", floor_plans: "Floor Plans",
+      };
+
+      syncItems = (syncEvents ?? []).map(e => ({
+        type: "sync",
+        icon: "↻",
+        color: "#a855f7",
+        label: `Synced: ${FEED_LABELS[e.feed] ?? e.feed}`,
+        detail: `${(e.rows_upserted ?? 0).toLocaleString()} rows upserted · ${(e.rows_total ?? 0).toLocaleString()} total`,
+        time: e.synced_at,
+        tag: "Sync",
+      }));
+    } catch {
+      // silently fail
+    }
+
+    activity = [...ghItems, ...vItems, ...syncItems]
       .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
       .slice(0, 15);
   } catch {

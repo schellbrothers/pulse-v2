@@ -1,6 +1,7 @@
-"use client";
-
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+
+export const revalidate = 60;
 
 type SystemStatus = "online" | "ready" | "unreachable";
 
@@ -33,7 +34,50 @@ const navItems = [
   { icon: "◈", label: "Status",        href: "/status" },
 ];
 
-export default function StatusPage() {
+const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: string }> = {
+  "lots":        { label: "Lots Explorer", times: ["8:00 AM", "1:00 PM", "6:30 PM"], freq: "3× daily" },
+  "model_homes": { label: "Model Homes",   times: ["8:00 AM", "6:30 PM"],            freq: "2× daily" },
+  "zillow":      { label: "Zillow Feed",   times: ["2:00 AM"],                        freq: "Nightly"  },
+  "floor_plans": { label: "Floor Plans",   times: ["2:00 AM"],                        freq: "Nightly"  },
+};
+
+function nextRun(times: string[]): string {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  for (const t of times) {
+    const [time, period] = t.split(" ");
+    const [h, m] = time.split(":").map(Number);
+    let hours = h;
+    if (period === "PM" && h !== 12) hours += 12;
+    if (period === "AM" && h === 12) hours = 0;
+    const mins = hours * 60 + (m ?? 0);
+    if (mins > nowMins) return t + " EDT";
+  }
+  return times[0] + " EDT tomorrow";
+}
+
+export default async function StatusPage() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+  );
+
+  // Latest sync per feed
+  const { data: syncStatus } = await supabase
+    .from("sync_log")
+    .select("feed, status, rows_upserted, rows_total, error_message, duration_ms, synced_at")
+    .order("synced_at", { ascending: false })
+    .limit(40);
+
+  // Dedupe to latest per feed
+  const latestPerFeed: Record<string, NonNullable<typeof syncStatus>[0]> = {};
+  for (const row of syncStatus ?? []) {
+    if (!latestPerFeed[row.feed]) latestPerFeed[row.feed] = row;
+  }
+
+  // Recent errors
+  const recentErrors = (syncStatus ?? []).filter(r => r.status === "error").slice(0, 5);
+
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
 
@@ -110,6 +154,92 @@ export default function StatusPage() {
             })}
           </div>
         </div>
+
+        {/* ── Data Sync Status ── */}
+        <div className="px-6 pb-6 space-y-4">
+          <h2 style={{ color: "#ededed", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+            Data Sync
+          </h2>
+
+          {/* Sync table */}
+          <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #1f1f1f" }}>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#0d0d0d" }}>
+                  {["Feed", "Last Run", "Result", "Rows", "Duration", "Next Run", "Schedule"].map(h => (
+                    <th key={h} style={{
+                      padding: "8px 14px", textAlign: "left", whiteSpace: "nowrap",
+                      borderBottom: "1px solid #1f1f1f", fontSize: 11,
+                      textTransform: "uppercase", letterSpacing: "0.07em", color: "#555",
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(SYNC_SCHEDULE).map(([key, cfg]) => {
+                  const row = latestPerFeed[key];
+                  const isSuccess = row?.status === "success";
+                  const isError = row?.status === "error";
+                  const lastRun = row
+                    ? new Date(row.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                    : "—";
+                  const dur = row?.duration_ms
+                    ? row.duration_ms < 1000 ? "< 1s" : `${(row.duration_ms / 1000).toFixed(1)}s`
+                    : "—";
+                  const rows = row?.rows_upserted != null
+                    ? row.rows_upserted.toLocaleString() + (row.rows_total && row.rows_total !== row.rows_upserted ? ` / ${row.rows_total.toLocaleString()}` : "")
+                    : "—";
+                  return (
+                    <tr key={key} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <td style={{ padding: "9px 14px", color: "#ededed", fontWeight: 500, whiteSpace: "nowrap" }}>
+                        {cfg.label}
+                      </td>
+                      <td style={{ padding: "9px 14px", color: "#666", whiteSpace: "nowrap" }}>{lastRun}</td>
+                      <td style={{ padding: "9px 14px", whiteSpace: "nowrap" }}>
+                        {!row ? (
+                          <span style={{ color: "#333", fontSize: 11 }}>No data</span>
+                        ) : isSuccess ? (
+                          <span style={{ color: "#00c853", fontSize: 11 }}>✓ success</span>
+                        ) : isError ? (
+                          <span style={{ color: "#ff6b6b", fontSize: 11 }}>✗ error</span>
+                        ) : null}
+                      </td>
+                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{rows}</td>
+                      <td style={{ padding: "9px 14px", color: "#666", whiteSpace: "nowrap" }}>{dur}</td>
+                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{nextRun(cfg.times)}</td>
+                      <td style={{ padding: "9px 14px", color: "#555", whiteSpace: "nowrap", fontSize: 11 }}>{cfg.freq}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Recent errors — only if any */}
+          {recentErrors.length > 0 && (
+            <div style={{ borderRadius: 8, border: "1px solid #3f1f1f", backgroundColor: "#1a0a0a", padding: "12px 16px" }}>
+              <div style={{ color: "#ff6b6b", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+                Recent Sync Errors
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {recentErrors.map((e, i) => (
+                  <div key={i} style={{ fontSize: 11, color: "#a1a1a1" }}>
+                    <span style={{ color: "#ff6b6b", fontWeight: 500 }}>
+                      {SYNC_SCHEDULE[e.feed]?.label ?? e.feed}
+                    </span>
+                    {" · "}
+                    <span style={{ color: "#555" }}>
+                      {new Date(e.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </span>
+                    {" · "}
+                    {(e.error_message ?? "").slice(0, 120)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
       </main>
     </div>
   );

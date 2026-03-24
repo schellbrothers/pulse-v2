@@ -308,12 +308,69 @@ Plans: ${JSON.stringify(plans ?? [], null, 2)}`;
 // Ollama / Spark call
 // ---------------------------------------------------------------------------
 
-function formatDataDirect(context: string): string {
+function formatDataDirect(context: string, question: string = ""): string {
   try {
-    const lines = context.split("\n").filter((l) => l.trim());
-    return lines.slice(0, 15).join("\n");
+    const q = question.toLowerCase();
+    const data = JSON.parse(context.slice(context.indexOf("[")));
+    
+    // Lots response
+    if (Array.isArray(data) && data[0]?.lot_number !== undefined) {
+      const lots = data as Array<{lot_number: string; lot_status: string; lot_premium: number; address: string; construction_status: string}>;
+      const available = lots.filter(l => l.lot_status === "Available Homesite");
+      const qd = lots.filter(l => l.lot_status === "Quick Delivery");
+      const future = lots.filter(l => l.lot_status === "Future Homesite");
+      
+      let reply = `**${lots[0] ? context.split("\n")[0].replace("Community: ", "").trim() : ""}**\n\n`;
+      
+      if (available.length > 0) {
+        reply += `**${available.length} Available Lots:**\n`;
+        available.slice(0, 8).forEach(l => {
+          const premium = l.lot_premium > 0 ? ` (+$${l.lot_premium.toLocaleString()} premium)` : "";
+          reply += `• Lot ${l.lot_number}${l.address ? " — " + l.address : ""}${premium} · ${l.construction_status || "Not Started"}\n`;
+        });
+        if (available.length > 8) reply += `  ...and ${available.length - 8} more\n`;
+      }
+      if (qd.length > 0) reply += `\n**${qd.length} Quick Delivery** (move-in ready)\n`;
+      if (future.length > 0) reply += `**${future.length} Future Lots** (not yet released)\n`;
+      if (available.length === 0 && qd.length === 0) reply += "No available lots at this time.";
+      return reply.trim();
+    }
+    
+    // Floor plans response
+    if (Array.isArray(data) && data[0]?.plan_name !== undefined) {
+      const plans = data as Array<{plan_name: string; net_price: number; base_price: number; incentive_amount: number; min_bedrooms: number; max_bedrooms: number; min_heated_sqft: number; max_heated_sqft: number; style_filters: string[]; community?: string}>;
+      const commName = context.split("\n")[0].replace("Community: ", "").trim();
+      let reply = commName ? `**Floor Plans at ${commName}:**\n\n` : `**${plans.length} Matching Floor Plans:**\n\n`;
+      plans.slice(0, 10).forEach(p => {
+        const beds = p.min_bedrooms === p.max_bedrooms ? p.min_bedrooms : `${p.min_bedrooms}–${p.max_bedrooms}`;
+        const sqft = p.min_heated_sqft ? ` · ${p.min_heated_sqft.toLocaleString()}–${p.max_heated_sqft?.toLocaleString() || "?"} sf` : "";
+        const price = p.net_price ? `$${p.net_price.toLocaleString()}` : "TBD";
+        const incentive = p.incentive_amount > 0 ? ` (saves $${p.incentive_amount.toLocaleString()})` : "";
+        const style = (p.style_filters || []).join(", ");
+        const comm = p.community ? ` @ ${p.community}` : "";
+        reply += `**${p.plan_name}**${comm} — ${price}${incentive}\n  ${beds} bd${sqft}${style ? " · " + style : ""}\n\n`;
+      });
+      if (plans.length > 10) reply += `...and ${plans.length - 10} more plans`;
+      return reply.trim();
+    }
+    
+    // Generic array — format as list
+    if (Array.isArray(data)) {
+      return data.slice(0, 8).map((item: Record<string, unknown>) => {
+        const name = item.name || item.plan_name || item.lot_number || "—";
+        const detail = item.city ? `${item.city}, ${item.state}` : item.net_price ? `$${(item.net_price as number).toLocaleString()}` : "";
+        return `• **${name}**${detail ? " — " + detail : ""}`;
+      }).join("\n");
+    }
+    
+    return context.slice(0, 600);
   } catch {
-    return context.slice(0, 500);
+    // Not JSON or no array — format the text context nicely
+    return context
+      .split("\n")
+      .filter(l => l.trim() && !l.trim().startsWith("{") && !l.trim().startsWith("}") && !l.trim().startsWith('"'))
+      .slice(0, 12)
+      .join("\n");
   }
 }
 
@@ -341,7 +398,7 @@ async function callSpark(
     const data = await res.json();
     return (data.response as string) || "No response";
   } catch {
-    return formatDataDirect(context);
+    return formatDataDirect(context, userMessage);
   }
 }
 

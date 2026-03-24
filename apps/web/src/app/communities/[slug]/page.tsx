@@ -30,7 +30,7 @@ export default async function CommunityDetailPage({
     supabase
       .from("lots")
       .select(
-        "id, lot_number, lot_status, construction_status, is_available, lot_premium, address, block, phase, can_basement"
+        "id, lot_number, lot_status, construction_status, is_available, lot_premium, address, block, phase, foundation"
       )
       .eq("community_id", community.id)
       .order("lot_number"),

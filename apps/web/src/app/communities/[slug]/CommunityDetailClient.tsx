@@ -97,7 +97,7 @@ interface Lot {
   address: string | null;
   block: string | null;
   phase: string | null;
-  can_basement: boolean | null;
+  foundation: string | null;
 }
 
 interface Props {
@@ -559,7 +559,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                           </span>
                         </td>
                         <td style={{ padding: "8px 14px", whiteSpace: "nowrap" }}>
-                          {l.can_basement === true ? <span style={{ color: "#a855f7" }}>✓</span> : "—"}
+                          {l.foundation ?? "—"}
                         </td>
                         <td style={{ padding: "8px 14px", color: "#666", whiteSpace: "nowrap" }}>{l.construction_status || "—"}</td>
                         <td style={{ padding: "8px 14px", color: l.lot_premium > 0 ? "#f5a623" : "#444", whiteSpace: "nowrap" }}>

@@ -17,7 +17,7 @@ export default async function LotsPage() {
     const { data, error } = await supabase
       .from("lots")
       .select(
-        "id, community_id, community_name_raw, division_raw, lot_number, block, phase, lot_status, construction_status, is_buildable, is_available, is_hide_from_marketing, address, lot_premium, can_basement"
+        "id, community_id, community_name_raw, division_raw, lot_number, block, phase, lot_status, construction_status, is_buildable, is_available, is_hide_from_marketing, address, lot_premium, foundation"
       )
       .order("division_raw")
       .order("community_name_raw")

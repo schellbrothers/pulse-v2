@@ -33,7 +33,7 @@ interface Lot {
   is_hide_from_marketing: boolean;
   address: string | null;
   lot_premium: number;
-  can_basement: boolean | null;
+  foundation: string | null;
 }
 
 interface Props {
@@ -520,13 +520,13 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
                           <span style={{ color: "#333" }}>—</span>
                         )}
                       </td>
-                      {/* Basement */}
-                      <td style={tdStyle}>
-                        {lot.can_basement === true ? (
-                          <span style={{ color: "#a855f7", fontWeight: 500 }}>✓</span>
-                        ) : (
-                          <span style={{ color: "#333" }}>—</span>
-                        )}
+                      {/* Foundation */}
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                        {lot.foundation ? (
+                          <span style={{ color: lot.foundation === "Basement Only" ? "#a855f7" : lot.foundation === "Crawl/Basement" ? "#0070f3" : "#666", fontSize: 11 }}>
+                            {lot.foundation}
+                          </span>
+                        ) : "—"}
                       </td>
 
                       {/* Premium */}

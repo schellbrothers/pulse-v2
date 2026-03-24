@@ -422,6 +422,9 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
                 <th style={thStyle} onClick={() => handleSort("is_available")}>
                   Available{sortIndicator("is_available")}
                 </th>
+                <th style={thStyle} onClick={() => handleSort("foundation")}>
+                  Foundation{sortIndicator("foundation")}
+                </th>
                 <th style={{ ...thStyle, textAlign: "right" }} onClick={() => handleSort("lot_premium")}>
                   Premium{sortIndicator("lot_premium")}
                 </th>

@@ -78,6 +78,13 @@ interface Plan {
   pdf_url: string | null;
   page_url: string | null;
   featured_image_url: string | null;
+  elevations: Array<{
+    kova_name: string;
+    is_included: boolean | null;
+    is_thumbnail: number | null;
+    image_path: string;
+    index: number;
+  }> | string | null;  // stored as JSON string in DB
 }
 
 interface Lot {
@@ -109,6 +116,15 @@ interface SpecHome {
   url: string;
   home_id: number;
   lot_block_number: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function s3ToHttps(path: string): string {
+  return path.replace(
+    "s3://heartbeat-page-designer-production/",
+    "https://heartbeat-page-designer-production.s3.amazonaws.com/"
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -962,195 +978,108 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                 </div>
               </div>
 
-              {/* Plan image */}
-              {selectedPlan.featured_image_url && (
-                <div style={{ height: 220, overflow: "hidden", backgroundColor: "#111", flexShrink: 0 }}>
-                  <img
-                    src={selectedPlan.featured_image_url}
-                    alt={selectedPlan.plan_name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
-                </div>
-              )}
-
               {/* Panel body */}
-              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", flex: 1 }}>
 
-                {/* Pricing section */}
-                <div>
-                  <div style={sectionLabel}>Pricing</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {selectedPlan.net_price && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#555" }}>Net Price</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: "#00c853" }}>
-                          ${selectedPlan.net_price.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    {selectedPlan.base_price && selectedPlan.base_price !== selectedPlan.net_price && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#555" }}>Base Price</span>
-                        <span style={{ fontSize: 13, color: "#444", textDecoration: "line-through" }}>
-                          ${selectedPlan.base_price.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    {selectedPlan.incentive_amount && selectedPlan.incentive_amount > 0 && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#555" }}>Incentive</span>
-                        <span style={{ fontSize: 13, color: "#f5a623" }}>
-                          -${selectedPlan.incentive_amount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Specs section */}
-                <div>
-                  <div style={sectionLabel}>Specifications</div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                    }}
-                  >
-                    {(selectedPlan.min_bedrooms || selectedPlan.max_bedrooms) && (
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 6,
-                          backgroundColor: "#141414",
-                          border: "1px solid #1a1a1a",
-                        }}
-                      >
-                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                          Bedrooms
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
-                          {selectedPlan.min_bedrooms === selectedPlan.max_bedrooms
-                            ? selectedPlan.min_bedrooms
-                            : `${selectedPlan.min_bedrooms}–${selectedPlan.max_bedrooms}`}
-                        </div>
-                      </div>
-                    )}
-                    {(selectedPlan.min_bathrooms || selectedPlan.max_bathrooms) && (
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 6,
-                          backgroundColor: "#141414",
-                          border: "1px solid #1a1a1a",
-                        }}
-                      >
-                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                          Bathrooms
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
-                          {selectedPlan.min_bathrooms === selectedPlan.max_bathrooms
-                            ? selectedPlan.min_bathrooms
-                            : `${selectedPlan.min_bathrooms}–${selectedPlan.max_bathrooms}`}
-                        </div>
-                      </div>
-                    )}
-                    {(selectedPlan.min_heated_sqft || selectedPlan.max_heated_sqft) && (
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 6,
-                          backgroundColor: "#141414",
-                          border: "1px solid #1a1a1a",
-                        }}
-                      >
-                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                          Sq Ft
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
-                          {selectedPlan.min_heated_sqft === selectedPlan.max_heated_sqft
-                            ? (selectedPlan.min_heated_sqft ?? 0).toLocaleString()
-                            : `${(selectedPlan.min_heated_sqft ?? 0).toLocaleString()}–${(selectedPlan.max_heated_sqft ?? 0).toLocaleString()}`}
-                        </div>
-                      </div>
-                    )}
-                    {selectedPlan.plan_type && (
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 6,
-                          backgroundColor: "#141414",
-                          border: "1px solid #1a1a1a",
-                        }}
-                      >
-                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                          Type
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
-                          {selectedPlan.plan_type}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Popularity */}
-                {selectedPlan.popularity && selectedPlan.popularity > 0 && (
-                  <div>
-                    <div style={sectionLabel}>Buyer Interest</div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 12px",
-                        borderRadius: 6,
-                        backgroundColor: "#141414",
-                        border: "1px solid #1a1a1a",
-                      }}
-                    >
-                      <span style={{ fontSize: 18 }}>★</span>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#ededed" }}>
-                          {selectedPlan.popularity}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#555" }}>Interest score</div>
+                {/* ── Elevation Gallery ── */}
+                {(() => {
+                  const elevs = selectedPlan.elevations
+                    ? (typeof selectedPlan.elevations === "string"
+                        ? JSON.parse(selectedPlan.elevations)
+                        : selectedPlan.elevations) as Array<{ kova_name: string; image_path: string; is_thumbnail: number | null }>
+                    : [];
+                  if (elevs.length === 0) return null;
+                  return (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: "#444", textTransform: "uppercase",
+                        letterSpacing: "0.07em", marginBottom: 8 }}>Elevations</div>
+                      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                        {elevs.map((e, i) => (
+                          <div key={i} style={{ flexShrink: 0, width: 140, borderRadius: 6,
+                            overflow: "hidden", border: "1px solid #2a2a2a", backgroundColor: "#0d0d0d",
+                            cursor: "pointer" }}
+                            onClick={() => window.open(s3ToHttps(e.image_path), "_blank")}
+                            title={e.kova_name}>
+                            <img
+                              src={s3ToHttps(e.image_path)}
+                              alt={e.kova_name}
+                              style={{ width: "100%", height: 90, objectFit: "contain",
+                                backgroundColor: "#0a0a0a", display: "block" }}
+                              loading="lazy"
+                            />
+                            <div style={{ padding: "4px 6px", fontSize: 9, color: "#555", textAlign: "center",
+                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {e.kova_name}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                  );
+                })()}
+
+                {/* ── Pricing ── */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#444", textTransform: "uppercase",
+                    letterSpacing: "0.07em", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid #1a1a1a" }}>
+                    Pricing
                   </div>
-                )}
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, color: "#555" }}>Net Price</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#00c853" }}>
+                      {selectedPlan.net_price ? `$${selectedPlan.net_price.toLocaleString()}` : "—"}
+                    </span>
+                  </div>
+                  {selectedPlan.base_price && selectedPlan.base_price !== selectedPlan.net_price && (
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: "#555" }}>Base Price</span>
+                      <span style={{ fontSize: 11, color: "#444", textDecoration: "line-through" }}>
+                        ${selectedPlan.base_price.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedPlan.incentive_amount && selectedPlan.incentive_amount > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 11, color: "#555" }}>Incentive</span>
+                      <span style={{ fontSize: 11, color: "#f5a623" }}>
+                        -${selectedPlan.incentive_amount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Specs grid ── */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#444", textTransform: "uppercase",
+                    letterSpacing: "0.07em", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid #1a1a1a" }}>
+                    Specifications
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {[
+                      { label: "BEDROOMS", value: selectedPlan.min_bedrooms === selectedPlan.max_bedrooms
+                        ? String(selectedPlan.min_bedrooms ?? "—")
+                        : `${selectedPlan.min_bedrooms}–${selectedPlan.max_bedrooms}` },
+                      { label: "BATHROOMS", value: selectedPlan.min_bathrooms === selectedPlan.max_bathrooms
+                        ? String(selectedPlan.min_bathrooms ?? "—")
+                        : `${selectedPlan.min_bathrooms}–${selectedPlan.max_bathrooms}` },
+                      { label: "HEATED SQ FT", value: selectedPlan.min_heated_sqft
+                        ? `${selectedPlan.min_heated_sqft.toLocaleString()}–${(selectedPlan.max_heated_sqft ?? 0).toLocaleString()}`
+                        : "—" },
+                      { label: "TYPE", value: selectedPlan.plan_type ?? "—" },
+                      { label: "STYLE", value: (selectedPlan.style_filters ?? []).join(", ") || "—" },
+                      { label: "INTEREST SCORE", value: selectedPlan.popularity ? String(selectedPlan.popularity) : "—" },
+                    ].map(s => (
+                      <div key={s.label} style={{ backgroundColor: "#111", borderRadius: 6, padding: "8px 10px",
+                        border: "1px solid #1f1f1f" }}>
+                        <div style={{ fontSize: 9, color: "#555", textTransform: "uppercase",
+                          letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed" }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
               </div>
-
-              {/* Footer action */}
-              {selectedPlan.virtual_tour_url && (
-                <div
-                  style={{
-                    padding: "16px 20px",
-                    borderTop: "1px solid #1f1f1f",
-                    flexShrink: 0,
-                  }}
-                >
-                  <a
-                    href={selectedPlan.virtual_tour_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      padding: "10px 0",
-                      borderRadius: 6,
-                      backgroundColor: "#0070f3",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      textDecoration: "none",
-                    }}
-                  >
-                    ▶ Open Virtual Tour
-                  </a>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -1269,6 +1198,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   <Row label="Division"      value={community.division_name} />
                   <Row label="Abbreviation"  value={community.abbr} />
                   <Row label="55+ Community" value={community.is_55_plus ? "Yes" : null} />
+
                   <Row label="LotWorks"      value={community.is_lotworks ? "Active" : null} />
                   <Row label="Status"        value={community.is_marketing_active ? "Marketing Active" : "Not Active"} />
                 </Section>

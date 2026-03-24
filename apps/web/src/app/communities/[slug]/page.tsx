@@ -37,7 +37,7 @@ export default async function CommunityDetailPage({
     supabase
       .from("floor_plans")
       .select(
-        "id, plan_name, plan_type, base_price, incentive_amount, net_price, min_bedrooms, max_bedrooms, min_bathrooms, max_bathrooms, min_heated_sqft, max_heated_sqft, style_filters, popularity, virtual_tour_url, pdf_url, page_url, featured_image_url"
+        "id, plan_name, plan_type, base_price, incentive_amount, net_price, min_bedrooms, max_bedrooms, min_bathrooms, max_bathrooms, min_heated_sqft, max_heated_sqft, style_filters, popularity, virtual_tour_url, pdf_url, page_url, featured_image_url, elevations"
       )
       .eq("community_id", community.id)
       .order("net_price"),

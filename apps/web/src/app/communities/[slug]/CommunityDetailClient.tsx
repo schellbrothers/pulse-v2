@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -134,15 +134,17 @@ function StatusBadge({ status }: { status: string | null }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div style={{ marginBottom: 14 }}>
       <div
         style={{
           fontSize: 10,
+          fontWeight: 600,
           color: "#444",
           textTransform: "uppercase" as const,
-          letterSpacing: "0.06em",
-          marginBottom: 8,
-          fontWeight: 500,
+          letterSpacing: "0.07em",
+          marginBottom: 6,
+          paddingBottom: 4,
+          borderBottom: "1px solid #1a1a1a",
         }}
       >
         {title}
@@ -160,13 +162,12 @@ function Row({ label, value }: { label: string; value: string | null | undefined
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-start",
-        paddingBottom: 6,
-        borderBottom: "1px solid #161616",
-        marginBottom: 6,
+        paddingBottom: 3,
+        gap: 8,
       }}
     >
-      <span style={{ fontSize: 11, color: "#555", flexShrink: 0, marginRight: 12 }}>{label}</span>
-      <span style={{ fontSize: 12, color: "#a1a1a1", textAlign: "right" }}>{value}</span>
+      <span style={{ fontSize: 11, color: "#555", flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "#a1a1a1", textAlign: "right" }}>{value}</span>
     </div>
   );
 }
@@ -1184,29 +1185,20 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                 overflowY: "auto",
               }}
             >
-              {/* Panel header */}
+              {/* Panel header — compact single line */}
               <div
                 style={{
-                  padding: "16px 20px",
+                  padding: "12px 20px",
                   borderBottom: "1px solid #1f1f1f",
                   display: "flex",
-                  alignItems: "flex-start",
+                  alignItems: "center",
                   justifyContent: "space-between",
                   flexShrink: 0,
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#ededed" }}>
-                    {community.name}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <StatusBadge status={community.status} />
-                    {community.city && community.state && (
-                      <span style={{ fontSize: 12, color: "#555" }}>
-                        {community.city}, {community.state}
-                      </span>
-                    )}
-                  </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>{community.name}</span>
+                  {community.city && <span style={{ fontSize: 11, color: "#555" }}>{community.city}, {community.state}</span>}
                 </div>
                 <button
                   onClick={() => setShowInfo(false)}
@@ -1224,19 +1216,52 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                 </button>
               </div>
 
-              {/* Panel body */}
-              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* Panel body — tighter padding, no gap (Section handles spacing) */}
+              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
 
-                {/* ── OVERVIEW ── */}
-                {community.description && (
-                  <Section title="Overview">
-                    <p style={{ fontSize: 12, color: "#a1a1a1", lineHeight: 1.7, margin: 0 }}>
-                      {community.description}
-                    </p>
-                  </Section>
+                {/* 1. RESOURCES — compact horizontal strip, no Section wrapper */}
+                {(community.brochure_url || community.included_features_url || community.design_center_url || community.page_url || community.marketing_video_url || community.flickr_set_id) && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 14, borderBottom: "1px solid #1a1a1a", marginBottom: 14 }}>
+                    {community.brochure_url && (
+                      <a href={community.brochure_url} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                        ⬇ Brochure
+                      </a>
+                    )}
+                    {community.included_features_url && (
+                      <a href={community.included_features_url} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                        ⬇ Included Features
+                      </a>
+                    )}
+                    {community.design_center_url && (
+                      <a href={community.design_center_url} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                        🎨 Design Center
+                      </a>
+                    )}
+                    {community.page_url && (
+                      <a href={`https://schellbrothers.com${community.page_url}`} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                        ↗ Website
+                      </a>
+                    )}
+                    {community.marketing_video_url && (
+                      <a href={community.marketing_video_url} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1f2e", border: "1px solid #1a2a3f", color: "#0070f3", textDecoration: "none" }}>
+                        ▶ Video
+                      </a>
+                    )}
+                    {community.flickr_set_id && (
+                      <a href={`https://www.flickr.com/photos/schellbrothers/sets/${community.flickr_set_id}`} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                        📷 Photo Gallery
+                      </a>
+                    )}
+                  </div>
                 )}
 
-                {/* ── KEY FACTS ── */}
+                {/* 2. KEY FACTS */}
                 <Section title="Key Facts">
                   <Row label="Priced From"   value={community.priced_from ? `$${community.priced_from.toLocaleString()}` : null} />
                   <Row label="HOA"           value={community.hoa_fee ? `$${community.hoa_fee}/mo` : null} />
@@ -1248,39 +1273,54 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   <Row label="Status"        value={community.is_marketing_active ? "Marketing Active" : "Not Active"} />
                 </Section>
 
-                {/* ── SALES CONTACT ── */}
-                {(community.sales_phone || community.sales_center_address) && (
-                  <Section title="Sales Contact">
-                    <Row label="Phone"   value={community.sales_phone} />
-                    <Row label="Address" value={community.sales_center_address} />
-                    {community.sales_email && (
-                      <Row label="Email" value={community.sales_email} />
-                    )}
-                  </Section>
-                )}
+                {/* 3. SALES CONTACT + HOURS — side by side in 2-col grid if both exist */}
+                {(() => {
+                  const hasSales = !!(community.sales_phone || community.sales_center_address || community.sales_email);
 
-                {/* ── HOURS ── */}
-                {community.hours && (() => {
-                  try {
-                    const hours = typeof community.hours === "string" ? JSON.parse(community.hours) : community.hours;
-                    const entries = Object.entries(hours as Record<string, string>);
-                    if (entries.length === 0) return null;
+                  let hoursEntries: Array<[string, string]> = [];
+                  if (community.hours) {
+                    try {
+                      const parsed: unknown = typeof community.hours === "string"
+                        ? JSON.parse(community.hours)
+                        : community.hours;
+                      hoursEntries = Object.entries(parsed as Record<string, string>);
+                    } catch {}
+                  }
+                  const hasHours = hoursEntries.length > 0;
+
+                  const salesBlock = hasSales ? (
+                    <Section title="Sales Contact">
+                      <Row label="Phone"   value={community.sales_phone} />
+                      <Row label="Address" value={community.sales_center_address} />
+                      <Row label="Email"   value={community.sales_email} />
+                    </Section>
+                  ) : null;
+
+                  const hoursBlock = hasHours ? (
+                    <Section title="Hours">
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
+                        {hoursEntries.map(([day, time]) => (
+                          <React.Fragment key={day}>
+                            <span style={{ fontSize: 11, color: "#555" }}>{day.slice(0, 3)}</span>
+                            <span style={{ fontSize: 11, color: "#a1a1a1" }}>{time}</span>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null;
+
+                  if (hasSales && hasHours) {
                     return (
-                      <Section title="Hours">
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {entries.map(([day, time]) => (
-                            <div key={day} style={{ display: "flex", justifyContent: "space-between", paddingBottom: 4, borderBottom: "1px solid #161616" }}>
-                              <span style={{ fontSize: 11, color: "#555" }}>{day}</span>
-                              <span style={{ fontSize: 11, color: "#a1a1a1" }}>{time}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </Section>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        <div>{salesBlock}</div>
+                        <div>{hoursBlock}</div>
+                      </div>
                     );
-                  } catch { return null; }
+                  }
+                  return <>{salesBlock}{hoursBlock}</>;
                 })()}
 
-                {/* ── SCHOOLS ── */}
+                {/* 4. SCHOOLS */}
                 {community.school_district && (
                   <Section title="Schools">
                     <Row label="District"   value={community.school_district} />
@@ -1290,7 +1330,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   </Section>
                 )}
 
-                {/* ── UTILITIES ── */}
+                {/* 5. UTILITIES */}
                 {(community.natural_gas || community.electric || community.water || community.sewer || community.trash) && (
                   <Section title="Utilities">
                     <Row label="Natural Gas"      value={community.natural_gas} />
@@ -1302,12 +1342,11 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   </Section>
                 )}
 
-                {/* ── AMENITIES ── */}
+                {/* 6. AMENITIES */}
                 {(() => {
-                  // Use structured amenities if available, fall back to string
                   try {
                     if (community.amenities_structured) {
-                      const amenities = typeof community.amenities_structured === "string"
+                      const amenities: unknown = typeof community.amenities_structured === "string"
                         ? JSON.parse(community.amenities_structured)
                         : community.amenities_structured;
                       if (Array.isArray(amenities) && amenities.length > 0) {
@@ -1315,7 +1354,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                           <Section title="Amenities">
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                               {(amenities as Array<{ name: string }>).map((a) => (
-                                <span key={a.name} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4,
+                                <span key={a.name} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4,
                                   backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1" }}>
                                   {a.name}
                                 </span>
@@ -1326,14 +1365,13 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                       }
                     }
                   } catch {}
-                  // Fall back to string
                   if (community.amenities) {
                     const items = community.amenities.split(";").map((s: string) => s.trim()).filter(Boolean);
                     return (
                       <Section title="Amenities">
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
                           {items.map((item: string) => (
-                            <span key={item} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4,
+                            <span key={item} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4,
                               backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1" }}>
                               {item}
                             </span>
@@ -1345,13 +1383,13 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   return null;
                 })()}
 
-                {/* ── MODEL & SPEC HOMES ── */}
+                {/* 7. MODEL & SPEC HOMES */}
                 {(() => {
                   try {
-                    const models = community.model_homes
+                    const models: Array<{ name: string; url: string; home_id: number }> = community.model_homes
                       ? (typeof community.model_homes === "string" ? JSON.parse(community.model_homes) : community.model_homes) as Array<{ name: string; url: string; home_id: number }>
                       : [];
-                    const specs = community.spec_homes
+                    const specs: Array<{ name: string; url: string; home_id: number; lot_block_number?: string }> = community.spec_homes
                       ? (typeof community.spec_homes === "string" ? JSON.parse(community.spec_homes) : community.spec_homes) as Array<{ name: string; url: string; home_id: number; lot_block_number?: string }>
                       : [];
 
@@ -1396,47 +1434,12 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   } catch { return null; }
                 })()}
 
-                {/* ── RESOURCES ── */}
-                {(community.brochure_url || community.included_features_url || community.design_center_url || community.page_url || community.marketing_video_url || community.flickr_set_id) && (
-                  <Section title="Resources">
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                      {community.brochure_url && (
-                        <a href={community.brochure_url} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
-                          ⬇ Brochure
-                        </a>
-                      )}
-                      {community.included_features_url && (
-                        <a href={community.included_features_url} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
-                          ⬇ Included Features
-                        </a>
-                      )}
-                      {community.design_center_url && (
-                        <a href={community.design_center_url} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
-                          🎨 Design Center
-                        </a>
-                      )}
-                      {community.page_url && (
-                        <a href={`https://schellbrothers.com${community.page_url}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
-                          ↗ Website
-                        </a>
-                      )}
-                      {community.marketing_video_url && (
-                        <a href={community.marketing_video_url} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1f2e", border: "1px solid #1a2a3f", color: "#0070f3", textDecoration: "none" }}>
-                          ▶ Video
-                        </a>
-                      )}
-                      {community.flickr_set_id && (
-                        <a href={`https://www.flickr.com/photos/schellbrothers/sets/${community.flickr_set_id}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
-                          📷 Photo Gallery
-                        </a>
-                      )}
-                    </div>
+                {/* 8. OVERVIEW — moved to bottom */}
+                {community.description && (
+                  <Section title="Overview">
+                    <p style={{ fontSize: 12, color: "#a1a1a1", lineHeight: 1.7, margin: 0 }}>
+                      {community.description}
+                    </p>
                   </Section>
                 )}
 

@@ -308,24 +308,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   ⬇ Brochure
                 </a>
               )}
-              {community.lot_map_url && (
-                <a
-                  href={community.lot_map_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: 11,
-                    padding: "4px 10px",
-                    borderRadius: 4,
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    color: "#a1a1a1",
-                    textDecoration: "none",
-                  }}
-                >
-                  ◫ Lot Map
-                </a>
-              )}
+              
               {community.page_url && (
                 <a
                   href={`https://schellbrothers.com${community.page_url}`}

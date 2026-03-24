@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@supabase/supabase-js";
 import Sidebar from "@/components/Sidebar";
 import TaskDetailPanel from "@/components/TaskDetailPanel";
 import type { Task, TaskStatus, TaskType } from "@/types/tasks";
@@ -37,6 +38,21 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  // Realtime subscription — board updates live without refresh
+  useEffect(() => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
+    );
+    const channel = supabase
+      .channel("hbx_tasks_live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "hbx_tasks" }, () => {
+        fetchTasks(); // re-fetch on any change
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchTasks]);
 
   const filteredTasks = tasks.filter(t => {
     if (filter === "active" && ["completed", "cancelled"].includes(t.status)) return false;

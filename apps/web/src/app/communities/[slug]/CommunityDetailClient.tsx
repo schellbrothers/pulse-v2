@@ -21,6 +21,8 @@ interface Community {
   hoa_fee: number | null;
   hoa_period: string | null;
   is_55_plus: boolean;
+  is_lotworks: boolean;
+  is_marketing_active: boolean;
   has_model: boolean;
   has_lotworks: boolean;
   school_district: string | null;
@@ -41,6 +43,20 @@ interface Community {
   flickr_set_id: string | null;
   model_homes: string | null;
   spec_homes: string | null;
+  // ── new fields ──
+  abbr: string | null;
+  division_code: string | null;
+  sales_email: string | null;
+  amenities_structured: string | null;   // JSON array from Heartbeat
+  hours: string | null;                   // JSON object {day: time}
+  natural_gas: string | null;
+  electric: string | null;
+  water: string | null;
+  sewer: string | null;
+  trash: string | null;
+  cable_internet: string | null;
+  included_features_url: string | null;
+  design_center_url: string | null;
 }
 
 interface Plan {
@@ -116,6 +132,45 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 10,
+          color: "#444",
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.06em",
+          marginBottom: 8,
+          fontWeight: 500,
+        }}
+      >
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        paddingBottom: 6,
+        borderBottom: "1px solid #161616",
+        marginBottom: 6,
+      }}
+    >
+      <span style={{ fontSize: 11, color: "#555", flexShrink: 0, marginRight: 12 }}>{label}</span>
+      <span style={{ fontSize: 12, color: "#a1a1a1", textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CommunityDetailClient({ community, plans, lots }: Props) {
@@ -155,15 +210,11 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
       label: "Available Lots",
       value: lotStats.available.toString(),
       color: "#00c853",
-      clickable: true,
-      lotFilter: "Available Homesite",
     },
     {
       label: "Total Lots",
       value: lotStats.total.toString(),
       color: "#666",
-      clickable: true,
-      lotFilter: "all",
     },
     {
       label: "Floor Plans",
@@ -179,8 +230,6 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
       label: "Sold",
       value: lotStats.sold.toString(),
       color: "#555",
-      clickable: true,
-      lotFilter: "Sold",
     },
   ];
 
@@ -308,7 +357,24 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                   ⬇ Brochure
                 </a>
               )}
-              
+              {community.lot_map_url && (
+                <a
+                  href={community.lot_map_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: 11,
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    backgroundColor: "#1a1a1a",
+                    border: "1px solid #2a2a2a",
+                    color: "#a1a1a1",
+                    textDecoration: "none",
+                  }}
+                >
+                  ◫ Lot Map
+                </a>
+              )}
               {community.page_url && (
                 <a
                   href={`https://schellbrothers.com${community.page_url}`}
@@ -1161,258 +1227,217 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
               {/* Panel body */}
               <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24 }}>
 
-                {/* Overview / Description */}
+                {/* ── OVERVIEW ── */}
                 {community.description && (
-                  <div>
-                    <div style={sectionLabel}>Overview</div>
-                    <p style={{ fontSize: 13, color: "#a1a1a1", lineHeight: 1.6, margin: 0 }}>
+                  <Section title="Overview">
+                    <p style={{ fontSize: 12, color: "#a1a1a1", lineHeight: 1.7, margin: 0 }}>
                       {community.description}
                     </p>
-                  </div>
+                  </Section>
                 )}
 
-                {/* Schools */}
-                {(community.school_district ||
-                  community.school_elementary ||
-                  community.school_middle ||
-                  community.school_high) && (
-                  <div>
-                    <div style={sectionLabel}>Schools</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {community.school_district && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            District
-                          </span>
-                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                            {community.school_district}
-                          </span>
-                        </div>
-                      )}
-                      {community.school_elementary && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            Elementary
-                          </span>
-                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                            {community.school_elementary}
-                          </span>
-                        </div>
-                      )}
-                      {community.school_middle && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            Middle
-                          </span>
-                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                            {community.school_middle}
-                          </span>
-                        </div>
-                      )}
-                      {community.school_high && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            High
-                          </span>
-                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                            {community.school_high}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* ── KEY FACTS ── */}
+                <Section title="Key Facts">
+                  <Row label="Priced From"   value={community.priced_from ? `$${community.priced_from.toLocaleString()}` : null} />
+                  <Row label="HOA"           value={community.hoa_fee ? `$${community.hoa_fee}/mo` : null} />
+                  <Row label="Location"      value={[community.city, community.state, community.zip].filter(Boolean).join(", ")} />
+                  <Row label="Division"      value={community.division_name} />
+                  <Row label="Abbreviation"  value={community.abbr} />
+                  <Row label="55+ Community" value={community.is_55_plus ? "Yes" : null} />
+                  <Row label="LotWorks"      value={community.is_lotworks ? "Active" : null} />
+                  <Row label="Status"        value={community.is_marketing_active ? "Marketing Active" : "Not Active"} />
+                </Section>
 
-                {/* Contact */}
+                {/* ── SALES CONTACT ── */}
                 {(community.sales_phone || community.sales_center_address) && (
-                  <div>
-                    <div style={sectionLabel}>Sales Contact</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {community.sales_phone && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            Phone
-                          </span>
-                          <a
-                            href={`tel:${community.sales_phone}`}
-                            style={{ fontSize: 12, color: "#a1a1a1", textDecoration: "none" }}
-                          >
-                            {community.sales_phone}
-                          </a>
-                        </div>
-                      )}
-                      {community.sales_center_address && (
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                            Address
-                          </span>
-                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                            {community.sales_center_address}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Section title="Sales Contact">
+                    <Row label="Phone"   value={community.sales_phone} />
+                    <Row label="Address" value={community.sales_center_address} />
+                    {community.sales_email && (
+                      <Row label="Email" value={community.sales_email} />
+                    )}
+                  </Section>
                 )}
 
-                {/* HOA */}
-                {community.hoa_fee && (
-                  <div>
-                    <div style={sectionLabel}>HOA</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
-                          Fee
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          ${community.hoa_fee.toLocaleString()}
-                          {community.hoa_period ? ` / ${community.hoa_period}` : " / mo"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Amenities */}
-                {amenityList.length > 0 && (
-                  <div>
-                    <div style={sectionLabel}>Amenities</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {amenityList.map((a) => (
-                        <span
-                          key={a}
-                          style={{
-                            fontSize: 11,
-                            padding: "3px 8px",
-                            borderRadius: 12,
-                            backgroundColor: "#161616",
-                            border: "1px solid #2a2a2a",
-                            color: "#a1a1a1",
-                          }}
-                        >
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Model & Spec Homes */}
-                {(modelHomes.length > 0 || specHomes.length > 0) && (
-                  <div>
-                    <div style={sectionLabel}>Model &amp; Spec Homes</div>
-
-                    {modelHomes.length > 0 && (
-                      <div style={{ marginBottom: specHomes.length > 0 ? 16 : 0 }}>
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: "#333",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.06em",
-                            marginBottom: 8,
-                          }}
-                        >
-                          Model Homes
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {modelHomes.map((m) => (
-                            <div
-                              key={m.home_id}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "6px 10px",
-                                borderRadius: 4,
-                                backgroundColor: "#141414",
-                                border: "1px solid #1a1a1a",
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div
-                                  style={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#a855f7",
-                                    flexShrink: 0,
-                                  }}
-                                />
-                                <span style={{ fontSize: 12, color: "#ededed" }}>{m.name}</span>
-                              </div>
-                              <a
-                                href={`https://schellbrothers.com${m.url}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
-                              >
-                                ↗
-                              </a>
+                {/* ── HOURS ── */}
+                {community.hours && (() => {
+                  try {
+                    const hours = typeof community.hours === "string" ? JSON.parse(community.hours) : community.hours;
+                    const entries = Object.entries(hours as Record<string, string>);
+                    if (entries.length === 0) return null;
+                    return (
+                      <Section title="Hours">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {entries.map(([day, time]) => (
+                            <div key={day} style={{ display: "flex", justifyContent: "space-between", paddingBottom: 4, borderBottom: "1px solid #161616" }}>
+                              <span style={{ fontSize: 11, color: "#555" }}>{day}</span>
+                              <span style={{ fontSize: 11, color: "#a1a1a1" }}>{time}</span>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      </Section>
+                    );
+                  } catch { return null; }
+                })()}
 
-                    {specHomes.length > 0 && (
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: "#333",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.06em",
-                            marginBottom: 8,
-                          }}
-                        >
-                          Spec Homes
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {specHomes.map((s) => (
-                            <div
-                              key={s.home_id}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "6px 10px",
-                                borderRadius: 4,
-                                backgroundColor: "#141414",
-                                border: "1px solid #1a1a1a",
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div
-                                  style={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#0070f3",
-                                    flexShrink: 0,
-                                  }}
-                                />
-                                <span style={{ fontSize: 12, color: "#ededed" }}>{s.name}</span>
-                                {s.lot_block_number && (
-                                  <span style={{ fontSize: 11, color: "#555" }}>
-                                    · Lot {s.lot_block_number}
-                                  </span>
-                                )}
-                              </div>
-                              <a
-                                href={`https://schellbrothers.com${s.url}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
-                              >
-                                ↗
-                              </a>
+                {/* ── SCHOOLS ── */}
+                {community.school_district && (
+                  <Section title="Schools">
+                    <Row label="District"   value={community.school_district} />
+                    <Row label="Elementary" value={community.school_elementary} />
+                    <Row label="Middle"     value={community.school_middle} />
+                    <Row label="High"       value={community.school_high} />
+                  </Section>
+                )}
+
+                {/* ── UTILITIES ── */}
+                {(community.natural_gas || community.electric || community.water || community.sewer || community.trash) && (
+                  <Section title="Utilities">
+                    <Row label="Natural Gas"      value={community.natural_gas} />
+                    <Row label="Electric"         value={community.electric} />
+                    <Row label="Water"            value={community.water} />
+                    <Row label="Sewer"            value={community.sewer} />
+                    <Row label="Trash"            value={community.trash} />
+                    <Row label="Cable / Internet" value={community.cable_internet} />
+                  </Section>
+                )}
+
+                {/* ── AMENITIES ── */}
+                {(() => {
+                  // Use structured amenities if available, fall back to string
+                  try {
+                    if (community.amenities_structured) {
+                      const amenities = typeof community.amenities_structured === "string"
+                        ? JSON.parse(community.amenities_structured)
+                        : community.amenities_structured;
+                      if (Array.isArray(amenities) && amenities.length > 0) {
+                        return (
+                          <Section title="Amenities">
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                              {(amenities as Array<{ name: string }>).map((a) => (
+                                <span key={a.name} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4,
+                                  backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1" }}>
+                                  {a.name}
+                                </span>
+                              ))}
                             </div>
+                          </Section>
+                        );
+                      }
+                    }
+                  } catch {}
+                  // Fall back to string
+                  if (community.amenities) {
+                    const items = community.amenities.split(";").map((s: string) => s.trim()).filter(Boolean);
+                    return (
+                      <Section title="Amenities">
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                          {items.map((item: string) => (
+                            <span key={item} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4,
+                              backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1" }}>
+                              {item}
+                            </span>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      </Section>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* ── MODEL & SPEC HOMES ── */}
+                {(() => {
+                  try {
+                    const models = community.model_homes
+                      ? (typeof community.model_homes === "string" ? JSON.parse(community.model_homes) : community.model_homes) as Array<{ name: string; url: string; home_id: number }>
+                      : [];
+                    const specs = community.spec_homes
+                      ? (typeof community.spec_homes === "string" ? JSON.parse(community.spec_homes) : community.spec_homes) as Array<{ name: string; url: string; home_id: number; lot_block_number?: string }>
+                      : [];
+
+                    if (models.length === 0 && specs.length === 0) return null;
+                    return (
+                      <Section title="Model & Spec Homes">
+                        {models.length > 0 && (
+                          <>
+                            <div style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Model Homes</div>
+                            {models.map(m => (
+                              <a key={m.home_id} href={`https://schellbrothers.com${m.url}`} target="_blank" rel="noreferrer"
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  padding: "6px 0", borderBottom: "1px solid #161616", textDecoration: "none" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#a855f7", flexShrink: 0, display: "inline-block" }} />
+                                  <span style={{ fontSize: 12, color: "#ededed", fontWeight: 500 }}>{m.name}</span>
+                                </div>
+                                <span style={{ fontSize: 11, color: "#555" }}>↗</span>
+                              </a>
+                            ))}
+                          </>
+                        )}
+                        {specs.length > 0 && (
+                          <>
+                            <div style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: models.length > 0 ? 12 : 0, marginBottom: 6 }}>Spec / Quick Delivery</div>
+                            {specs.map(s => (
+                              <a key={s.home_id} href={`https://schellbrothers.com${s.url}`} target="_blank" rel="noreferrer"
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  padding: "6px 0", borderBottom: "1px solid #161616", textDecoration: "none" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#0070f3", flexShrink: 0, display: "inline-block" }} />
+                                  <span style={{ fontSize: 12, color: "#ededed", fontWeight: 500 }}>{s.name}</span>
+                                  {s.lot_block_number && <span style={{ fontSize: 11, color: "#555" }}>· Lot {s.lot_block_number}</span>}
+                                </div>
+                                <span style={{ fontSize: 11, color: "#555" }}>↗</span>
+                              </a>
+                            ))}
+                          </>
+                        )}
+                      </Section>
+                    );
+                  } catch { return null; }
+                })()}
+
+                {/* ── RESOURCES ── */}
+                {(community.brochure_url || community.included_features_url || community.design_center_url || community.page_url || community.marketing_video_url || community.flickr_set_id) && (
+                  <Section title="Resources">
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                      {community.brochure_url && (
+                        <a href={community.brochure_url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                          ⬇ Brochure
+                        </a>
+                      )}
+                      {community.included_features_url && (
+                        <a href={community.included_features_url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                          ⬇ Included Features
+                        </a>
+                      )}
+                      {community.design_center_url && (
+                        <a href={community.design_center_url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                          🎨 Design Center
+                        </a>
+                      )}
+                      {community.page_url && (
+                        <a href={`https://schellbrothers.com${community.page_url}`} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                          ↗ Website
+                        </a>
+                      )}
+                      {community.marketing_video_url && (
+                        <a href={community.marketing_video_url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1f2e", border: "1px solid #1a2a3f", color: "#0070f3", textDecoration: "none" }}>
+                          ▶ Video
+                        </a>
+                      )}
+                      {community.flickr_set_id && (
+                        <a href={`https://www.flickr.com/photos/schellbrothers/sets/${community.flickr_set_id}`} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", color: "#a1a1a1", textDecoration: "none" }}>
+                          📷 Photo Gallery
+                        </a>
+                      )}
+                    </div>
+                  </Section>
                 )}
 
               </div>

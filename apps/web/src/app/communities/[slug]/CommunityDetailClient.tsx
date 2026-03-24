@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -115,202 +116,12 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-function DonutChart({
-  data,
-}: {
-  data: { label: string; value: number; color: string }[];
-}) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return null;
-
-  const cx = 80;
-  const cy = 80;
-  const r = 60;
-  const strokeW = 20;
-  const circumference = 2 * Math.PI * r;
-  let offset = 0;
-
-  return (
-    <svg width={160} height={160} viewBox="0 0 160 160" style={{ flexShrink: 0 }}>
-      {data
-        .filter((d) => d.value > 0)
-        .map((d, i) => {
-          const dash = (d.value / total) * circumference;
-          const gap = circumference - dash;
-          const el = (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill="none"
-              stroke={d.color}
-              strokeWidth={strokeW}
-              strokeDasharray={`${dash} ${gap}`}
-              strokeDashoffset={-offset}
-              transform={`rotate(-90 ${cx} ${cy})`}
-            />
-          );
-          offset += dash;
-          return el;
-        })}
-      <text
-        x={cx}
-        y={cy - 8}
-        textAnchor="middle"
-        fill="#ededed"
-        fontSize={20}
-        fontWeight={700}
-      >
-        {total}
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fill="#555" fontSize={9}>
-        TOTAL LOTS
-      </text>
-    </svg>
-  );
-}
-
-function PopularityBars({ plans }: { plans: Plan[] }) {
-  const sorted = [...plans]
-    .filter((p) => p.popularity)
-    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
-  const max = Math.max(...sorted.map((p) => p.popularity ?? 0), 1);
-
-  if (sorted.length === 0) {
-    return (
-      <div style={{ fontSize: 12, color: "#555" }}>No popularity data available.</div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {sorted.map((p) => (
-        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{ fontSize: 11, color: "#a1a1a1", width: 80, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-          >
-            {p.plan_name}
-          </span>
-          <div
-            style={{
-              flex: 1,
-              height: 6,
-              backgroundColor: "#1a1a1a",
-              borderRadius: 3,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${((p.popularity ?? 0) / max) * 100}%`,
-                height: "100%",
-                backgroundColor: "#0070f3",
-                borderRadius: 3,
-                transition: "width 0.3s",
-              }}
-            />
-          </div>
-          <span style={{ fontSize: 11, color: "#555", width: 20, textAlign: "right" }}>
-            {p.popularity}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PriceBars({ plans }: { plans: Plan[] }) {
-  const sorted = [...plans]
-    .filter((p) => p.net_price)
-    .sort((a, b) => (a.net_price ?? 0) - (b.net_price ?? 0));
-
-  if (sorted.length === 0) {
-    return (
-      <div style={{ fontSize: 12, color: "#555" }}>No pricing data available.</div>
-    );
-  }
-
-  const minPrice = Math.min(...sorted.map((p) => p.net_price ?? 0));
-  const maxPrice = Math.max(...sorted.map((p) => p.net_price ?? 0));
-  const range = maxPrice - minPrice || 1;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {sorted.map((p) => (
-        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{ fontSize: 11, color: "#a1a1a1", width: 80, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-          >
-            {p.plan_name}
-          </span>
-          <div
-            style={{
-              flex: 1,
-              height: 6,
-              backgroundColor: "#1a1a1a",
-              borderRadius: 3,
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                marginLeft: `${(((p.net_price ?? 0) - minPrice) / range) * 100}%`,
-                width: "8px",
-                height: "100%",
-                backgroundColor: "#00c853",
-                borderRadius: 3,
-              }}
-            />
-          </div>
-          <span style={{ fontSize: 11, color: "#00c853", width: 72, textAlign: "right" }}>
-            ${((p.net_price ?? 0) / 1000).toFixed(0)}k
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Card wrapper helper ──────────────────────────────────────────────────────
-
-function SectionCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        borderRadius: 8,
-        border: "1px solid #1f1f1f",
-        backgroundColor: "#111111",
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 500,
-          color: "#555",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          marginBottom: 12,
-        }}
-      >
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CommunityDetailClient({ community, plans, lots }: Props) {
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+
   // Lot stats
   const lotStats = {
     total: lots.length,
@@ -321,12 +132,47 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
     qd: lots.filter((l) => l.lot_status === "Quick Delivery").length,
   };
 
-  const LOT_STATUS_DATA = [
-    { label: "Available", value: lotStats.available, color: "#00c853" },
-    { label: "Sold", value: lotStats.sold, color: "#444" },
-    { label: "Future", value: lotStats.future, color: "#f5a623" },
-    { label: "Model", value: lotStats.model, color: "#a855f7" },
-    { label: "Quick Del", value: lotStats.qd, color: "#0070f3" },
+  // Incentive — all plans in a community share the same incentive
+  const incentive =
+    plans.find((p) => p.incentive_amount && p.incentive_amount > 0)?.incentive_amount ?? 0;
+
+  // Stats blocks — 7 blocks
+  const statBlocks = [
+    {
+      label: "Priced From",
+      value: community.priced_from ? `$${community.priced_from.toLocaleString()}` : "—",
+      color: "#00c853",
+    },
+    {
+      label: "Incentive",
+      value: incentive > 0 ? `-$${incentive.toLocaleString()}` : "—",
+      color: "#f5a623",
+    },
+    {
+      label: "Available Lots",
+      value: lotStats.available.toString(),
+      color: "#00c853",
+    },
+    {
+      label: "Total Lots",
+      value: lotStats.total.toString(),
+      color: "#666",
+    },
+    {
+      label: "Floor Plans",
+      value: plans.length.toString(),
+      color: "#a1a1a1",
+    },
+    {
+      label: "HOA / mo",
+      value: community.hoa_fee ? `$${community.hoa_fee}` : "—",
+      color: "#a1a1a1",
+    },
+    {
+      label: "Sold",
+      value: lotStats.sold.toString(),
+      color: "#555",
+    },
   ];
 
   // Parse model + spec homes safely
@@ -351,57 +197,29 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
         .filter(Boolean)
     : [];
 
-  // Bed/bath range helpers
-  function bedRange(p: Plan): string {
-    if (!p.min_bedrooms && !p.max_bedrooms) return "—";
-    if (p.min_bedrooms === p.max_bedrooms) return `${p.min_bedrooms}`;
-    return `${p.min_bedrooms ?? ""}–${p.max_bedrooms ?? ""}`;
-  }
-  function bathRange(p: Plan): string {
-    if (!p.min_bathrooms && !p.max_bathrooms) return "—";
-    if (p.min_bathrooms === p.max_bathrooms) return `${p.min_bathrooms}`;
-    return `${p.min_bathrooms ?? ""}–${p.max_bathrooms ?? ""}`;
-  }
-  function sqftRange(p: Plan): string {
-    if (!p.min_heated_sqft && !p.max_heated_sqft) return "—";
-    if (p.min_heated_sqft === p.max_heated_sqft)
-      return `${(p.min_heated_sqft ?? 0).toLocaleString()}`;
-    return `${(p.min_heated_sqft ?? 0).toLocaleString()}–${(p.max_heated_sqft ?? 0).toLocaleString()}`;
-  }
-
-  // Table cell style
-  const td: React.CSSProperties = {
-    padding: "6px 12px",
-    fontSize: 12,
-    color: "#a1a1a1",
-    borderBottom: "1px solid #1a1a1a",
-    whiteSpace: "nowrap",
-  };
-  const th: React.CSSProperties = {
-    padding: "6px 12px",
+  // Section label style (shared)
+  const sectionLabel: React.CSSProperties = {
     fontSize: 10,
-    color: "#555",
+    color: "#444",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
+    marginBottom: 8,
     fontWeight: 500,
-    textAlign: "left",
-    borderBottom: "1px solid #1f1f1f",
-    whiteSpace: "nowrap",
   };
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       <Sidebar activeHref="/communities" />
 
-      <main className="flex-1 overflow-y-auto">
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
         {/* ── Hero Bar ─────────────────────────────────────────────────────── */}
         <div
           style={{
             borderBottom: "1px solid #1f1f1f",
             padding: "16px 24px",
             backgroundColor: "#0a0a0a",
-            position: "sticky",
-            top: 0,
+            flexShrink: 0,
             zIndex: 10,
             backdropFilter: "blur(8px)",
           }}
@@ -447,8 +265,22 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
               )}
             </div>
 
-            {/* Right: resource links */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {/* Right: resource links + Info button */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                onClick={() => setShowInfo(true)}
+                style={{
+                  fontSize: 11,
+                  padding: "4px 10px",
+                  borderRadius: 4,
+                  backgroundColor: "#1a1a1a",
+                  border: "1px solid #2a2a2a",
+                  color: "#a1a1a1",
+                  cursor: "pointer",
+                }}
+              >
+                ⓘ Info
+              </button>
               {community.brochure_url && (
                 <a
                   href={community.brochure_url}
@@ -538,57 +370,23 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
           )}
         </div>
 
-        {/* ── Stats Row ────────────────────────────────────────────────────── */}
+        {/* ── Stats Row — 7 blocks ─────────────────────────────────────────── */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: "repeat(7, 1fr)",
             gap: 1,
             borderBottom: "1px solid #1f1f1f",
             backgroundColor: "#1f1f1f",
+            flexShrink: 0,
           }}
         >
-          {[
-            {
-              label: "Priced From",
-              value: community.priced_from
-                ? `$${community.priced_from.toLocaleString()}`
-                : "—",
-              color: "#00c853",
-            },
-            {
-              label: "Available Lots",
-              value: lotStats.available.toString(),
-              color: "#00c853",
-            },
-            {
-              label: "Total Lots",
-              value: lotStats.total.toString(),
-              color: "#666",
-            },
-            {
-              label: "Floor Plans",
-              value: plans.length.toString(),
-              color: "#a1a1a1",
-            },
-            {
-              label: "HOA / mo",
-              value: community.hoa_fee ? `$${community.hoa_fee}` : "—",
-              color: "#a1a1a1",
-            },
-            {
-              label: "Sold",
-              value: lotStats.sold.toString(),
-              color: "#555",
-            },
-          ].map((s) => (
+          {statBlocks.map((s) => (
             <div
               key={s.label}
               style={{ backgroundColor: "#0a0a0a", padding: "14px 20px" }}
             >
-              <div
-                style={{ fontSize: 18, fontWeight: 700, color: s.color }}
-              >
+              <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>
                 {s.value}
               </div>
               <div
@@ -606,574 +404,938 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
           ))}
         </div>
 
-        {/* ── Main 2-column Grid ───────────────────────────────────────────── */}
+        {/* ── Main Content — Map + Floor Plan Cards (full height) ──────────── */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: 20,
-            padding: 24,
+            gap: 0,
+            flex: 1,
+            overflow: "hidden",
           }}
         >
-          {/* ── LEFT COLUMN ──────────────────────────────────────────────── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-            {/* Lot Status Donut Chart */}
-            <SectionCard title="Lot Status">
-              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <DonutChart data={LOT_STATUS_DATA} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {LOT_STATUS_DATA.filter((d) => d.value > 0).map((d) => (
-                    <div
-                      key={d.label}
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          backgroundColor: d.color,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                        {d.label}
-                      </span>
+          {/* LEFT: LotWorks Map — full height */}
+          <div
+            style={{
+              borderRight: "1px solid #1f1f1f",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            {/* Map header */}
+            <div
+              style={{
+                padding: "10px 16px",
+                borderBottom: "1px solid #1f1f1f",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#555",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Site Map &amp; Lots
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+                  {[
+                    { color: "#00c853", label: `${lotStats.available} Available` },
+                    { color: "#f5a623", label: `${lotStats.future} Future` },
+                    { color: "#a855f7", label: `${lotStats.model} Model` },
+                    { color: "#0070f3", label: `${lotStats.qd} QD` },
+                  ]
+                    .filter((s) => parseInt(s.label) > 0)
+                    .map((s) => (
                       <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: "#ededed",
-                          marginLeft: "auto",
-                          paddingLeft: 16,
-                        }}
+                        key={s.label}
+                        style={{ display: "flex", alignItems: "center", gap: 4, color: "#555" }}
                       >
-                        {d.value}
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            backgroundColor: s.color,
+                            display: "inline-block",
+                          }}
+                        />
+                        {s.label}
                       </span>
-                    </div>
-                  ))}
-                  {LOT_STATUS_DATA.every((d) => d.value === 0) && (
-                    <span style={{ fontSize: 12, color: "#555" }}>No lot data.</span>
-                  )}
+                    ))}
                 </div>
+                {community.lot_map_url && (
+                  <a
+                    href={community.lot_map_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
+                  >
+                    Open ↗
+                  </a>
+                )}
               </div>
-            </SectionCard>
+            </div>
 
-            {/* Floor Plan Popularity Chart */}
-            <SectionCard title="Plan Popularity">
-              <PopularityBars plans={plans} />
-            </SectionCard>
-
-            {/* Price Range Chart */}
-            <SectionCard title="Price Range by Plan">
-              <PriceBars plans={plans} />
-            </SectionCard>
-
+            {/* Map iframe or empty state */}
+            {community.lot_map_url ? (
+              <iframe
+                src={community.lot_map_url}
+                style={{ flex: 1, border: "none", display: "block", width: "100%" }}
+                title="Lot Map"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#333",
+                  fontSize: 13,
+                }}
+              >
+                No lot map available
+              </div>
+            )}
           </div>
 
-          {/* ── RIGHT COLUMN ─────────────────────────────────────────────── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* RIGHT: Floor Plan Cards — scrollable */}
+          <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {/* Plans header */}
+            <div
+              style={{
+                padding: "10px 16px",
+                borderBottom: "1px solid #1f1f1f",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#555",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Floor Plans
+              </span>
+              <span style={{ fontSize: 11, color: "#444" }}>
+                {plans.length} plans · click to explore
+              </span>
+            </div>
 
-            {/* Floor Plans Table */}
-            <SectionCard title={`Floor Plans (${plans.length})`}>
-              {plans.length === 0 ? (
-                <div style={{ fontSize: 12, color: "#555" }}>
-                  No floor plans available.
-                </div>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      fontSize: 12,
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th style={th}>Plan</th>
-                        <th style={th}>Beds</th>
-                        <th style={th}>Baths</th>
-                        <th style={th}>SqFt</th>
-                        <th style={th}>Net Price</th>
-                        <th style={th}>Style</th>
-                        <th style={th}>Tour</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {plans.map((p) => (
-                        <tr
-                          key={p.id}
-                          style={{ transition: "background 0.15s" }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#161616")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = "transparent")
-                          }
-                        >
-                          <td style={{ ...td, color: "#ededed", fontWeight: 500 }}>
-                            {p.page_url ? (
-                              <a
-                                href={`https://schellbrothers.com${p.page_url}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ color: "#ededed", textDecoration: "none" }}
-                              >
-                                {p.plan_name}
-                              </a>
-                            ) : (
-                              p.plan_name
-                            )}
-                          </td>
-                          <td style={td}>{bedRange(p)}</td>
-                          <td style={td}>{bathRange(p)}</td>
-                          <td style={td}>{sqftRange(p)}</td>
-                          <td style={{ ...td, color: "#00c853" }}>
-                            {p.net_price
-                              ? `$${p.net_price.toLocaleString()}`
-                              : "—"}
-                          </td>
-                          <td style={td}>
-                            {p.style_filters && p.style_filters.length > 0 ? (
-                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                                {p.style_filters.map((s) => (
-                                  <span
-                                    key={s}
-                                    style={{
-                                      fontSize: 10,
-                                      padding: "1px 5px",
-                                      borderRadius: 3,
-                                      backgroundColor: "#1a1a1a",
-                                      border: "1px solid #2a2a2a",
-                                      color: "#666",
-                                    }}
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span style={{ color: "#444" }}>—</span>
-                            )}
-                          </td>
-                          <td style={td}>
-                            {p.virtual_tour_url ? (
-                              <a
-                                href={p.virtual_tour_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                title="Virtual Tour"
-                                style={{ color: "#0070f3", fontSize: 14 }}
-                              >
-                                ▶
-                              </a>
-                            ) : (
-                              <span style={{ color: "#333" }}>—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </SectionCard>
-
-            {/* Model Homes + Spec Homes */}
-            {(modelHomes.length > 0 || specHomes.length > 0) && (
-              <SectionCard title="Model & Spec Homes">
-                {modelHomes.length > 0 && (
-                  <div style={{ marginBottom: specHomes.length > 0 ? 16 : 0 }}>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "#444",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Model Homes
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {modelHomes.map((m) => (
-                        <div
-                          key={m.home_id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "6px 10px",
-                            borderRadius: 4,
-                            backgroundColor: "#0f0f0f",
-                            border: "1px solid #1a1a1a",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div
-                              style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: "50%",
-                                backgroundColor: "#a855f7",
-                                flexShrink: 0,
-                              }}
-                            />
-                            <span style={{ fontSize: 12, color: "#ededed" }}>
-                              {m.name}
-                            </span>
-                          </div>
-                          <a
-                            href={`https://schellbrothers.com${m.url}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
-                          >
-                            ↗
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {specHomes.length > 0 && (
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "#444",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Spec Homes
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {specHomes.map((s) => (
-                        <div
-                          key={s.home_id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "6px 10px",
-                            borderRadius: 4,
-                            backgroundColor: "#0f0f0f",
-                            border: "1px solid #1a1a1a",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div
-                              style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: "50%",
-                                backgroundColor: "#0070f3",
-                                flexShrink: 0,
-                              }}
-                            />
-                            <span style={{ fontSize: 12, color: "#ededed" }}>
-                              {s.name}
-                            </span>
-                            {s.lot_block_number && (
-                              <span style={{ fontSize: 11, color: "#555" }}>
-                                · Lot {s.lot_block_number}
-                              </span>
-                            )}
-                          </div>
-                          <a
-                            href={`https://schellbrothers.com${s.url}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
-                          >
-                            ↗
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </SectionCard>
-            )}
-
-            {/* Community Info */}
-            <SectionCard title="Community Info">
-              {/* Amenities */}
-              {amenityList.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
+            {/* Scrollable plan card grid */}
+            <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {plans.map((p) => (
                   <div
+                    key={p.id}
+                    onClick={() => setSelectedPlan(p)}
                     style={{
-                      fontSize: 10,
-                      color: "#444",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      marginBottom: 8,
+                      borderRadius: 8,
+                      border:
+                        selectedPlan?.id === p.id
+                          ? "1px solid #2a2a2a"
+                          : "1px solid #1f1f1f",
+                      backgroundColor:
+                        selectedPlan?.id === p.id ? "#161616" : "#0d0d0d",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedPlan?.id !== p.id)
+                        e.currentTarget.style.borderColor = "#2a2a2a";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedPlan?.id !== p.id)
+                        e.currentTarget.style.borderColor = "#1f1f1f";
                     }}
                   >
-                    Amenities
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {amenityList.map((a) => (
-                      <span
-                        key={a}
+                    {/* Plan image */}
+                    {p.featured_image_url ? (
+                      <div
+                        style={{ height: 130, overflow: "hidden", backgroundColor: "#111" }}
+                      >
+                        <img
+                          src={p.featured_image_url}
+                          alt={p.plan_name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <div
                         style={{
-                          fontSize: 11,
-                          padding: "3px 8px",
-                          borderRadius: 12,
-                          backgroundColor: "#161616",
-                          border: "1px solid #2a2a2a",
-                          color: "#a1a1a1",
+                          height: 130,
+                          backgroundColor: "#111",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        {a}
+                        <span style={{ color: "#333", fontSize: 28 }}>⌂</span>
+                      </div>
+                    )}
+
+                    {/* Plan info */}
+                    <div style={{ padding: "10px 12px" }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#ededed",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {p.plan_name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+                        {p.min_bedrooms === p.max_bedrooms
+                          ? p.min_bedrooms
+                          : `${p.min_bedrooms}–${p.max_bedrooms}`}
+                        bd{" · "}
+                        {p.min_bathrooms === p.max_bathrooms
+                          ? p.min_bathrooms
+                          : `${p.min_bathrooms}–${p.max_bathrooms}`}
+                        ba
+                        {p.min_heated_sqft
+                          ? ` · ${p.min_heated_sqft.toLocaleString()}–${p.max_heated_sqft?.toLocaleString()} sf`
+                          : ""}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <span
+                            style={{ fontSize: 14, fontWeight: 700, color: "#00c853" }}
+                          >
+                            {p.net_price ? `$${p.net_price.toLocaleString()}` : "—"}
+                          </span>
+                          {p.base_price && p.base_price !== p.net_price && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "#444",
+                                marginLeft: 6,
+                                textDecoration: "line-through",
+                              }}
+                            >
+                              ${p.base_price.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        {(p.style_filters ?? []).length > 0 && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              padding: "2px 7px",
+                              borderRadius: 4,
+                              backgroundColor: "#1a1f2e",
+                              color: "#0070f3",
+                              border: "1px solid #1a2a3f",
+                            }}
+                          >
+                            {(p.style_filters ?? [])[0]}
+                          </span>
+                        )}
+                      </div>
+                      {p.popularity && p.popularity > 0 && (
+                        <div style={{ fontSize: 10, color: "#444", marginTop: 4 }}>
+                          ★ Interest score: {p.popularity}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Plan Slide-Over ───────────────────────────────────────────────── */}
+        {selectedPlan !== null && (
+          <>
+            {/* Overlay */}
+            <div
+              onClick={() => setSelectedPlan(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "rgba(0,0,0,0.5)",
+                zIndex: 40,
+              }}
+            />
+
+            {/* Panel */}
+            <div
+              style={{
+                position: "fixed",
+                right: 0,
+                top: 0,
+                height: "100%",
+                width: 560,
+                backgroundColor: "#0f0f0f",
+                borderLeft: "1px solid #1f1f1f",
+                zIndex: 50,
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto",
+              }}
+            >
+              {/* Panel header */}
+              <div
+                style={{
+                  padding: "16px 20px",
+                  borderBottom: "1px solid #1f1f1f",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#ededed" }}>
+                    {selectedPlan.plan_name}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {(selectedPlan.style_filters ?? []).map((s) => (
+                      <span
+                        key={s}
+                        style={{
+                          fontSize: 10,
+                          padding: "2px 7px",
+                          borderRadius: 4,
+                          backgroundColor: "#1a1f2e",
+                          color: "#0070f3",
+                          border: "1px solid #1a2a3f",
+                        }}
+                      >
+                        {s}
                       </span>
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Schools */}
-              {(community.school_district ||
-                community.school_elementary ||
-                community.school_middle ||
-                community.school_high) && (
-                <div style={{ marginBottom: 16 }}>
-                  <div
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {selectedPlan.virtual_tour_url && (
+                    <a
+                      href={selectedPlan.virtual_tour_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontSize: 11,
+                        padding: "4px 10px",
+                        borderRadius: 4,
+                        backgroundColor: "#1a1f2e",
+                        border: "1px solid #1a2a3f",
+                        color: "#0070f3",
+                        textDecoration: "none",
+                      }}
+                    >
+                      ▶ Virtual Tour
+                    </a>
+                  )}
+                  {selectedPlan.pdf_url && (
+                    <a
+                      href={selectedPlan.pdf_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontSize: 11,
+                        padding: "4px 10px",
+                        borderRadius: 4,
+                        backgroundColor: "#1a1a1a",
+                        border: "1px solid #2a2a2a",
+                        color: "#a1a1a1",
+                        textDecoration: "none",
+                      }}
+                    >
+                      ⬇ PDF
+                    </a>
+                  )}
+                  {selectedPlan.page_url && (
+                    <a
+                      href={`https://schellbrothers.com${selectedPlan.page_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontSize: 11,
+                        padding: "4px 10px",
+                        borderRadius: 4,
+                        backgroundColor: "#1a1a1a",
+                        border: "1px solid #2a2a2a",
+                        color: "#a1a1a1",
+                        textDecoration: "none",
+                      }}
+                    >
+                      ↗ Website
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setSelectedPlan(null)}
                     style={{
-                      fontSize: 10,
-                      color: "#444",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      marginBottom: 8,
+                      fontSize: 16,
+                      background: "none",
+                      border: "none",
+                      color: "#555",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                      lineHeight: 1,
                     }}
                   >
-                    Schools
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {community.school_district && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          District
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          {community.school_district}
-                        </span>
-                      </div>
-                    )}
-                    {community.school_elementary && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          Elementary
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          {community.school_elementary}
-                        </span>
-                      </div>
-                    )}
-                    {community.school_middle && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          Middle
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          {community.school_middle}
-                        </span>
-                      </div>
-                    )}
-                    {community.school_high && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          High
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          {community.school_high}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    ×
+                  </button>
                 </div>
-              )}
+              </div>
 
-              {/* Contact */}
-              {(community.sales_phone || community.sales_center_address) && (
-                <div style={{ marginBottom: 16 }}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: "#444",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Sales Contact
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {community.sales_phone && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          Phone
-                        </span>
-                        <a
-                          href={`tel:${community.sales_phone}`}
-                          style={{ fontSize: 12, color: "#a1a1a1", textDecoration: "none" }}
-                        >
-                          {community.sales_phone}
-                        </a>
-                      </div>
-                    )}
-                    {community.sales_center_address && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                          Address
-                        </span>
-                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                          {community.sales_center_address}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* HOA */}
-              {community.hoa_fee && (
-                <div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: "#444",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      marginBottom: 8,
-                    }}
-                  >
-                    HOA
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                      Fee
-                    </span>
-                    <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                      ${community.hoa_fee.toLocaleString()}
-                      {community.hoa_period ? ` / ${community.hoa_period}` : " / mo"}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Division */}
-              {community.division_name && (
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #1a1a1a" }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <span style={{ fontSize: 10, color: "#555", width: 64, flexShrink: 0 }}>
-                      Division
-                    </span>
-                    <span style={{ fontSize: 12, color: "#a1a1a1" }}>
-                      {community.division_name}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </SectionCard>
-
-          </div>
-        </div>
-
-        {/* Map + Floor Plan Cards — full width below the charts */}
-        {(community.lot_map_url || plans.some(p => p.featured_image_url)) && (
-          <div style={{ padding: "0 24px 24px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: community.lot_map_url ? "1fr 1fr" : "1fr", gap: 20 }}>
-
-              {/* LEFT: LotWorks embedded map */}
-              {community.lot_map_url && (
-                <div style={{ borderRadius: 8, border: "1px solid #1f1f1f", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 14px", borderBottom: "1px solid #1f1f1f", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Site Map & Lots</span>
-                    <a href={community.lot_map_url} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 11, color: "#555", textDecoration: "none" }}>Open Full Map ↗</a>
-                  </div>
-                  <iframe
-                    src={community.lot_map_url}
-                    style={{ width: "100%", height: 480, border: "none", display: "block" }}
-                    title="Lot Map"
-                    loading="lazy"
+              {/* Plan image */}
+              {selectedPlan.featured_image_url && (
+                <div style={{ height: 220, overflow: "hidden", backgroundColor: "#111", flexShrink: 0 }}>
+                  <img
+                    src={selectedPlan.featured_image_url}
+                    alt={selectedPlan.plan_name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
                 </div>
               )}
 
-              {/* RIGHT: Floor Plan Image Cards */}
-              {plans.some(p => p.featured_image_url) && (
-                <div style={{ borderRadius: 8, border: "1px solid #1f1f1f", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 14px", borderBottom: "1px solid #1f1f1f", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Floor Plans</span>
-                    <span style={{ fontSize: 11, color: "#444" }}>{plans.length} plans</span>
+              {/* Panel body */}
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24, flex: 1 }}>
+
+                {/* Pricing section */}
+                <div>
+                  <div style={sectionLabel}>Pricing</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {selectedPlan.net_price && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#555" }}>Net Price</span>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: "#00c853" }}>
+                          ${selectedPlan.net_price.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPlan.base_price && selectedPlan.base_price !== selectedPlan.net_price && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#555" }}>Base Price</span>
+                        <span style={{ fontSize: 13, color: "#444", textDecoration: "line-through" }}>
+                          ${selectedPlan.base_price.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPlan.incentive_amount && selectedPlan.incentive_amount > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#555" }}>Incentive</span>
+                        <span style={{ fontSize: 13, color: "#f5a623" }}>
+                          -${selectedPlan.incentive_amount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ height: 480, overflowY: "auto", padding: 12 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {plans.map(p => (
-                        <div
-                          key={p.id}
-                          style={{ borderRadius: 6, border: "1px solid #1f1f1f", backgroundColor: "#0d0d0d", overflow: "hidden", cursor: "pointer", transition: "border-color 0.15s" }}
-                          onMouseEnter={e => (e.currentTarget.style.borderColor = "#2a2a2a")}
-                          onMouseLeave={e => (e.currentTarget.style.borderColor = "#1f1f1f")}
-                          onClick={() => p.virtual_tour_url ? window.open(p.virtual_tour_url, "_blank") : p.page_url ? window.open(`https://schellbrothers.com${p.page_url}`, "_blank") : null}
-                        >
-                          {/* Elevation image */}
-                          {p.featured_image_url ? (
-                            <div style={{ height: 140, overflow: "hidden", backgroundColor: "#111" }}>
-                              <img
-                                src={p.featured_image_url}
-                                alt={p.plan_name}
-                                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                loading="lazy"
-                              />
-                            </div>
-                          ) : (
-                            <div style={{ height: 140, backgroundColor: "#111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ color: "#333", fontSize: 24 }}>⌂</span>
-                            </div>
-                          )}
-                          {/* Plan info */}
-                          <div style={{ padding: "8px 10px" }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed", marginBottom: 3 }}>{p.plan_name}</div>
-                            <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>
-                              {p.min_bedrooms === p.max_bedrooms ? p.min_bedrooms : `${p.min_bedrooms}–${p.max_bedrooms}`} bd
-                              {" · "}
-                              {p.min_bathrooms === p.max_bathrooms ? p.min_bathrooms : `${p.min_bathrooms}–${p.max_bathrooms}`} ba
-                              {p.min_heated_sqft && ` · ${p.min_heated_sqft?.toLocaleString()}+ sf`}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#00c853" }}>
-                                {p.net_price ? `$${p.net_price.toLocaleString()}` : "—"}
-                              </span>
-                              {(p.style_filters ?? []).length > 0 && (
-                                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3,
-                                  backgroundColor: "#1a1f2e", color: "#0070f3", border: "1px solid #1a2a3f" }}>
-                                  {(p.style_filters ?? [])[0]}
-                                </span>
-                              )}
-                            </div>
-                            {p.incentive_amount && p.incentive_amount > 0 && (
-                              <div style={{ fontSize: 10, color: "#444", marginTop: 2 }}>
-                                Base ${p.base_price?.toLocaleString()} − ${p.incentive_amount?.toLocaleString()} incentive
-                              </div>
-                            )}
-                          </div>
+                </div>
+
+                {/* Specs section */}
+                <div>
+                  <div style={sectionLabel}>Specifications</div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 10,
+                    }}
+                  >
+                    {(selectedPlan.min_bedrooms || selectedPlan.max_bedrooms) && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 6,
+                          backgroundColor: "#141414",
+                          border: "1px solid #1a1a1a",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Bedrooms
                         </div>
-                      ))}
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
+                          {selectedPlan.min_bedrooms === selectedPlan.max_bedrooms
+                            ? selectedPlan.min_bedrooms
+                            : `${selectedPlan.min_bedrooms}–${selectedPlan.max_bedrooms}`}
+                        </div>
+                      </div>
+                    )}
+                    {(selectedPlan.min_bathrooms || selectedPlan.max_bathrooms) && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 6,
+                          backgroundColor: "#141414",
+                          border: "1px solid #1a1a1a",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Bathrooms
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
+                          {selectedPlan.min_bathrooms === selectedPlan.max_bathrooms
+                            ? selectedPlan.min_bathrooms
+                            : `${selectedPlan.min_bathrooms}–${selectedPlan.max_bathrooms}`}
+                        </div>
+                      </div>
+                    )}
+                    {(selectedPlan.min_heated_sqft || selectedPlan.max_heated_sqft) && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 6,
+                          backgroundColor: "#141414",
+                          border: "1px solid #1a1a1a",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Sq Ft
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
+                          {selectedPlan.min_heated_sqft === selectedPlan.max_heated_sqft
+                            ? (selectedPlan.min_heated_sqft ?? 0).toLocaleString()
+                            : `${(selectedPlan.min_heated_sqft ?? 0).toLocaleString()}–${(selectedPlan.max_heated_sqft ?? 0).toLocaleString()}`}
+                        </div>
+                      </div>
+                    )}
+                    {selectedPlan.plan_type && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 6,
+                          backgroundColor: "#141414",
+                          border: "1px solid #1a1a1a",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, color: "#444", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Type
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>
+                          {selectedPlan.plan_type}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Popularity */}
+                {selectedPlan.popularity && selectedPlan.popularity > 0 && (
+                  <div>
+                    <div style={sectionLabel}>Buyer Interest</div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 12px",
+                        borderRadius: 6,
+                        backgroundColor: "#141414",
+                        border: "1px solid #1a1a1a",
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>★</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#ededed" }}>
+                          {selectedPlan.popularity}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#555" }}>Interest score</div>
+                      </div>
                     </div>
                   </div>
+                )}
+
+              </div>
+
+              {/* Footer action */}
+              {selectedPlan.virtual_tour_url && (
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    borderTop: "1px solid #1f1f1f",
+                    flexShrink: 0,
+                  }}
+                >
+                  <a
+                    href={selectedPlan.virtual_tour_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      padding: "10px 0",
+                      borderRadius: 6,
+                      backgroundColor: "#0070f3",
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    ▶ Open Virtual Tour
+                  </a>
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
+
+        {/* ── Community Info Slide-Over ─────────────────────────────────────── */}
+        {showInfo && (
+          <>
+            {/* Overlay */}
+            <div
+              onClick={() => setShowInfo(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "rgba(0,0,0,0.5)",
+                zIndex: 40,
+              }}
+            />
+
+            {/* Panel */}
+            <div
+              style={{
+                position: "fixed",
+                right: 0,
+                top: 0,
+                height: "100%",
+                width: 560,
+                backgroundColor: "#0f0f0f",
+                borderLeft: "1px solid #1f1f1f",
+                zIndex: 50,
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto",
+              }}
+            >
+              {/* Panel header */}
+              <div
+                style={{
+                  padding: "16px 20px",
+                  borderBottom: "1px solid #1f1f1f",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#ededed" }}>
+                    {community.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <StatusBadge status={community.status} />
+                    {community.city && community.state && (
+                      <span style={{ fontSize: 12, color: "#555" }}>
+                        {community.city}, {community.state}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowInfo(false)}
+                  style={{
+                    fontSize: 16,
+                    background: "none",
+                    border: "none",
+                    color: "#555",
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Panel body */}
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 24 }}>
+
+                {/* Overview / Description */}
+                {community.description && (
+                  <div>
+                    <div style={sectionLabel}>Overview</div>
+                    <p style={{ fontSize: 13, color: "#a1a1a1", lineHeight: 1.6, margin: 0 }}>
+                      {community.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Schools */}
+                {(community.school_district ||
+                  community.school_elementary ||
+                  community.school_middle ||
+                  community.school_high) && (
+                  <div>
+                    <div style={sectionLabel}>Schools</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {community.school_district && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            District
+                          </span>
+                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                            {community.school_district}
+                          </span>
+                        </div>
+                      )}
+                      {community.school_elementary && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            Elementary
+                          </span>
+                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                            {community.school_elementary}
+                          </span>
+                        </div>
+                      )}
+                      {community.school_middle && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            Middle
+                          </span>
+                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                            {community.school_middle}
+                          </span>
+                        </div>
+                      )}
+                      {community.school_high && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            High
+                          </span>
+                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                            {community.school_high}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact */}
+                {(community.sales_phone || community.sales_center_address) && (
+                  <div>
+                    <div style={sectionLabel}>Sales Contact</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {community.sales_phone && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            Phone
+                          </span>
+                          <a
+                            href={`tel:${community.sales_phone}`}
+                            style={{ fontSize: 12, color: "#a1a1a1", textDecoration: "none" }}
+                          >
+                            {community.sales_phone}
+                          </a>
+                        </div>
+                      )}
+                      {community.sales_center_address && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                            Address
+                          </span>
+                          <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                            {community.sales_center_address}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* HOA */}
+                {community.hoa_fee && (
+                  <div>
+                    <div style={sectionLabel}>HOA</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span style={{ fontSize: 10, color: "#555", width: 70, flexShrink: 0 }}>
+                          Fee
+                        </span>
+                        <span style={{ fontSize: 12, color: "#a1a1a1" }}>
+                          ${community.hoa_fee.toLocaleString()}
+                          {community.hoa_period ? ` / ${community.hoa_period}` : " / mo"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Amenities */}
+                {amenityList.length > 0 && (
+                  <div>
+                    <div style={sectionLabel}>Amenities</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {amenityList.map((a) => (
+                        <span
+                          key={a}
+                          style={{
+                            fontSize: 11,
+                            padding: "3px 8px",
+                            borderRadius: 12,
+                            backgroundColor: "#161616",
+                            border: "1px solid #2a2a2a",
+                            color: "#a1a1a1",
+                          }}
+                        >
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Model & Spec Homes */}
+                {(modelHomes.length > 0 || specHomes.length > 0) && (
+                  <div>
+                    <div style={sectionLabel}>Model &amp; Spec Homes</div>
+
+                    {modelHomes.length > 0 && (
+                      <div style={{ marginBottom: specHomes.length > 0 ? 16 : 0 }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#333",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Model Homes
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {modelHomes.map((m) => (
+                            <div
+                              key={m.home_id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "6px 10px",
+                                borderRadius: 4,
+                                backgroundColor: "#141414",
+                                border: "1px solid #1a1a1a",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#a855f7",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span style={{ fontSize: 12, color: "#ededed" }}>{m.name}</span>
+                              </div>
+                              <a
+                                href={`https://schellbrothers.com${m.url}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
+                              >
+                                ↗
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {specHomes.length > 0 && (
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: "#333",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Spec Homes
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {specHomes.map((s) => (
+                            <div
+                              key={s.home_id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "6px 10px",
+                                borderRadius: 4,
+                                backgroundColor: "#141414",
+                                border: "1px solid #1a1a1a",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    backgroundColor: "#0070f3",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span style={{ fontSize: 12, color: "#ededed" }}>{s.name}</span>
+                                {s.lot_block_number && (
+                                  <span style={{ fontSize: 11, color: "#555" }}>
+                                    · Lot {s.lot_block_number}
+                                  </span>
+                                )}
+                              </div>
+                              <a
+                                href={`https://schellbrothers.com${s.url}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ fontSize: 11, color: "#555", textDecoration: "none" }}
+                              >
+                                ↗
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </>
+        )}
+
       </main>
     </div>
   );

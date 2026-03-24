@@ -577,8 +577,8 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                           style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
-                            objectPosition: "center top",
+                            objectFit: "contain",
+                            backgroundColor: "#0a0a0a",
                             display: "block",
                           }}
                           loading="lazy"

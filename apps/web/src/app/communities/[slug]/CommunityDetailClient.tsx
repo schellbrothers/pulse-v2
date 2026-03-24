@@ -121,6 +121,9 @@ function StatusBadge({ status }: { status: string | null }) {
 export default function CommunityDetailClient({ community, plans, lots }: Props) {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [mainView, setMainView] = useState<"map-plans" | "lots">("map-plans");
+  const [lotStatusFilter, setLotStatusFilter] = useState("all");
+  const [lotSearch, setLotSearch] = useState("");
 
   // Lot stats
   const lotStats = {
@@ -137,7 +140,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
     plans.find((p) => p.incentive_amount && p.incentive_amount > 0)?.incentive_amount ?? 0;
 
   // Stats blocks — 7 blocks
-  const statBlocks = [
+  const statBlocks: Array<{ label: string; value: string; color: string; clickable?: boolean; lotFilter?: string }> = [
     {
       label: "Priced From",
       value: community.priced_from ? `$${community.priced_from.toLocaleString()}` : "—",
@@ -384,7 +387,15 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
           {statBlocks.map((s) => (
             <div
               key={s.label}
-              style={{ backgroundColor: "#0a0a0a", padding: "14px 20px" }}
+              style={{
+                backgroundColor: "#0a0a0a", padding: "14px 20px",
+                cursor: s.clickable ? "pointer" : "default",
+                borderBottom: s.clickable && mainView === "lots" && (s as any).lotFilter === lotStatusFilter ? "2px solid #ededed" : "2px solid transparent",
+                transition: "background 0.15s",
+              }}
+              onClick={() => { if (s.clickable) { setMainView("lots"); setLotStatusFilter((s as any).lotFilter || "all"); } }}
+              onMouseEnter={e => { if (s.clickable) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#111111"; }}
+              onMouseLeave={e => { if (s.clickable) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#0a0a0a"; }}
             >
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>
                 {s.value}
@@ -405,7 +416,89 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
         </div>
 
         {/* ── Main Content — Map + Floor Plan Cards (full height) ──────────── */}
-        <div
+  
+      {/* ── LOT TABLE VIEW (takes over when mainView === "lots") ── */}
+      {mainView === "lots" ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Lot table toolbar */}
+          <div style={{ padding: "10px 20px", borderBottom: "1px solid #1f1f1f", display: "flex", alignItems: "center", gap: 12, backgroundColor: "#0a0a0a", flexShrink: 0 }}>
+            <button
+              onClick={() => setMainView("map-plans")}
+              style={{ fontSize: 12, color: "#555", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            >
+              ← Map & Plans
+            </button>
+            <span style={{ color: "#2a2a2a" }}>|</span>
+            <span style={{ fontSize: 12, color: "#ededed", fontWeight: 500 }}>Lots — {community.name}</span>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Status filter tabs */}
+              {["all", "Available Homesite", "Future Homesite", "Quick Delivery", "Sold"].map(f => (
+                <button key={f} onClick={() => setLotStatusFilter(f)}
+                  style={{
+                    fontSize: 11, padding: "3px 10px", borderRadius: 4, cursor: "pointer",
+                    backgroundColor: lotStatusFilter === f ? "#1a1a1a" : "transparent",
+                    border: lotStatusFilter === f ? "1px solid #2a2a2a" : "1px solid transparent",
+                    color: lotStatusFilter === f ? "#ededed" : "#555",
+                    transition: "all 0.1s",
+                  }}>
+                  {f === "all" ? "All" : f === "Available Homesite" ? "Available" : f === "Future Homesite" ? "Future" : f === "Quick Delivery" ? "QD" : "Sold"}
+                </button>
+              ))}
+              <input
+                value={lotSearch}
+                onChange={e => setLotSearch(e.target.value)}
+                placeholder="Search lot # or address..."
+                style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, backgroundColor: "#111", border: "1px solid #2a2a2a", color: "#a1a1a1", outline: "none", width: 180 }}
+              />
+            </div>
+          </div>
+          {/* Lot table */}
+          <div style={{ flex: 1, overflowY: "auto", overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: 800, fontSize: 12, borderCollapse: "collapse" }}>
+              <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                <tr style={{ backgroundColor: "#0d0d0d" }}>
+                  {["Lot #", "Block", "Phase", "Status", "Construction", "Premium", "Address"].map(h => (
+                    <th key={h} style={{ padding: "6px 14px", textAlign: "left", fontWeight: 500, fontSize: 11, color: "#666", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "1px solid #1f1f1f", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {lots
+                  .filter(l => lotStatusFilter === "all" || l.lot_status === lotStatusFilter)
+                  .filter(l => !lotSearch || l.lot_number.includes(lotSearch) || (l.address || "").toLowerCase().includes(lotSearch.toLowerCase()))
+                  .map(l => {
+                    const isAvail = l.lot_status === "Available Homesite";
+                    const isQD = l.lot_status === "Quick Delivery";
+                    const isFuture = l.lot_status === "Future Homesite";
+                    const statusColor = isAvail || isQD ? "#00c853" : isFuture ? "#f5a623" : "#444";
+                    const statusBg = isAvail || isQD ? "#1a2a1a" : isFuture ? "#2a2a1a" : "#1a1a1a";
+                    const statusBorder = isAvail || isQD ? "#1f3f1f" : isFuture ? "#3f3a1f" : "#2a2a2a";
+                    return (
+                      <tr key={l.id} style={{ borderBottom: "1px solid #1a1a1a" }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#111111")}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                        <td style={{ padding: "8px 14px", color: "#ededed", fontWeight: 500 }}>{l.lot_number}</td>
+                        <td style={{ padding: "8px 14px", color: "#555" }}>{l.block || "—"}</td>
+                        <td style={{ padding: "8px 14px", color: "#555", whiteSpace: "nowrap", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{l.phase || "—"}</td>
+                        <td style={{ padding: "8px 14px", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, backgroundColor: statusBg, color: statusColor, border: `1px solid ${statusBorder}` }}>
+                            {l.lot_status === "Available Homesite" ? "Available" : l.lot_status === "Future Homesite" ? "Future" : l.lot_status === "Quick Delivery" ? "Quick Del" : l.lot_status || "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "8px 14px", color: "#666", whiteSpace: "nowrap" }}>{l.construction_status || "—"}</td>
+                        <td style={{ padding: "8px 14px", color: l.lot_premium > 0 ? "#f5a623" : "#444", whiteSpace: "nowrap" }}>
+                          {l.lot_premium > 0 ? `+$${l.lot_premium.toLocaleString()}` : "—"}
+                        </td>
+                        <td style={{ padding: "8px 14px", color: "#555" }}>{l.address || "—"}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+      <div
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -676,6 +769,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
             </div>
           </div>
         </div>
+      )}
 
         {/* ── Plan Slide-Over ───────────────────────────────────────────────── */}
         {selectedPlan !== null && (

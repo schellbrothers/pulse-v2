@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 import type { TaskDetail, TaskStatus } from "@/types/tasks";
 
 const STATUS_COLORS: Record<TaskStatus, { bg: string; text: string; border: string }> = {
@@ -23,10 +24,18 @@ export default function TaskDetailPanel({ taskId, onClose }: Props) {
   useEffect(() => {
     if (!taskId) { setTask(null); return; }
     setLoading(true);
-    fetch(`/api/tasks/${taskId}`)
-      .then(r => r.json())
-      .then(d => { setTask(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
+    );
+    Promise.all([
+      supabase.from("hbx_tasks").select("*").eq("id", taskId).single(),
+      supabase.from("hbx_task_documents").select("*").eq("task_id", taskId).order("created_at"),
+      supabase.from("hbx_task_history").select("*").eq("task_id", taskId).order("changed_at"),
+    ]).then(([{ data: task }, { data: documents }, { data: history }]) => {
+      if (task) setTask({ ...task, documents: documents ?? [], history: history ?? [] });
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [taskId]);
 
   if (!taskId) return null;

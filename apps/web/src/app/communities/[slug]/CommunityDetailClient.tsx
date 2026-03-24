@@ -873,106 +873,23 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                 overflowY: "auto",
               }}
             >
-              {/* Panel header */}
-              <div
-                style={{
-                  padding: "16px 20px",
-                  borderBottom: "1px solid #1f1f1f",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#ededed" }}>
-                    {selectedPlan.plan_name}
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {(selectedPlan.style_filters ?? []).map((s) => (
-                      <span
-                        key={s}
-                        style={{
-                          fontSize: 10,
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                          backgroundColor: "#1a1f2e",
-                          color: "#0070f3",
-                          border: "1px solid #1a2a3f",
-                        }}
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {selectedPlan.virtual_tour_url && (
-                    <a
-                      href={selectedPlan.virtual_tour_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        fontSize: 11,
-                        padding: "4px 10px",
-                        borderRadius: 4,
-                        backgroundColor: "#1a1f2e",
-                        border: "1px solid #1a2a3f",
-                        color: "#0070f3",
-                        textDecoration: "none",
-                      }}
-                    >
-                      ▶ Virtual Tour
-                    </a>
-                  )}
-                  {selectedPlan.pdf_url && (
-                    <a
-                      href={selectedPlan.pdf_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        fontSize: 11,
-                        padding: "4px 10px",
-                        borderRadius: 4,
-                        backgroundColor: "#1a1a1a",
-                        border: "1px solid #2a2a2a",
-                        color: "#a1a1a1",
-                        textDecoration: "none",
-                      }}
-                    >
-                      ⬇ PDF
-                    </a>
-                  )}
-                  {selectedPlan.page_url && (
-                    <a
-                      href={`https://schellbrothers.com${selectedPlan.page_url}#plan`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        fontSize: 11,
-                        padding: "4px 10px",
-                        borderRadius: 4,
-                        backgroundColor: "#1a1a1a",
-                        border: "1px solid #2a2a2a",
-                        color: "#a1a1a1",
-                        textDecoration: "none",
-                      }}
-                    >
-                      ↗ Website
-                    </a>
-                  )}
-                  <button
-                    onClick={() => setSelectedPlan(null)}
-                    style={{
-                      fontSize: 16,
-                      background: "none",
-                      border: "none",
-                      color: "#555",
-                      cursor: "pointer",
-                      padding: "4px 8px",
-                      lineHeight: 1,
-                    }}
-                  >
+                            {/* Panel header — clean single line */}
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid #1f1f1f",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                flexShrink: 0, gap: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#ededed" }}>
+                  {selectedPlan.plan_name}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                  {(selectedPlan.style_filters ?? []).map((s) => (
+                    <span key={s} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4,
+                      backgroundColor: "#1a1f2e", color: "#0070f3", border: "1px solid #1a2a3f" }}>
+                      {s}
+                    </span>
+                  ))}
+                  <button onClick={() => setSelectedPlan(null)}
+                    style={{ background: "none", border: "none", color: "#555",
+                      cursor: "pointer", fontSize: 20, lineHeight: 1, padding: "0 0 0 8px" }}>
                     ×
                   </button>
                 </div>
@@ -1020,24 +937,44 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
                       ) : (
                         <div style={{ fontSize: 11, color: "#444" }}>No elevation images</div>
                       )}
-                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                      {/* 4-button action bar */}
+                      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                        {selectedPlan.virtual_tour_url && (
+                          <a href={selectedPlan.virtual_tour_url} target="_blank" rel="noreferrer"
+                            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                              gap: 4, padding: "7px 0", borderRadius: 6, fontSize: 10, fontWeight: 500,
+                              backgroundColor: "#1a1f2e", border: "1px solid #1a2a3f",
+                              color: "#0070f3", textDecoration: "none" }}>
+                            ▶ Tour
+                          </a>
+                        )}
                         {selectedPlan.page_url && (
                           <a href={`https://schellbrothers.com${selectedPlan.page_url}#plan`}
                             target="_blank" rel="noreferrer"
                             style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                              padding: "7px 0", borderRadius: 6, fontSize: 11, fontWeight: 500,
+                              gap: 4, padding: "7px 0", borderRadius: 6, fontSize: 10, fontWeight: 500,
                               backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
                               color: "#a1a1a1", textDecoration: "none" }}>
-                            ◱ View Floor Plans
+                            ◱ Floor Plans
                           </a>
                         )}
                         {selectedPlan.pdf_url && (
                           <a href={selectedPlan.pdf_url} target="_blank" rel="noreferrer"
                             style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                              padding: "7px 0", borderRadius: 6, fontSize: 11, fontWeight: 500,
+                              gap: 4, padding: "7px 0", borderRadius: 6, fontSize: 10, fontWeight: 500,
                               backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
                               color: "#a1a1a1", textDecoration: "none" }}>
-                            ⬇ Download PDF
+                            ⬇ PDF
+                          </a>
+                        )}
+                        {selectedPlan.page_url && (
+                          <a href={`https://schellbrothers.com${selectedPlan.page_url}`}
+                            target="_blank" rel="noreferrer"
+                            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                              gap: 4, padding: "7px 0", borderRadius: 6, fontSize: 10, fontWeight: 500,
+                              backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+                              color: "#a1a1a1", textDecoration: "none" }}>
+                            ↗ Website
                           </a>
                         )}
                       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import DataTable, { type Column, type StatItem } from "@/components/DataTable";
+import Sidebar from "@/components/Sidebar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -194,14 +195,9 @@ export default function LotsClient({ lots }: LotsClientProps) {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        backgroundColor: "#080808",
-      }}
-    >
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+      <Sidebar activeHref="/lots" />
+      <main className="flex-1 overflow-y-auto flex flex-col">
       {/* Top bar: title left, search right */}
       <div
         style={{
@@ -253,6 +249,7 @@ export default function LotsClient({ lots }: LotsClientProps) {
         minWidth={1100}
         emptyMessage="No lots match the current filters"
       />
+      </main>
     </div>
   );
 }

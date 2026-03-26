@@ -116,10 +116,24 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
   const [pageSize, setPageSize] = useState(250);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ── New: column filter state ──────────────────────────────────────────────
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>({});
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   // Reset community when division changes
   useEffect(() => {
     setCommunityFilter("all");
   }, [divisionFilter]);
+
+  // Close column filter dropdown on outside click
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-dropdown]")) setOpenDropdown(null);
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   // Communities filtered by selected division
   const filteredCommunities = useMemo(() => {
@@ -140,7 +154,23 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
     }
   }
 
-  // Filtered + sorted rows
+  // ── New: get unique values for a column (from full lots list) ─────────────
+  function getUniqueValues(col: string): string[] {
+    const vals = new Set<string>();
+    lots.forEach((l) => {
+      let v = "";
+      if (col === "division_raw") v = l.division_raw;
+      else if (col === "community_name_raw") v = l.community_name_raw;
+      else if (col === "lot_status") v = l.lot_status ?? "";
+      else if (col === "construction_status") v = l.construction_status ?? "";
+      else if (col === "is_available") v = l.is_available ? "Yes" : "No";
+      else if (col === "foundation") v = l.foundation ?? "";
+      if (v) vals.add(v);
+    });
+    return Array.from(vals).sort();
+  }
+
+  // Filtered + sorted rows (column filters applied after existing filters)
   const rows = useMemo(() => {
     return lots
       .filter((l) => divisionFilter === "all" || l.division_raw === divisionFilter)
@@ -155,6 +185,21 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
           l.lot_number.toLowerCase().includes(q) ||
           l.community_name_raw.toLowerCase().includes(q)
         );
+      })
+      // ── New: column header filters ────────────────────────────────────────
+      .filter((l) => {
+        for (const [col, vals] of Object.entries(columnFilters)) {
+          if (vals.length === 0) continue;
+          let cellVal = "";
+          if (col === "division_raw") cellVal = l.division_raw;
+          else if (col === "community_name_raw") cellVal = l.community_name_raw;
+          else if (col === "lot_status") cellVal = l.lot_status ?? "";
+          else if (col === "construction_status") cellVal = l.construction_status ?? "";
+          else if (col === "is_available") cellVal = l.is_available ? "Yes" : "No";
+          else if (col === "foundation") cellVal = l.foundation ?? "";
+          if (!vals.includes(cellVal)) return false;
+        }
+        return true;
       })
       .sort((a, b) => {
         if (sortCol === "division_raw" && sortDir === "asc") {
@@ -175,12 +220,12 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
             : String(av).localeCompare(String(bv), undefined, { numeric: true });
         return sortDir === "asc" ? cmp : -cmp;
       });
-  }, [lots, divisionFilter, communityFilter, statusFilter, availableOnly, search, sortCol, sortDir]);
+  }, [lots, divisionFilter, communityFilter, statusFilter, availableOnly, search, sortCol, sortDir, columnFilters]);
 
   const totalPages = Math.ceil(rows.length / pageSize);
   const paginatedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  React.useEffect(() => { setCurrentPage(1); }, [divisionFilter, communityFilter, statusFilter, availableOnly, search]);
+  React.useEffect(() => { setCurrentPage(1); }, [divisionFilter, communityFilter, statusFilter, availableOnly, search, columnFilters]);
 
   // Stats
   const stats = useMemo(() => {
@@ -224,6 +269,228 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
     whiteSpace: "nowrap",
     borderBottom: "1px solid #141414",
   };
+
+  // ── New: FilterableHeader nested component ────────────────────────────────
+  function FilterableHeader({
+    col,
+    label,
+    extraStyle,
+  }: {
+    col: string;
+    label: string;
+    extraStyle?: React.CSSProperties;
+  }) {
+    const isOpen = openDropdown === col;
+    const activeFilters = columnFilters[col] ?? [];
+    const hasFilter = activeFilters.length > 0;
+    const values = getUniqueValues(col);
+
+    return (
+      <th
+        data-dropdown
+        style={{
+          padding: "6px 12px",
+          textAlign: "left",
+          fontWeight: 500,
+          fontSize: 11,
+          color: hasFilter ? "#0070f3" : "#555",
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.06em",
+          borderBottom: hasFilter ? "2px solid #0070f3" : "1px solid #1a1a1a",
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          position: "relative",
+          userSelect: "none" as const,
+          ...extraStyle,
+        }}
+        onClick={() => setOpenDropdown(isOpen ? null : col)}
+      >
+        {label}
+        {hasFilter && (
+          <span
+            style={{
+              marginLeft: 4,
+              fontSize: 9,
+              backgroundColor: "#0070f3",
+              color: "#fff",
+              borderRadius: 10,
+              padding: "1px 5px",
+            }}
+          >
+            {activeFilters.length}
+          </span>
+        )}
+        {sortCol === col && (
+          <span style={{ marginLeft: 4, fontSize: 10, color: "#888" }}>
+            {sortDir === "asc" ? "↑" : "↓"}
+          </span>
+        )}
+
+        {/* Dropdown */}
+        {isOpen && (
+          <div
+            data-dropdown
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              zIndex: 100,
+              backgroundColor: "#111111",
+              border: "1px solid #2a2a2a",
+              borderRadius: 6,
+              minWidth: 180,
+              maxHeight: 280,
+              overflow: "hidden",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sort options */}
+            <div style={{ padding: "6px 0", borderBottom: "1px solid #1f1f1f" }}>
+              {(
+                [
+                  ["asc", "↑ Sort A → Z"],
+                  ["desc", "↓ Sort Z → A"],
+                ] as [SortDir, string][]
+              ).map(([dir, lbl]) => {
+                const isActive = sortCol === col && sortDir === dir;
+                return (
+                  <div
+                    key={dir}
+                    onClick={() => {
+                      handleSort(col);
+                      setOpenDropdown(null);
+                    }}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: 11,
+                      color: isActive ? "#ededed" : "#666",
+                      cursor: "pointer",
+                      backgroundColor: isActive ? "#1a1a1a" : "transparent",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#1a1a1a")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = isActive
+                        ? "#1a1a1a"
+                        : "transparent")
+                    }
+                  >
+                    {lbl}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Filter header */}
+            <div
+              style={{
+                padding: "6px 12px 4px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "#555",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Filter
+              </span>
+              {activeFilters.length > 0 && (
+                <button
+                  onClick={() =>
+                    setColumnFilters((prev) => {
+                      const n = { ...prev };
+                      delete n[col];
+                      return n;
+                    })
+                  }
+                  style={{
+                    fontSize: 10,
+                    color: "#ff6b6b",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Value list */}
+            <div style={{ overflowY: "auto", maxHeight: 180 }}>
+              {values.map((val) => {
+                const checked = activeFilters.includes(val);
+                return (
+                  <div
+                    key={val}
+                    onClick={() =>
+                      setColumnFilters((prev) => {
+                        const cur = prev[col] ?? [];
+                        return {
+                          ...prev,
+                          [col]: checked
+                            ? cur.filter((v) => v !== val)
+                            : [...cur, val],
+                        };
+                      })
+                    }
+                    style={{
+                      padding: "5px 12px",
+                      fontSize: 11,
+                      color: checked ? "#ededed" : "#a1a1a1",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      backgroundColor: checked ? "#1a1f2e" : "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!checked)
+                        e.currentTarget.style.backgroundColor = "#1a1a1a";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!checked)
+                        e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: 3,
+                        border: `1px solid ${checked ? "#0070f3" : "#2a2a2a"}`,
+                        backgroundColor: checked ? "#0070f3" : "transparent",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 8,
+                        color: "#fff",
+                      }}
+                    >
+                      {checked ? "✓" : ""}
+                    </span>
+                    {val || "(blank)"}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </th>
+    );
+  }
+
+  // Derived: any active column filters?
+  const hasColumnFilters = Object.values(columnFilters).some((v) => v.length > 0);
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
@@ -343,6 +610,25 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
           <StatItem label="Quick Delivery" value={stats.quickDelivery} color="#0070f3" />
           <StatItem label="Future" value={stats.future} color="#f5a623" />
           <StatItem label="Sold" value={stats.sold} color="#444" />
+
+          {/* ── New: clear column filters button ── */}
+          {hasColumnFilters && (
+            <button
+              onClick={() => setColumnFilters({})}
+              style={{
+                fontSize: 11,
+                color: "#ff6b6b",
+                background: "none",
+                border: "1px solid #3f1f1f",
+                borderRadius: 4,
+                padding: "2px 8px",
+                cursor: "pointer",
+              }}
+            >
+              × Clear filters
+            </button>
+          )}
+
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 11, color: "#555" }}>
               {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, rows.length)} of {rows.length}
@@ -391,43 +677,50 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
           >
             <thead>
               <tr style={{ position: "sticky", top: 0, zIndex: 2, backgroundColor: "#0d0d0d" }}>
-                <th
-                  style={{
-                    ...thStyle,
+                {/* Division — sticky left, filterable */}
+                <FilterableHeader
+                  col="division_raw"
+                  label="Division"
+                  extraStyle={{
                     position: "sticky",
                     left: 0,
                     zIndex: 3,
                     backgroundColor: "#0d0d0d",
                     minWidth: "120px",
                   }}
-                  onClick={() => handleSort("division_raw")}
-                >
-                  Division{sortIndicator("division_raw")}
-                </th>
-                <th style={thStyle} onClick={() => handleSort("community_name_raw")}>
-                  Community{sortIndicator("community_name_raw")}
-                </th>
+                />
+
+                {/* Community — filterable */}
+                <FilterableHeader col="community_name_raw" label="Community" />
+
+                {/* Lot # — plain sort header */}
                 <th style={thStyle} onClick={() => handleSort("lot_number")}>
                   Lot #{sortIndicator("lot_number")}
                 </th>
+
+                {/* Block — plain sort header */}
                 <th style={thStyle} onClick={() => handleSort("block")}>
                   Block{sortIndicator("block")}
                 </th>
-                <th style={thStyle} onClick={() => handleSort("lot_status")}>
-                  Status{sortIndicator("lot_status")}
-                </th>
-                <th style={thStyle} onClick={() => handleSort("construction_status")}>
-                  Construction{sortIndicator("construction_status")}
-                </th>
-                <th style={thStyle} onClick={() => handleSort("is_available")}>
-                  Available{sortIndicator("is_available")}
-                </th>
-                <th style={thStyle} onClick={() => handleSort("foundation")}>
-                  Foundation{sortIndicator("foundation")}
-                </th>
+
+                {/* Status — filterable */}
+                <FilterableHeader col="lot_status" label="Status" />
+
+                {/* Construction — filterable */}
+                <FilterableHeader col="construction_status" label="Construction" />
+
+                {/* Available — filterable */}
+                <FilterableHeader col="is_available" label="Available" />
+
+                {/* Foundation — filterable */}
+                <FilterableHeader col="foundation" label="Foundation" />
+
+                {/* Premium — plain sort header */}
                 <th style={{ ...thStyle, textAlign: "right" }} onClick={() => handleSort("lot_premium")}>
                   Premium{sortIndicator("lot_premium")}
                 </th>
+
+                {/* Address — plain sort header */}
                 <th style={thStyle} onClick={() => handleSort("address")}>
                   Address{sortIndicator("address")}
                 </th>
@@ -437,7 +730,7 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
               {rows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -523,13 +816,26 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
                           <span style={{ color: "#333" }}>—</span>
                         )}
                       </td>
+
                       {/* Foundation */}
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                         {lot.foundation ? (
-                          <span style={{ color: lot.foundation === "Basement Only" ? "#a855f7" : lot.foundation === "Crawl/Basement" ? "#0070f3" : "#666", fontSize: 11 }}>
+                          <span
+                            style={{
+                              color:
+                                lot.foundation === "Basement Only"
+                                  ? "#a855f7"
+                                  : lot.foundation === "Crawl/Basement"
+                                  ? "#0070f3"
+                                  : "#666",
+                              fontSize: 11,
+                            }}
+                          >
                             {lot.foundation}
                           </span>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </td>
 
                       {/* Premium */}

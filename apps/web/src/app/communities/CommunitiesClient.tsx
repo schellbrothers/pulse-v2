@@ -2,8 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ interface Community {
   price_to: number | null;
   is_55_plus: boolean;
   has_model: boolean;
-  has_lotworks: boolean;
+  has_lotworks: boolean | null;
   hoa_fee: number | null;
   hoa_period: string | null;
   natural_gas: string | null;
@@ -66,16 +66,22 @@ interface Community {
   spec_homes: string | null;    // JSON string
 }
 
+// Augmented row type for DataTable (adds computed/display fields)
+type CommunityTableRow = Community & Record<string, unknown> & {
+  _status_display: string;
+  _tag: string;
+  _city_state: string;
+  _hoa_display: string;
+  _available: string;
+};
+
 interface Props {
   communities: Community[];
   divisions: Division[];
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Derive binary status and tag from the raw status value
 function getStatusAndTag(status: string | null): { isActive: boolean; tag: string | null } {
   switch (status) {
     case "active":       return { isActive: true,  tag: null };
@@ -95,7 +101,6 @@ function StatItem({ label, value, color }: { label: string; value: number; color
     </div>
   );
 }
-
 
 function StatusBadge({ status }: { status: string | null }) {
   const { isActive } = getStatusAndTag(status);
@@ -188,8 +193,6 @@ function CommunitiesInner(props: Props) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
   const [selected, setSelected] = useState<Community | null>(null);
-  const [sortCol, setSortCol] = useState<keyof Community>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Hydrate view from localStorage after mount
   useEffect(() => {
@@ -200,15 +203,6 @@ function CommunitiesInner(props: Props) {
   function handleViewChange(v: "card" | "table") {
     setView(v);
     localStorage.setItem("communities-view", v);
-  }
-
-  function handleSort(col: keyof Community) {
-    if (col === sortCol) {
-      setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortCol(col);
-      setSortDir("asc");
-    }
   }
 
   const rows = communities
@@ -225,16 +219,22 @@ function CommunitiesInner(props: Props) {
       if (statusFilter === "active") return getStatusAndTag(c.status).isActive;
       if (statusFilter === "not-active") return !getStatusAndTag(c.status).isActive;
       return true;
-    })
-    .sort((a, b) => {
-      const av = (a as unknown as Record<string, unknown>)[sortCol as string] ?? "";
-      const bv = (b as unknown as Record<string, unknown>)[sortCol as string] ?? "";
-      return sortDir === "asc"
-        ? String(av).localeCompare(String(bv), undefined, { numeric: true })
-        : String(bv).localeCompare(String(av), undefined, { numeric: true });
     });
 
-  // Stats for the stats bar (based on filtered rows, excluding sold-out from total)
+  // Augmented rows for DataTable — adds computed display fields
+  const tableRows: CommunityTableRow[] = rows.map(c => {
+    const { isActive, tag } = getStatusAndTag(c.status);
+    return {
+      ...c,
+      _status_display: isActive ? "Active" : "Not Active",
+      _tag: tag ?? "",
+      _city_state: [c.city, c.state].filter(Boolean).join(", "),
+      _hoa_display: formatHoa(c.hoa_fee, c.hoa_period),
+      _available: c.has_lotworks ? "Yes" : "—",
+    };
+  });
+
+  // Stats (based on filtered rows, excluding sold-out from total)
   const stats = {
     total: rows.filter(c => c.status !== "sold-out").length,
     active: rows.filter(c => ["active","now-selling","last-chance"].includes(c.status ?? "")).length,
@@ -242,8 +242,83 @@ function CommunitiesInner(props: Props) {
     soldOut: rows.filter(c => c.status === "sold-out").length,
   };
 
-  const sortArrow = (col: keyof Community) =>
-    sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+  const dataTableStats: DataTableStatItem[] = [
+    { label: "Total",       value: stats.total,     color: "#666" },
+    { label: "Active",      value: stats.active,    color: "#00c853" },
+    { label: "Coming Soon", value: stats.comingSoon, color: "#f5a623" },
+    { label: "Sold Out",    value: stats.soldOut,   color: "#555" },
+  ];
+
+  // DataTable column definitions
+  const tableColumns: Column<CommunityTableRow>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sticky: true,
+      render: (_val, row) => (
+        <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>
+          {row.name}
+          {row.is_55_plus && (
+            <span style={{
+              color: "#f5a623", fontSize: 10, fontWeight: 600, marginLeft: 6,
+              background: "#2a2a1a", border: "1px solid #3f3a1f", borderRadius: 4, padding: "1px 5px",
+            }}>
+              55+
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "division_name",
+      label: "Division",
+      filterable: true,
+    },
+    {
+      key: "_status_display",
+      label: "Status",
+      filterable: true,
+      render: (_val, row) => <StatusBadge status={row.status} />,
+    },
+    {
+      key: "_tag",
+      label: "Tag",
+      filterable: true,
+      render: (_val, row) => <TagBadge status={row.status} />,
+    },
+    {
+      key: "_city_state",
+      label: "City/State",
+    },
+    {
+      key: "price_from",
+      label: "Price From",
+      render: (val) => formatPrice(val as number | null),
+    },
+    {
+      key: "_hoa_display",
+      label: "HOA",
+      sortable: false,
+    },
+    {
+      key: "_available",
+      label: "Available",
+    },
+    {
+      key: "foundation",
+      label: "Foundation",
+    },
+    {
+      key: "amenities",
+      label: "Amenities",
+      sortable: false,
+      render: (val) => {
+        const s = val as string | null;
+        if (!s) return "—";
+        return s.length > 50 ? s.slice(0, 50) + "…" : s;
+      },
+    },
+  ];
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
 
@@ -419,115 +494,18 @@ function CommunitiesInner(props: Props) {
     </div>
   );
 
-  // ── Table view ─────────────────────────────────────────────────────────────
-
-  const thStyle: React.CSSProperties = {
-    background: "#111", color: "#666", fontSize: 11, fontWeight: 500,
-    textTransform: "uppercase", letterSpacing: "0.06em",
-    padding: "6px 12px", whiteSpace: "nowrap", cursor: "pointer",
-    borderBottom: "1px solid #1f1f1f", userSelect: "none",
-  };
-
-  const tdStyle: React.CSSProperties = {
-    padding: "6px 12px", color: "#a1a1a1", fontSize: 13,
-    borderBottom: "1px solid #161616", whiteSpace: "nowrap",
-  };
-
-  type SortableCol = keyof Community;
-
-  const columns: { label: string; col: SortableCol; render?: (c: Community) => React.ReactNode }[] = [
-    { label: "Name",          col: "name",          render: c => <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>{c.name}</span> },
-    { label: "Division",      col: "division_name",  render: c => c.division_name || c.division_slug },
-    { label: "Status",        col: "status",         render: c => (
-      <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
-        <StatusBadge status={c.status} />
-      </td>
-    )},
-    { label: "Tag",           col: "status",         render: c => (
-      <td style={{ padding: "6px 12px", whiteSpace: "nowrap" }}>
-        <TagBadge status={c.status} />
-      </td>
-    )},
-    { label: "Location",      col: "city",           render: c => [c.city, c.state].filter(Boolean).join(", ") || "—" },
-    { label: "Price From",    col: "price_from",     render: c => formatPrice(c.price_from) },
-    { label: "HOA",           col: "hoa_fee",        render: c => formatHoa(c.hoa_fee, c.hoa_period) },
-    { label: "55+",           col: "is_55_plus",     render: c => c.is_55_plus ? "✓" : "—" },
-    { label: "Model",         col: "has_model",      render: c => c.has_model ? "✓" : "—" },
-    { label: "Amenities",     col: "amenities",      render: c => {
-      const list = c.amenities ? c.amenities.split(",").map(s => s.trim()).filter(Boolean) : [];
-      return list.length ? `${list.slice(0, 2).join(", ")}${list.length > 2 ? ` +${list.length - 2}` : ""}` : "—";
-    }},
-    { label: "Nat. Gas",      col: "natural_gas",    render: c => c.natural_gas ?? "—" },
-    { label: "Electric",      col: "electric",       render: c => c.electric ?? "—" },
-    { label: "Water",         col: "water",          render: c => c.water ?? "—" },
-    { label: "Sewer",         col: "sewer",          render: c => c.sewer ?? "—" },
-    { label: "Cable/Internet",col: "cable_internet", render: c => c.cable_internet ?? "—" },
-    { label: "Trash",         col: "trash",          render: c => c.trash ?? "—" },
-  ];
+  // ── Table view (DataTable) ─────────────────────────────────────────────────
 
   const tableView = (
-    <div style={{
-      overflow: "auto", maxHeight: "calc(100vh - 120px)",
-      position: "relative", margin: "0 24px 24px",
-    }}>
-      <table style={{ minWidth: 1400, borderCollapse: "collapse", width: "100%" }}>
-        <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-          <tr>
-            {columns.map((col, i) => (
-              <th
-                key={col.label}
-                style={{
-                  ...thStyle,
-                  ...(i === 0 ? { position: "sticky", left: 0, zIndex: 3, background: "#111" } : {}),
-                }}
-                onClick={() => handleSort(col.col)}
-              >
-                {col.label}{sortArrow(col.col)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(c => (
-            <tr
-              key={c.id}
-              onClick={() => c.slug ? window.location.href = `/communities/${c.slug}` : setSelected(c)}
-              style={{ cursor: "pointer" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#161616")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
-              {columns.map((col, i) => {
-                const rendered = col.render ? col.render(c) : String((c as unknown as Record<string, unknown>)[col.col] ?? "—");
-                // Status and Tag columns return a full <td> from render; unwrap or wrap appropriately
-                if (col.label === "Status" || col.label === "Tag") {
-                  return (
-                    <td
-                      key={col.label}
-                      style={{ ...tdStyle, padding: "6px 12px", whiteSpace: "nowrap" }}
-                    >
-                      {col.label === "Status"
-                        ? <StatusBadge status={c.status} />
-                        : <TagBadge status={c.status} />}
-                    </td>
-                  );
-                }
-                return (
-                  <td
-                    key={col.label}
-                    style={{
-                      ...tdStyle,
-                      ...(i === 0 ? { position: "sticky", left: 0, background: "#0d0d0d", zIndex: 1, fontWeight: 500, color: "#ededed", fontSize: 13 } : {}),
-                    }}
-                  >
-                    {rendered}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable<CommunityTableRow>
+      columns={tableColumns}
+      rows={tableRows}
+      stats={dataTableStats}
+      defaultPageSize={100}
+      onRowClick={(row) => setSelected(row)}
+      emptyMessage="No communities"
+      minWidth={1200}
+    />
   );
 
   // ── Slide-over panel ───────────────────────────────────────────────────────
@@ -732,17 +710,19 @@ function CommunitiesInner(props: Props) {
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {topBar}
-        {/* Stats bar — same pattern as Lots page */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 20,
-          padding: "6px 24px", backgroundColor: "#0d0d0d",
-          borderBottom: "1px solid #1a1a1a", flexShrink: 0,
-        }}>
-          <StatItem label="Total" value={stats.total} color="#666" />
-          <StatItem label="Active" value={stats.active} color="#00c853" />
-          <StatItem label="Coming Soon" value={stats.comingSoon} color="#f5a623" />
-          <StatItem label="Sold Out" value={stats.soldOut} color="#555" />
-        </div>
+        {/* Stats bar — shown in card view; DataTable renders its own stats ribbon in table view */}
+        {view === "card" && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 20,
+            padding: "6px 24px", backgroundColor: "#0d0d0d",
+            borderBottom: "1px solid #1a1a1a", flexShrink: 0,
+          }}>
+            <StatItem label="Total" value={stats.total} color="#666" />
+            <StatItem label="Active" value={stats.active} color="#00c853" />
+            <StatItem label="Coming Soon" value={stats.comingSoon} color="#f5a623" />
+            <StatItem label="Sold Out" value={stats.soldOut} color="#555" />
+          </div>
+        )}
         <div style={{ flex: 1, overflow: "auto" }}>
           {view === "card" ? cardView : tableView}
         </div>

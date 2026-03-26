@@ -504,7 +504,7 @@ export default function LotsClient({ lots, divisions, communities }: Props) {
           <h1 className="text-[14px] font-semibold text-[#ededed]">Lots</h1>
 
           {/* Controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
             {/* Search */}
             <input
               type="text"

@@ -38,6 +38,25 @@ export default function TaskDetailPanel({ taskId, onClose }: Props) {
     }).catch(() => setLoading(false));
   }, [taskId]);
 
+  async function approveTask() {
+    if (!task) return;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
+    );
+    await supabase.from("hbx_tasks").update({ status: "approved" }).eq("id", task.id);
+    await supabase.from("hbx_task_history").insert([{
+      task_id: task.id, previous_status: task.status,
+      new_status: "approved", changed_by: "lance",
+      note: "Approved via task board",
+    }]);
+    // Refresh task
+    const { data } = await supabase.from("hbx_tasks").select("*").eq("id", task.id).single();
+    const { data: documents } = await supabase.from("hbx_task_documents").select("*").eq("task_id", task.id).order("created_at");
+    const { data: history } = await supabase.from("hbx_task_history").select("*").eq("task_id", task.id).order("changed_at");
+    if (data) setTask({ ...data, documents: documents ?? [], history: history ?? [] });
+  }
+
   if (!taskId) return null;
 
   const s = task ? STATUS_COLORS[task.status] : null;
@@ -90,6 +109,15 @@ export default function TaskDetailPanel({ taskId, onClose }: Props) {
           {!task && !loading && <div className="text-[12px] text-[#555]">Task not found.</div>}
           {task && activeTab === "overview" && (
             <div className="space-y-5">
+              {task.status === "needs_review" && (
+                <div className="mb-4">
+                  <button onClick={approveTask}
+                    className="w-full flex items-center justify-center gap-2 bg-[#00843d] text-white rounded-lg py-2.5 text-[13px] font-semibold hover:bg-[#006630] transition-colors">
+                    ✓ Approve — Send to Build
+                  </button>
+                  <div className="text-[10px] text-[#555] text-center mt-1.5">Moves task to Approved status</div>
+                </div>
+              )}
               {task.description && (
                 <div>
                   <div className="text-[10px] font-medium text-[#444] uppercase tracking-widest mb-2">Description</div>
@@ -168,7 +196,10 @@ export default function TaskDetailPanel({ taskId, onClose }: Props) {
                       <div className="text-[12px] text-[#a1a1a1]">
                         {h.previous_status ? <span className="text-[#555]">{h.previous_status.replace("_"," ")} → </span> : null}
                         <span style={{ color: sc?.text ?? "#a1a1a1" }}>{h.new_status.replace("_"," ")}</span>
-                        <span className="text-[#555]"> by {h.changed_by}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] text-[#444]">by</span>
+                        <span className="text-[11px] font-medium" style={{ color: sc?.text ?? "#555" }}>{h.changed_by}</span>
                       </div>
                       {h.note && <div className="text-[11px] text-[#555] mt-0.5">{h.note}</div>}
                     </div>

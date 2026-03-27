@@ -95,6 +95,12 @@ function s3ToHttps(path: string | null | undefined): string | null {
   return path.replace("s3://heartbeat-page-designer-production/", "https://heartbeat-page-designer-production.s3.amazonaws.com/");
 }
 
+function parseJSON<T>(val: unknown): T[] {
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === "string") { try { return JSON.parse(val) as T[]; } catch { return []; } }
+  return [];
+}
+
 function popularityColor(pop: number | null): string {
   if (pop == null) return "#444";
   if (pop > 10) return "#888";
@@ -656,7 +662,7 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
 
             {/* Right: elevation[0] image */}
             {(() => {
-              const elevs = Array.isArray(p.elevations) ? p.elevations : [];
+              const elevs = parseJSON<{image_path?: string; is_hidden?: boolean|null}>(p.elevations);
               const first = elevs.find((e: {is_hidden?: boolean|null}) => !e.is_hidden) ?? elevs[0];
               const thumb = first ? s3ToHttps((first as {image_path?: string}).image_path) : s3ToHttps(p.featured_image_url);
               return thumb ? (
@@ -755,7 +761,7 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
 
           {/* Elevations */}
           {(() => {
-            const elevs = Array.isArray(selectedPlan.elevations) ? selectedPlan.elevations : [];
+            const elevs = parseJSON<{kova_name?: string; image_path?: string; is_hidden?: boolean|null}>(selectedPlan.elevations);
             const visible = elevs.filter((e: {is_hidden?: boolean|null}) => !e.is_hidden);
             if (!visible.length) return null;
             return (
@@ -834,7 +840,7 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
 
           {/* Elevations */}
           {(() => {
-            const elevs = Array.isArray(selectedPlan.elevations) ? selectedPlan.elevations : [];
+            const elevs = parseJSON<{kova_name?: string; image_path?: string; is_hidden?: boolean|null}>(selectedPlan.elevations);
             const visible = elevs.filter((e: { is_hidden?: boolean | null }) => !e.is_hidden);
             if (!visible.length) return null;
             return (

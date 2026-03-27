@@ -212,18 +212,7 @@ export default function ModelHomesClient({ communities, divisions }: Props) {
       key: "lot",
       label: "Lot #",
     },
-    {
-      key: "price_from",
-      label: "Price From",
-      render: (_val, row) =>
-        row.price_from != null ? (
-          <span style={{ color: "#00c853", fontWeight: 700 }}>
-            {formatCurrency(row.price_from)}
-          </span>
-        ) : (
-          "—"
-        ),
-    },
+
     {
       key: "model_url",
       label: "View",
@@ -511,22 +500,7 @@ export default function ModelHomesClient({ communities, divisions }: Props) {
                 Lot #{mh.lot}
               </div>
             )}
-
-            {/* Price from */}
-            {mh.price_from != null && (
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#00c853",
-                  marginBottom: 10,
-                }}
-              >
-                {formatCurrency(mh.price_from)}
-              </div>
-            )}
-
-            {/* Link */}
+{/* Link */}
             <a
               href={mh.model_url}
               target="_blank"
@@ -662,17 +636,7 @@ export default function ModelHomesClient({ communities, divisions }: Props) {
             <Row label="Status" value={selectedHome.community_status} />
           </Section>
 
-          {/* Pricing */}
-          {selectedHome.price_from != null && (
-            <Section title="Pricing">
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#00c853" }}>
-                  {formatCurrency(selectedHome.price_from)}
-                </span>
-                <span style={{ fontSize: 12, color: "#555", marginLeft: 6 }}>from</span>
-              </div>
-            </Section>
-          )}
+
 
           {/* Link */}
           <Section title="Actions">

@@ -30,7 +30,7 @@ const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: stri
 function nextRun(times: string[]): string {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
-  const fmt = (d: Date) => d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const fmt = (d: Date) => d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" });
   for (const t of times) {
     const [time, period] = t.split(" ");
     const [h, m] = time.split(":").map(Number);
@@ -141,7 +141,7 @@ export default async function StatusPage() {
                   const isSuccess = row?.status === "success";
                   const isError = row?.status === "error";
                   const lastRun = row
-                    ? new Date(row.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                    ? new Date(row.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })
                     : "—";
                   const dur = row?.duration_ms
                     ? row.duration_ms < 1000 ? "< 1s" : `${(row.duration_ms / 1000).toFixed(1)}s`
@@ -189,7 +189,7 @@ export default async function StatusPage() {
                     </span>
                     {" · "}
                     <span style={{ color: "#555" }}>
-                      {new Date(e.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      {new Date(e.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
                     </span>
                     {" · "}
                     {(e.error_message ?? "").slice(0, 120)}

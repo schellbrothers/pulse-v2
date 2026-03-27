@@ -866,28 +866,6 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
             <Row label="Division" value={getDivisionName(selectedPlan)} />
           </Section>
 
-          {/* Elevations */}
-          {(() => {
-            const elevs = parseJSON<{kova_name?: string; image_path?: string; is_hidden?: boolean|null}>(selectedPlan.elevations);
-            const visible = elevs.filter((e: { is_hidden?: boolean | null }) => !e.is_hidden);
-            if (!visible.length) return null;
-            return (
-              <Section title="Elevations">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {visible.map((e: { kova_name?: string; image_path?: string }, i: number) => {
-                    const url = s3ToHttps(e.image_path);
-                    return url ? (
-                      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <img src={url} alt={e.kova_name ?? `Elevation ${i+1}`}
-                          style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 4, border: "1px solid #2a2a2a" }} />
-                        {e.kova_name && <span style={{ fontSize: 10, color: "#555" }}>{e.kova_name}</span>}
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              </Section>
-            );
-          })()}
 
           {/* Assets */}
           {(selectedPlan.virtual_tour_url || selectedPlan.pdf_url || selectedPlan.page_url) && (

@@ -27,11 +27,21 @@ const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: stri
   "floor_plans": { label: "HB Page Designer API", times: ["6:00 AM", "12:00 PM", "6:00 PM"], freq: "3× daily" },
 };
 
-// Next scheduled run times (hardcoded, matches cron schedule)
-const NEXT_RUN: Record<string, string> = {
-  "lots":        "6:05 AM EDT · 12:05 PM EDT · 6:05 PM EDT",
-  "floor_plans": "6:00 AM EDT · 12:00 PM EDT · 6:00 PM EDT",
-};
+// Get next run time as single upcoming time string
+function nextRun(times: string[]): string {
+  const et = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: false }).format(new Date());
+  const [hStr, mStr] = et.split(":");
+  const nowMins = parseInt(hStr) * 60 + parseInt(mStr);
+  for (const t of times) {
+    const [time, ampm] = t.split(" ");
+    const [h, m] = time.split(":").map(Number);
+    let hours = h;
+    if (ampm === "PM" && h !== 12) hours += 12;
+    if (ampm === "AM" && h === 12) hours = 0;
+    if (hours * 60 + (m ?? 0) > nowMins) return t + " EDT";
+  }
+  return times[0] + " EDT tomorrow";
+}
 
 
 export default async function StatusPage() {
@@ -144,7 +154,7 @@ export default async function StatusPage() {
                       </td>
                       <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{rows}</td>
                       <td style={{ padding: "9px 14px", color: "#666", whiteSpace: "nowrap" }}>{dur}</td>
-                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{NEXT_RUN[key] ?? cfg.times.join(" · ")}</td>
+                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{nextRun(cfg.times)}</td>
                       <td style={{ padding: "9px 14px", color: "#555", whiteSpace: "nowrap", fontSize: 11 }}>{cfg.freq}</td>
                     </tr>
                   );

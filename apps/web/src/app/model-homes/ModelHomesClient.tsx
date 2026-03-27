@@ -30,7 +30,7 @@ interface Community {
   featured_image_url: string | null;
   division_id: string;
   page_url: string | null;
-  model_homes: ModelHomeEntry[] | null;
+  model_homes: ModelHomeEntry[] | string | null;
 }
 
 // Flattened row type
@@ -66,8 +66,8 @@ function formatCurrency(n: number | null): string {
 function flattenModelHomes(communities: Community[]): ModelHomeRow[] {
   const rows: ModelHomeRow[] = [];
   for (const c of communities) {
-    if (!c.model_homes || !Array.isArray(c.model_homes)) continue;
-    for (const mh of c.model_homes) {
+    const mhArr = Array.isArray(c.model_homes) ? c.model_homes : (typeof c.model_homes === "string" ? JSON.parse(c.model_homes) : []); if (!mhArr.length) continue;
+    for (const mh of mhArr) {
       rows.push({
         id: `${c.id}-${mh.home_id}`,
         community_id: c.id,

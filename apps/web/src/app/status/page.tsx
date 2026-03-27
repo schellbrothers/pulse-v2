@@ -23,8 +23,8 @@ const statusMap: Record<SystemStatus, { label: string; dot: string; text: string
 };
 
 const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: string }> = {
-  "lots":        { label: "Lots Explorer",          times: ["8:00 AM", "1:00 PM", "6:30 PM"], freq: "3× daily" },
-  "floor_plans": { label: "Community Enrichment",   times: ["8:05 AM", "1:05 PM", "6:35 PM"], freq: "3× daily" },
+  "lots":        { label: "HB Lot API",              times: ["8:00 AM", "1:00 PM", "6:30 PM"], freq: "3× daily" },
+  "floor_plans": { label: "HB Page Designer API",    times: ["8:05 AM", "1:05 PM", "6:35 PM"], freq: "3× daily" },
 };
 
 function nextRun(times: string[]): string {

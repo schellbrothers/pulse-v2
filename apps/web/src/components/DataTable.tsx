@@ -35,6 +35,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
   searchKeys?: (keyof T)[];
   showSearch?: boolean;
   onRowClick?: (row: T) => void;
+  onFilteredRowsChange?: (rows: T[]) => void;  // called whenever filtered set changes
 }
 
 const thStyle = {

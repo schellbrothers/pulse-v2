@@ -12,10 +12,18 @@ interface Division {
   name: string;
 }
 
+interface ModelHomeEntry {
+  name: string;
+  home_id: number;
+  url?: string;
+  lot_block_number?: string;
+}
+
 interface Community {
   id: string;
   name: string;
   division_id: string;
+  model_homes?: ModelHomeEntry[] | string | null;
 }
 
 interface FloorPlan {
@@ -221,6 +229,18 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
   // Community / division lookup maps
   const commMap = new Map(communities.map((c) => [c.id, c]));
   const divMap = new Map(divisions.map((d) => [d.id, d]));
+
+  // Build model home lookup: "community_id|plan_name" → true
+  const modelHomeKeys = new Set<string>();
+  for (const c of communities) {
+    const mh = parseJSON<ModelHomeEntry>(c.model_homes);
+    for (const m of mh) {
+      modelHomeKeys.add(`${c.id}|${m.name.toLowerCase()}`);
+    }
+  }
+  function isModelHome(plan: FloorPlan): boolean {
+    return modelHomeKeys.has(`${plan.community_id}|${plan.plan_name.toLowerCase()}`);
+  }
 
   function getCommunityName(plan: FloorPlan): string {
     return plan.community_id ? (commMap.get(plan.community_id)?.name ?? "—") : "—";

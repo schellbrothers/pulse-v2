@@ -568,7 +568,7 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
   // ── Card view ─────────────────────────────────────────────────────────────────
 
   const cardView = (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, padding: "16px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: "16px" }}>
       {rows.map((p) => {
         const commName = getCommunityName(p);
         const imgUrl = p.featured_image_url;

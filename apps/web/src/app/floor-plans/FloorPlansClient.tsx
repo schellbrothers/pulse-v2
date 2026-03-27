@@ -654,15 +654,20 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
               </div>
             </div>
 
-            {/* Right: featured image */}
-            {imgUrl ? (
-              <div style={{ flexShrink: 0, width: 200, height: 140, borderRadius: 8, overflow: "hidden" }}>
-                <img src={imgUrl} alt={p.plan_name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              </div>
-            ) : (
-              <div style={{ flexShrink: 0, width: 200, height: 140, borderRadius: 8, background: "#1a1a1a" }} />
-            )}
+            {/* Right: elevation[0] image */}
+            {(() => {
+              const elevs = Array.isArray(p.elevations) ? p.elevations : [];
+              const first = elevs.find((e: {is_hidden?: boolean|null}) => !e.is_hidden) ?? elevs[0];
+              const thumb = first ? s3ToHttps((first as {image_path?: string}).image_path) : s3ToHttps(p.featured_image_url);
+              return thumb ? (
+                <div style={{ flexShrink: 0, width: 200, height: 140, borderRadius: 8, overflow: "hidden" }}>
+                  <img src={thumb} alt={p.plan_name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+              ) : (
+                <div style={{ flexShrink: 0, width: 200, height: 140, borderRadius: 8, background: "#1a1a1a" }} />
+              );
+            })()}
           </div>
         );
       })}
@@ -747,6 +752,35 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+
+          {/* Elevations */}
+          {(() => {
+            const elevs = Array.isArray(selectedPlan.elevations) ? selectedPlan.elevations : [];
+            const visible = elevs.filter((e: {is_hidden?: boolean|null}) => !e.is_hidden);
+            if (!visible.length) return null;
+            return (
+              <Section title="Elevations">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  {visible.map((e: {kova_name?: string; image_path?: string}, i: number) => {
+                    const url = s3ToHttps(e.image_path);
+                    return (
+                      <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {url ? (
+                          <img src={url} alt={e.kova_name ?? `Elevation ${i+1}`}
+                            style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: 6, border: "1px solid #2a2a2a", display: "block" }} />
+                        ) : (
+                          <div style={{ width: "100%", aspectRatio: "4/3", background: "#1a1a1a", borderRadius: 6 }} />
+                        )}
+                        {e.kova_name && (
+                          <span style={{ fontSize: 10, color: "#555", textAlign: "center" }}>{e.kova_name}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            );
+          })()}
 
           {/* Pricing */}
           <Section title="Pricing">

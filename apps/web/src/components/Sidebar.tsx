@@ -23,40 +23,121 @@ export const NAV_ITEMS = [
   { icon: "◧", label: "Docs",           href: "/docs",           group: "tools" },
 ] as const;
 
+const GROUP_LABELS: Record<string, string> = {
+  core: "WORKSPACE",
+  data: "DATA",
+  tools: "TOOLS",
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
+
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
+    <aside
+      style={{
+        width: 220,
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        borderRight: "1px solid #333333",
+        background: "#222323",
+        height: "100vh",
+        position: "sticky",
+        top: 0,
+      }}
+    >
       {/* Brand */}
-      <div className="px-4 py-4 border-b border-[#1f1f1f]">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🦞</span>
+      <div
+        style={{
+          padding: "14px 16px",
+          borderBottom: "1px solid #333333",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🦞</span>
           <div>
-            <span className="font-semibold text-[13px] text-[#ededed]">Pulse v2</span>
-            <div className="text-[10px] text-[#555]">HBx AI Factory</div>
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: 13,
+                color: "#59a6bd",
+                letterSpacing: "0.02em",
+              }}
+            >
+              Pulse v2
+            </span>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>HBx AI Factory</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3">
+      <nav style={{ flex: 1, padding: "8px 8px", overflowY: "auto" }}>
         {NAV_ITEMS.map((item, i) => {
           const prevItem = i > 0 ? NAV_ITEMS[i - 1] : null;
-          const showDivider = prevItem && prevItem.group !== item.group;
+          const isFirstInGroup = !prevItem || prevItem.group !== item.group;
+          const isActive =
+            item.href === pathname ||
+            (item.href !== "/" && item.href !== "#" && pathname.startsWith(item.href));
+
           return (
             <div key={item.label}>
-              {showDivider && (
-                <div className="my-1.5 mx-2 border-t border-[#1a1a1a]" />
+              {/* Group label */}
+              {isFirstInGroup && (
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.4)",
+                    textTransform: "uppercase",
+                    padding: i === 0 ? "4px 10px 4px" : "12px 10px 4px",
+                  }}
+                >
+                  {GROUP_LABELS[item.group]}
+                </div>
               )}
               <Link
                 href={item.href}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
-                  item.href === pathname || (item.href !== "/" && pathname.startsWith(item.href))
-                    ? "bg-[#1a1a1a] text-[#ededed]"
-                    : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
-                }`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "6px 10px",
+                  borderRadius: 3,
+                  fontSize: 13,
+                  textDecoration: "none",
+                  transition: "background 0.1s, color 0.1s",
+                  marginBottom: 1,
+                  borderLeft: isActive ? "3px solid #59a6bd" : "3px solid transparent",
+                  background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
+                  color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
+                  paddingLeft: 7, // 10px - 3px border = 7px to keep visual alignment
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.9)";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.06)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.6)";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                  }
+                }}
               >
-                <span className="text-[14px] w-4 text-center opacity-70">{item.icon}</span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    width: 16,
+                    textAlign: "center",
+                    opacity: isActive ? 1 : 0.7,
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
             </div>
@@ -65,15 +146,65 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-[#1f1f1f]">
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-shrink-0">
-            <div className="w-6 h-6 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs">🦞</div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00c853] rounded-full border border-[#0a0a0a] animate-pulse" />
+      <div
+        style={{
+          padding: "10px 12px",
+          borderTop: "1px solid #333333",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: "#3E3F44",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+              }}
+            >
+              🦞
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: -1,
+                right: -1,
+                width: 8,
+                height: 8,
+                background: "#80B602",
+                borderRadius: "50%",
+                border: "1px solid #222323",
+              }}
+            />
           </div>
-          <div className="min-w-0">
-            <div className="text-[12px] font-medium text-[#ededed] truncate">Schellie</div>
-            <div className="text-[11px] text-[#555] truncate">Orchestrator · Online</div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.9)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Schellie
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.4)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Orchestrator · Online
+            </div>
           </div>
         </div>
       </div>

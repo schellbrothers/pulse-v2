@@ -23,45 +23,45 @@ const VARIANT_STYLES: Record<
   { bg: string; color: string; border: string; label: string }
 > = {
   model: {
-    bg: "#161820",
-    color: "#5b80a0",
-    border: "#1a2a3f",
+    bg: "#1a3040",
+    color: "#59a6bd",
+    border: "#2a5070",
     label: "Model",
   },
   sold: {
-    bg: "#1e1212",
-    color: "#8a5a5a",
-    border: "#3f1a1a",
+    bg: "#3a1818",
+    color: "#E32027",
+    border: "#5a2020",
     label: "Sold",
   },
   qd: {
-    bg: "#1e1e12",
-    color: "#8a7a5a",
-    border: "#3f3f1a",
+    bg: "#3a2e18",
+    color: "#e07000",
+    border: "#5a4a20",
     label: "Quick Delivery",
   },
   active: {
-    bg: "#0f1e0f",
-    color: "#4a8a4a",
-    border: "#1a3f1a",
+    bg: "#1a2e10",
+    color: "#80B602",
+    border: "#2a4a18",
     label: "Active",
   },
   "sold-out": {
-    bg: "#1a1a1a",
-    color: "#555",
-    border: "#222",
+    bg: "#2a2b2e",
+    color: "#999",
+    border: "#444",
     label: "Sold Out",
   },
   leaseback: {
-    bg: "#1a1220",
-    color: "#7a5a8a",
-    border: "#2a1a3f",
+    bg: "#2e2a18",
+    color: "#e07000",
+    border: "#4a4018",
     label: "Leaseback",
   },
   "coming-soon": {
-    bg: "#1a1a0a",
-    color: "#7a7a40",
-    border: "#3a3a10",
+    bg: "#2a2b2e",
+    color: "#666",
+    border: "#444",
     label: "Coming Soon",
   },
 };
@@ -79,9 +79,9 @@ export default function Badge({
   let defaultLabel: string;
 
   if (variant === "custom") {
-    bg = customBg ?? "#1a1a1a";
-    color = customColor ?? "#888";
-    border = customBorder ?? "#222";
+    bg = customBg ?? "#2a2b2e";
+    color = customColor ?? "#999";
+    border = customBorder ?? "#444";
     defaultLabel = label ?? "—";
   } else {
     const s = VARIANT_STYLES[variant];

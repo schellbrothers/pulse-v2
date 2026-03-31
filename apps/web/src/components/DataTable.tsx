@@ -59,14 +59,14 @@ const thStyle = {
   textAlign: "left" as const,
   fontWeight: 500,
   fontSize: 11,
-  color: "#666",
+  color: "rgba(255,255,255,0.5)",
   textTransform: "uppercase" as const,
   letterSpacing: "0.06em",
-  borderBottom: "1px solid #1a1a1a",
+  borderBottom: "1px solid #444",
   whiteSpace: "nowrap" as const,
   cursor: "pointer",
   userSelect: "none" as const,
-  backgroundColor: "#0d0d0d",
+  backgroundColor: "#2a2b2e",
 };
 
 function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) {
@@ -210,14 +210,14 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
 
     const headerStyle: React.CSSProperties = {
       ...thStyle,
-      color: hasActiveFilter ? "#0070f3" : isActiveSort ? "#ededed" : "#666",
+      color: hasActiveFilter ? "#59a6bd" : isActiveSort ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
       borderBottom: hasActiveFilter
-        ? "2px solid #0070f3"
-        : "1px solid #1a1a1a",
+        ? "2px solid #59a6bd"
+        : "1px solid #555",
       width: col.width ?? undefined,
       textAlign: col.align ?? "left",
       ...(isSticky
-        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#0d0d0d" }
+        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#2a2b2e" }
         : {}),
       position: isSticky ? "sticky" : "relative",
     };
@@ -232,7 +232,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
         >
           {col.label}
           {isActiveSort && (
-            <span style={{ marginLeft: 4, color: "#a1a1a1" }}>
+            <span style={{ marginLeft: 4, color: "rgba(255,255,255,0.6)" }}>
               {sortDir === "asc" ? "↑" : "↓"}
             </span>
           )}
@@ -262,7 +262,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#0070f3",
+                backgroundColor: "#59a6bd",
                 color: "#fff",
                 borderRadius: "50%",
                 width: 14,
@@ -275,7 +275,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               {activeFilters.length}
             </span>
           )}
-          <span style={{ fontSize: 9, color: "#444", marginLeft: 2 }}>▼</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginLeft: 2 }}>▼</span>
         </div>
 
         {isOpen && (
@@ -286,8 +286,8 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               top: "100%",
               left: 0,
               zIndex: 100,
-              backgroundColor: "#111",
-              border: "1px solid #2a2a2a",
+              backgroundColor: "#3E3F44",
+              border: "1px solid #555",
               borderRadius: 6,
               minWidth: 180,
               maxHeight: 300,
@@ -312,7 +312,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     textAlign: "left",
                     padding: "6px 12px",
                     fontSize: 11,
-                    color: sortCol === colKey && sortDir === "asc" ? "#0070f3" : "#a1a1a1",
+                    color: sortCol === colKey && sortDir === "asc" ? "#59a6bd" : "rgba(255,255,255,0.5)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -333,7 +333,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     textAlign: "left",
                     padding: "6px 12px",
                     fontSize: 11,
-                    color: sortCol === colKey && sortDir === "desc" ? "#0070f3" : "#a1a1a1",
+                    color: sortCol === colKey && sortDir === "desc" ? "#59a6bd" : "rgba(255,255,255,0.5)",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -344,7 +344,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                 <div
                   style={{
                     height: 1,
-                    backgroundColor: "#1a1a1a",
+                    backgroundColor: "rgba(255,255,255,0.05)",
                     margin: "4px 0",
                   }}
                 />
@@ -357,7 +357,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                 style={{
                   padding: "8px 12px",
                   fontSize: 11,
-                  color: "#444",
+                  color: "rgba(255,255,255,0.3)",
                 }}
               >
                 No values
@@ -373,7 +373,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     gap: 8,
                     padding: "5px 12px",
                     fontSize: 11,
-                    color: activeFilters.includes(val) ? "#ededed" : "#a1a1a1",
+                    color: activeFilters.includes(val) ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
                     cursor: "pointer",
                     backgroundColor: activeFilters.includes(val)
                       ? "#1a1a2e"
@@ -381,7 +381,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                   }}
                   onMouseEnter={(e) => {
                     if (!activeFilters.includes(val))
-                      e.currentTarget.style.backgroundColor = "#1a1a1a";
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
                   }}
                   onMouseLeave={(e) => {
                     if (!activeFilters.includes(val))
@@ -394,10 +394,10 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     onClick={(e) => { e.stopPropagation(); toggleFilter(colKey, val); }}
                     style={{
                       width: 14, height: 14, borderRadius: 3, flexShrink: 0,
-                      border: `1px solid ${activeFilters.includes(val) ? "#0070f3" : "#444"}`,
+                      border: `1px solid ${activeFilters.includes(val) ? "#59a6bd" : "#555"}`,
                       backgroundColor: activeFilters.includes(val) ? "#1a3a5c" : "#2a2a2a",
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      cursor: "pointer", fontSize: 9, color: "#0070f3", lineHeight: "1",
+                      cursor: "pointer", fontSize: 9, color: "#59a6bd", lineHeight: "1",
                     }}
                   >{activeFilters.includes(val) ? "✓" : ""}</div>
                   <span data-dropdown>{val}</span>
@@ -411,7 +411,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                 <div
                   style={{
                     height: 1,
-                    backgroundColor: "#1a1a1a",
+                    backgroundColor: "rgba(255,255,255,0.05)",
                     margin: "4px 0",
                   }}
                 />
@@ -427,7 +427,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     textAlign: "left",
                     padding: "6px 12px",
                     fontSize: 11,
-                    color: "#ff6b6b",
+                    color: "#E32027",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -452,7 +452,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        backgroundColor: "#080808",
+        backgroundColor: "#323236",
       }}
     >
       {/* Search bar */}
@@ -460,8 +460,8 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
         <div
           style={{
             padding: "8px 24px",
-            backgroundColor: "#0d0d0d",
-            borderBottom: "1px solid #1a1a1a",
+            backgroundColor: "#2a2b2e",
+            borderBottom: "1px solid #444",
             flexShrink: 0,
           }}
         >
@@ -471,12 +471,12 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
             style={{
-              background: "#111",
-              border: "1px solid #2a2a2a",
+              background: "#3E3F44",
+              border: "1px solid #555",
               borderRadius: 6,
               padding: "6px 12px",
               fontSize: 12,
-              color: "#a1a1a1",
+              color: "rgba(255,255,255,0.6)",
               outline: "none",
               width: 240,
             }}
@@ -491,8 +491,8 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
           alignItems: "center",
           gap: 20,
           padding: "6px 24px",
-          backgroundColor: "#0d0d0d",
-          borderBottom: "1px solid #1a1a1a",
+          backgroundColor: "#2a2b2e",
+          borderBottom: "1px solid #444",
           flexShrink: 0,
           flexWrap: "wrap",
         }}
@@ -505,7 +505,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                 key={s.label}
                 style={{ display: "flex", alignItems: "center", gap: 6 }}
               >
-                <span style={{ fontSize: 11, color: "#555" }}>{s.label}:</span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{s.label}:</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: s.color }}>
                   {s.isString
                     ? s.value
@@ -528,9 +528,9 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             style={{
               marginLeft: activeStats && activeStats.length > 0 ? 0 : "auto",
               fontSize: 11,
-              color: "#ff6b6b",
+              color: "#E32027",
               background: "none",
-              border: "1px solid #3f1f1f",
+              border: "1px solid #5a2020",
               borderRadius: 4,
               padding: "2px 8px",
               cursor: "pointer",
@@ -556,9 +556,9 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               setCurrentPage(1);
             }}
             style={{
-              background: "#111",
-              border: "1px solid #2a2a2a",
-              color: "#a1a1a1",
+              background: "#3E3F44",
+              border: "1px solid #555",
+              color: "rgba(255,255,255,0.6)",
               fontSize: 11,
               borderRadius: 4,
               padding: "3px 8px",
@@ -571,7 +571,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             <option value={500}>500 / page</option>
             <option value={9999}>All</option>
           </select>
-          <span style={{ fontSize: 11, color: "#444" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
             {filtered.length === 0
               ? "0 results"
               : `${rangeStart}–${rangeEnd} of ${filtered.length}`}
@@ -580,12 +580,12 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             style={{
-              background: "#111",
-              border: "1px solid #2a2a2a",
+              background: "#3E3F44",
+              border: "1px solid #555",
               fontSize: 12,
               borderRadius: 4,
               padding: "3px 8px",
-              color: currentPage === 1 ? "#333" : "#a1a1a1",
+              color: currentPage === 1 ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
               cursor: currentPage === 1 ? "default" : "pointer",
             }}
           >
@@ -595,12 +595,12 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage >= totalPages}
             style={{
-              background: "#111",
-              border: "1px solid #2a2a2a",
+              background: "#3E3F44",
+              border: "1px solid #555",
               fontSize: 12,
               borderRadius: 4,
               padding: "3px 8px",
-              color: currentPage >= totalPages ? "#333" : "#a1a1a1",
+              color: currentPage >= totalPages ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
               cursor: currentPage >= totalPages ? "default" : "pointer",
             }}
           >
@@ -628,7 +628,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
           }}
         >
           <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-            <tr style={{ backgroundColor: "#0d0d0d" }}>
+            <tr style={{ backgroundColor: "#2a2b2e" }}>
               {props.columns.map((col, i) => renderHeader(col, i))}
             </tr>
           </thead>
@@ -640,7 +640,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                   style={{
                     padding: "48px",
                     textAlign: "center",
-                    color: "#444",
+                    color: "rgba(255,255,255,0.3)",
                     fontSize: 12,
                   }}
                 >
@@ -653,12 +653,12 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                   key={ri}
                   onClick={() => props.onRowClick?.(row)}
                   style={{
-                    borderBottom: "1px solid #141414",
+                    borderBottom: "1px solid #444",
                     cursor: props.onRowClick ? "pointer" : "default",
                   }}
                   onMouseEnter={(e) => {
                     if (props.onRowClick)
-                      e.currentTarget.style.backgroundColor = "#111111";
+                      e.currentTarget.style.backgroundColor = "#444950";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
@@ -677,16 +677,16 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                         style={{
                           padding: "6px 12px",
                           fontSize: 12,
-                          color: isSticky ? "#ededed" : "#a1a1a1",
+                          color: isSticky ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.7)",
                           fontWeight: isSticky ? 500 : 400,
                           whiteSpace: "nowrap",
-                          borderBottom: "1px solid #141414",
+                          borderBottom: "1px solid #444",
                           textAlign: col.align ?? "left",
                           ...(isSticky
                             ? {
                                 position: "sticky",
                                 left: 0,
-                                backgroundColor: "#0a0a0a",
+                                backgroundColor: "#3E3F44",
                                 zIndex: 1,
                               }
                             : {}),

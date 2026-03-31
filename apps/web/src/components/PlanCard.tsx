@@ -67,9 +67,9 @@ export default function PlanCard({
     <div
       onClick={onClick}
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 10,
+        background: "#3E3F44",
+        border: "1px solid #555",
+        borderRadius: 3,
         overflow: "hidden",
         cursor: onClick ? "pointer" : "default",
         transition: "border-color 0.15s",
@@ -77,10 +77,10 @@ export default function PlanCard({
         flexDirection: "column",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-2)";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#666";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#555";
       }}
     >
       {/* Image */}
@@ -88,7 +88,7 @@ export default function PlanCard({
         style={{
           width: "100%",
           height: 160,
-          background: "#1a1a1a",
+          background: "#2a2b2e",
           position: "relative",
           overflow: "hidden",
           flexShrink: 0,
@@ -109,7 +109,7 @@ export default function PlanCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#333",
+              color: "rgba(255,255,255,0.2)",
               fontSize: 11,
             }}
           >
@@ -124,9 +124,9 @@ export default function PlanCard({
               position: "absolute",
               top: 8,
               right: 8,
-              background: "#0f1e0f",
-              color: "#4a8a4a",
-              border: "1px solid #1a3f1a",
+              background: "#1a2e10",
+              color: "#80B602",
+              border: "1px solid #2a4a18",
               borderRadius: 4,
               fontSize: 10,
               fontWeight: 600,
@@ -146,9 +146,9 @@ export default function PlanCard({
         <div
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 600,
-            color: "var(--text)",
+            color: "rgba(255,255,255,0.9)",
             lineHeight: 1.3,
           }}
         >
@@ -157,12 +157,12 @@ export default function PlanCard({
 
         {/* Community / location */}
         {locationLine && (
-          <div style={{ fontSize: 11, color: "#555", lineHeight: 1.3 }}>{locationLine}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.3 }}>{locationLine}</div>
         )}
 
         {/* Specs row */}
         {specParts.length > 0 && (
-          <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
             {specParts.join(" · ")}
           </div>
         )}
@@ -174,7 +174,7 @@ export default function PlanCard({
               fontFamily: "var(--font-display)",
               fontSize: 14,
               fontWeight: 600,
-              color: "#8a7a5a",
+              color: "#59a6bd",
               marginTop: 4,
             }}
           >
@@ -184,7 +184,7 @@ export default function PlanCard({
 
         {/* Division */}
         {divisionName && (
-          <div style={{ fontSize: 10, color: "#444", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {divisionName}
           </div>
         )}

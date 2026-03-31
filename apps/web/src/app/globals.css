@@ -2,37 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Open+Sans:wght@300;400;500;600;700&family=Roboto+Condensed:wght@300;400;700&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
 
 :root {
-  /* PV2 dark tokens */
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --surface-2: #1a1a1a;
-  --surface-3: #222222;
-  --border: #1f1f1f;
-  --border-2: #2a2a2a;
-  --text: #ededed;
-  --text-2: #a1a1a1;
-  --text-3: #666666;
-  --text-4: #444444;
-  --accent: #ffffff;
-  --blue: #0070f3;
-  --green: #00c853;
-  --yellow: #f5a623;
-  --red: #e00;
+  /* HBv1 design tokens */
+  --bg:              #323236;
+  --sidebar-bg:      #222323;
+  --sidebar-border:  #333333;
+  --surface:         #3E3F44;
+  --surface-2:       #2a2b2e;
+  --surface-3:       #363739;
+  --border:          #444444;
+  --border-2:        #555555;
+  --border-light:    rgba(255,255,255,0.1);
+  --text:            rgba(255,255,255,0.9);
+  --text-2:          rgba(255,255,255,0.7);
+  --text-3:          rgba(255,255,255,0.4);
+  --text-4:          #999999;
+  --accent:          #ffffff;
+
+  --blue:            #59a6bd;
+  --blue-light:      #a0d3e8;
+  --blue-dark:       #3f899f;
+  --green:           #80B602;
+  --green-dark:      #669202;
+  --orange:          #e07000;
+  --red:             #E32027;
+  --red-dark:        #b8171d;
+  --yellow:          #e07000;
+  --white:           #ffffff;
 
   /* Schell Brothers brand colors */
-  --schell-navy: #223347;
-  --schell-red: #d21d40;
-  --schell-red-hover: #a81733;
+  --schell-navy:       #223347;
+  --schell-red:        #d21d40;
+  --schell-red-hover:  #a81733;
   --schell-blue-light: #a0d3e8;
-  --schell-bg-light: #f5f5f5;
+  --schell-bg-light:   #f5f5f5;
 
   /* Typography */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Open Sans', 'Geist', -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', monospace;
+  --font-display: 'Bitter', 'Georgia', serif;
+  --font-body:    'Open Sans', 'Roboto Condensed', sans-serif;
+  --font-mono:    'Geist Mono', monospace;
+
+  /* Shape & shadow */
+  --radius-sm:  3px;
+  --radius:     5px;
+  --radius-lg:  8px;
+  --shadow:     0 1px 3px rgba(0,0,0,0.4);
+  --shadow-lg:  0 2px 8px rgba(0,0,0,0.5);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -46,15 +63,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
 /* Card base */
 .pv2-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   transition: border-color 0.15s;
 }
@@ -63,7 +80,7 @@ body {
 /* Plan card price */
 .price-display {
   font-family: var(--font-display);
-  color: var(--text);
+  color: var(--blue);
   font-size: 18px;
   font-weight: 600;
 }
@@ -80,8 +97,8 @@ body {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge-model     { background: #161820; color: #5b80a0; border: 1px solid #1a2a3f; }
-.badge-sold      { background: #1e1212; color: #8a5a5a; border: 1px solid #3f1a1a; }
-.badge-qd        { background: #1e1e12; color: #8a7a5a; border: 1px solid #3f3f1a; }
-.badge-active    { background: #0f1e0f; color: #4a8a4a; border: 1px solid #1a3f1a; }
-.badge-sold-out  { background: #1a1a1a; color: #555;    border: 1px solid #222;    }
+.badge-model     { background: #1a3040; color: #59a6bd; border: 1px solid #2a5070; }
+.badge-sold      { background: #3a1818; color: #E32027; border: 1px solid #5a2020; }
+.badge-qd        { background: #3a2e18; color: #e07000; border: 1px solid #5a4a20; }
+.badge-active    { background: #1a2e10; color: #80B602; border: 1px solid #2a4a18; }
+.badge-sold-out  { background: #2a2b2e; color: #999;    border: 1px solid #444;    }

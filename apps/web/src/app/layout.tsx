@@ -17,13 +17,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Suspense fallback={null}>
           <GlobalFilterProvider>
-            <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+            <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
               <Sidebar />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <Suspense fallback={null}>
                   <GlobalFilterBar />
                 </Suspense>
-                <main style={{ flex: 1, overflow: "hidden" }}>
+                <main style={{ flex: 1, overflow: "hidden", background: "var(--bg)" }}>
                   {children}
                 </main>
               </div>

@@ -16,10 +16,10 @@ interface Props {
 }
 
 const selectStyle: React.CSSProperties = {
-  background: "#111",
-  border: "1px solid #2a2a2a",
-  borderRadius: 5,
-  color: "#888",
+  background: "#3E3F44",
+  border: "1px solid #555",
+  borderRadius: 3,
+  color: "rgba(255,255,255,0.6)",
   fontSize: 12,
   padding: "4px 8px",
   outline: "none",
@@ -31,8 +31,8 @@ const selectStyle: React.CSSProperties = {
 
 const activeSelectStyle: React.CSSProperties = {
   ...selectStyle,
-  border: "1px solid #3a3a3a",
-  color: "#ededed",
+  border: "1px solid #59a6bd",
+  color: "rgba(255,255,255,0.9)",
 };
 
 export default function GlobalFilterBarClient({ divisions, communities }: Props) {
@@ -102,11 +102,11 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         display: "flex",
         alignItems: "center",
         gap: 8,
-        height: 40,
+        height: 44,
         paddingLeft: 12,
         paddingRight: 12,
-        borderBottom: "1px solid #1f1f1f",
-        backgroundColor: "#0d0d0d",
+        borderBottom: "1px solid #444444",
+        backgroundColor: "#2a2b2e",
         flexShrink: 0,
       }}
     >
@@ -124,7 +124,7 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         ))}
       </select>
 
-      <span style={{ color: "#333", fontSize: 12 }}>›</span>
+      <span style={{ color: "#555", fontSize: 12 }}>›</span>
 
       {/* Community select */}
       <select
@@ -140,7 +140,7 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         ))}
       </select>
 
-      <span style={{ color: "#333", fontSize: 12 }}>›</span>
+      <span style={{ color: "#555", fontSize: 12 }}>›</span>
 
       {/* Plan select */}
       <select
@@ -165,7 +165,7 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         <span
           style={{
             fontSize: 11,
-            color: "#555",
+            color: "#59a6bd",
             fontStyle: "italic",
             marginRight: 8,
             whiteSpace: "nowrap",
@@ -185,9 +185,9 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
           title="Clear filter"
           style={{
             background: "none",
-            border: "1px solid #2a2a2a",
+            border: "1px solid #555",
             borderRadius: 4,
-            color: "#666",
+            color: "rgba(255,255,255,0.5)",
             fontSize: 12,
             padding: "2px 8px",
             cursor: "pointer",
@@ -196,12 +196,12 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
             transition: "color 0.15s, border-color 0.15s",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "#ededed";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#444";
+            (e.currentTarget as HTMLButtonElement).style.color = "#E32027";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#E32027";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "#666";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#2a2a2a";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#555";
           }}
         >
           ✕ Clear

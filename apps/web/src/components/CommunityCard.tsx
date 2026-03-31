@@ -35,9 +35,9 @@ export default function CommunityCard({
     <div
       onClick={onClick}
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 10,
+        background: "#3E3F44",
+        border: "1px solid #555",
+        borderRadius: 3,
         overflow: "hidden",
         cursor: onClick ? "pointer" : "default",
         transition: "border-color 0.15s",
@@ -45,10 +45,10 @@ export default function CommunityCard({
         flexDirection: "column",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-2)";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#666";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#555";
       }}
     >
       {/* Image */}
@@ -56,7 +56,7 @@ export default function CommunityCard({
         style={{
           width: "100%",
           height: 180,
-          background: "#1a1a1a",
+          background: "#2a2b2e",
           position: "relative",
           overflow: "hidden",
           flexShrink: 0,
@@ -77,7 +77,7 @@ export default function CommunityCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#333",
+              color: "rgba(255,255,255,0.2)",
               fontSize: 11,
             }}
           >
@@ -93,7 +93,7 @@ export default function CommunityCard({
               top: 8,
               left: 8,
               background: "rgba(0,0,0,0.75)",
-              color: "#a1a1a1",
+              color: "rgba(255,255,255,0.7)",
               borderRadius: 4,
               fontSize: 10,
               fontWeight: 600,
@@ -114,9 +114,9 @@ export default function CommunityCard({
               position: "absolute",
               bottom: 8,
               left: 8,
-              background: "#161820",
-              color: "#5b80a0",
-              border: "1px solid #1a2a3f",
+              background: "#1a3040",
+              color: "#59a6bd",
+              border: "1px solid #2a5070",
               borderRadius: 4,
               fontSize: 10,
               fontWeight: 600,
@@ -138,7 +138,7 @@ export default function CommunityCard({
             fontFamily: "var(--font-display)",
             fontSize: 15,
             fontWeight: 600,
-            color: "var(--text)",
+            color: "rgba(255,255,255,0.9)",
             lineHeight: 1.3,
           }}
         >
@@ -147,7 +147,7 @@ export default function CommunityCard({
 
         {/* Location */}
         {location && (
-          <div style={{ fontSize: 11, color: "#666", lineHeight: 1.3 }}>{location}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.3 }}>{location}</div>
         )}
 
         {/* Price from */}
@@ -156,7 +156,7 @@ export default function CommunityCard({
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: "#8a7a5a",
+              color: "#59a6bd",
               marginTop: 2,
             }}
           >
@@ -169,7 +169,7 @@ export default function CommunityCard({
           <div
             style={{
               fontSize: 12,
-              color: "#888",
+              color: "rgba(255,255,255,0.6)",
               lineHeight: 1.4,
               marginTop: 2,
               display: "-webkit-box",
@@ -197,9 +197,9 @@ export default function CommunityCard({
                 key={i}
                 style={{
                   fontSize: 10,
-                  color: "#555",
-                  background: "#1a1a1a",
-                  border: "1px solid #222",
+                  color: "rgba(255,255,255,0.5)",
+                  background: "#2a2b2e",
+                  border: "1px solid #444",
                   borderRadius: 3,
                   padding: "1px 5px",
                   textTransform: "uppercase",

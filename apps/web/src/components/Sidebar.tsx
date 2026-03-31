@@ -5,21 +5,21 @@ import Link from "next/link";
 // ── Canonical nav items — single source of truth ─────────────────────────────
 // To add a new page: add one entry here. All client pages inherit it automatically.
 export const NAV_ITEMS = [
-  { icon: "▤", label: "Overview",      href: "/"            },
-  { icon: "⊡", label: "Agents",        href: "#"            },
-  { icon: "✓", label: "Tasks",         href: "/tasks"       },
-  { icon: "⊕", label: "Leads",         href: "/leads"       },
-  { icon: "⌂", label: "Communities",   href: "/communities" },
-  { icon: "◫", label: "Lots",          href: "/lots"        },
-  { icon: "◱", label: "Plans",           href: "/plans"        },
-  { icon: "⌂", label: "Model Homes",    href: "/model-homes"  },
+  { icon: "▤", label: "Overview",      href: "/"               },
+  { icon: "⊡", label: "Agents",        href: "#"               },
+  { icon: "✓", label: "Tasks",         href: "/tasks"          },
+  { icon: "⊕", label: "Leads",         href: "/leads"          },
+  { icon: "⊞", label: "Divisions",     href: "/divisions"      },
+  { icon: "⌂", label: "Communities",   href: "/communities"    },
+  { icon: "◱", label: "Plans",         href: "/plans"          },
+  { icon: "⌂", label: "Model Homes",   href: "/model-homes"    },
   { icon: "◈", label: "Quick Delivery", href: "/quick-delivery" },
-  { icon: "⊞", label: "Divisions",     href: "/divisions"   },
-  { icon: "◷", label: "Calendar",      href: "#"            },
-  { icon: "◉", label: "Notifications", href: "#"            },
-  { icon: "⚙", label: "Settings",      href: "#"            },
-  { icon: "◈", label: "Status",        href: "/status"      },
-  { icon: "◧", label: "Docs",          href: "/docs"        },
+  { icon: "◫", label: "Lots",          href: "/lots"           },
+  { icon: "◷", label: "Calendar",      href: "#"               },
+  { icon: "◉", label: "Notifications", href: "#"               },
+  { icon: "⚙", label: "Settings",      href: "#"               },
+  { icon: "◈", label: "Status",        href: "/status"         },
+  { icon: "◧", label: "Docs",          href: "/docs"           },
 ] as const;
 
 interface SidebarProps {

@@ -26,20 +26,20 @@ interface Props {
 
 const LOT_STATUS_STYLES: Record<
   string,
-  { bg: string; color: string; border: string; variant?: string }
+  { bg: string; color: string; border: string }
 > = {
-  "Available Homesite": { bg: "#0a2e1a", color: "#00c853", border: "#1a5c33" },
-  "Quick Delivery": { bg: "#0a1e3a", color: "#2196f3", border: "#1a3f7a" },
-  "Future Homesite": { bg: "#2e1f00", color: "#f5a623", border: "#5c3f00" },
-  "Under Contract": { bg: "#2e1a00", color: "#ff9800", border: "#5c3500" },
-  "Sold": { bg: "#1a1a1a", color: "#555", border: "#2a2a2a" },
+  "Available Homesite": { bg: "#162800", color: "#80B602", border: "#2a4a00" },
+  "Quick Delivery":     { bg: "#0d2229", color: "#59a6bd", border: "#1a3f50" },
+  "Future Homesite":    { bg: "#2e1800", color: "#e07000", border: "#5c3000" },
+  "Under Contract":     { bg: "#2e1800", color: "#e07000", border: "#5c3000" },
+  "Sold":               { bg: "#2a0a0a", color: "#E32027", border: "#4a1a1a" },
 };
 
 function getLotStatusStyle(status: string | null): { bg: string; color: string; border: string } {
   if (status && LOT_STATUS_STYLES[status]) {
     return LOT_STATUS_STYLES[status];
   }
-  return { bg: "#1a1a1a", color: "#555", border: "#2a2a2a" };
+  return { bg: "var(--surface-2)", color: "var(--text-3)", border: "var(--border)" };
 }
 
 function LotStatusBadge({ status }: { status: string | null }) {
@@ -73,9 +73,9 @@ function ConstructionBadge({ status }: { status: string | null }) {
         fontSize: 10,
         padding: "2px 8px",
         borderRadius: 4,
-        backgroundColor: "#1a1a2e",
-        color: "#7a7aaa",
-        border: "1px solid #2a2a4f",
+        backgroundColor: "#0d2229",
+        color: "#59a6bd",
+        border: "1px solid #1a3f50",
         fontWeight: 600,
         whiteSpace: "nowrap",
         textTransform: "uppercase",
@@ -202,23 +202,23 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   // Stats
   const statsBarItems = useMemo(
     () => [
-      { label: "Total Lots", value: rows.length, color: "#666" },
+      { label: "Total Lots", value: rows.length, color: "var(--text-3)" },
       {
         label: "Available",
         value: rows.filter((l) => l.lot_status === "Available Homesite").length,
-        color: "#00c853",
+        color: "#80B602",
       },
       {
         label: "Under Construction",
         value: rows.filter(
           (l) => l.construction_status && l.construction_status !== "Not Started"
         ).length,
-        color: "#7a7aaa",
+        color: "#59a6bd",
       },
       {
         label: "Quick Delivery",
         value: rows.filter((l) => l.lot_status === "Quick Delivery").length,
-        color: "#2196f3",
+        color: "#59a6bd",
       },
     ],
     [rows]
@@ -226,15 +226,15 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
 
   // Table stat config (filter-reactive)
   const statConfig: StatConfigItem<LotTableRow>[] = [
-    { label: "Total Lots", color: "#666", getValue: (r) => r.length },
+    { label: "Total Lots", color: "var(--text-3)", getValue: (r) => r.length },
     {
       label: "Available",
-      color: "#00c853",
+      color: "#80B602",
       getValue: (r) => r.filter((l) => l.lot_status === "Available Homesite").length,
     },
     {
       label: "Under Construction",
-      color: "#7a7aaa",
+      color: "#59a6bd",
       getValue: (r) =>
         r.filter(
           (l) => l.construction_status && l.construction_status !== "Not Started"
@@ -242,7 +242,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
     },
     {
       label: "Quick Delivery",
-      color: "#2196f3",
+      color: "#59a6bd",
       getValue: (r) => r.filter((l) => l.lot_status === "Quick Delivery").length,
     },
   ];
@@ -265,7 +265,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       sortable: true,
       filterable: true,
       render: (_v, row) => (
-        <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>
+        <span style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}>
           {row.community_name_raw ?? "—"}
         </span>
       ),
@@ -309,7 +309,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       sortable: true,
       filterable: true,
       render: (_v, row) => (
-        <span style={{ fontSize: 12, color: "#a1a1a1" }}>{getDivisionName(row)}</span>
+        <span style={{ fontSize: 12, color: "var(--text-2)" }}>{getDivisionName(row)}</span>
       ),
     },
     {
@@ -319,7 +319,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       align: "right" as const,
       render: (_v, row) =>
         (row.lot_premium as number) > 0 ? (
-          <span style={{ color: "#f5a623", fontSize: 12, fontWeight: 600 }}>
+          <span style={{ color: "var(--blue)", fontSize: 12, fontWeight: 600 }}>
             +${(row.lot_premium as number).toLocaleString()}
           </span>
         ) : (
@@ -340,8 +340,8 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
                 row.foundation === "Basement Only"
                   ? "#a855f7"
                   : row.foundation === "Crawl/Basement"
-                  ? "#0070f3"
-                  : "#666",
+                  ? "var(--blue)"
+                  : "var(--text-3)",
             }}
           >
             {row.foundation as string}
@@ -371,14 +371,14 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
             onClick={() => setSelectedLot(lot)}
             style={{
               borderRadius: 8,
-              border: "1px solid #1f1f1f",
-              backgroundColor: "#111",
+              border: "1px solid #555",
+              backgroundColor: "#3E3F44",
               padding: 12,
               cursor: "pointer",
               transition: "border-color 0.15s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1f1f1f")}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#555")}
           >
             {/* Community name */}
             <div
@@ -386,7 +386,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
                 fontFamily: "var(--font-display)",
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#ededed",
+                color: "var(--text)",
                 marginBottom: 2,
               }}
             >
@@ -394,7 +394,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
             </div>
 
             {/* Lot # and block */}
-            <div style={{ fontSize: 11, color: "#666", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
               Lot {lot.lot_number ?? "—"}
               {lot.block ? ` · Block ${lot.block}` : ""}
               {lot.phase ? ` · Phase ${lot.phase}` : ""}
@@ -437,7 +437,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: "#f5a623",
+                  color: "var(--blue)",
                   marginTop: 6,
                 }}
               >
@@ -467,11 +467,11 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       filtersBar={
         <>
           {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
             </div>
           )}
           <FiltersBar
@@ -558,7 +558,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
                 label="Lot Premium"
                 value={
                   (selectedLot.lot_premium as number) > 0 ? (
-                    <span style={{ color: "#f5a623", fontWeight: 600 }}>
+                    <span style={{ color: "var(--blue)", fontWeight: 600 }}>
                       +${(selectedLot.lot_premium as number).toLocaleString()}
                     </span>
                   ) : null

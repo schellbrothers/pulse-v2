@@ -73,15 +73,15 @@ function displayPrice(plan: CommunityPlan): string {
 function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   const btnStyle = (active: boolean): React.CSSProperties => ({
     padding: "4px 12px",
-    borderRadius: 6,
+    borderRadius: 3,
     border: "1px solid",
     fontSize: 12,
     fontWeight: 500,
     cursor: "pointer",
     transition: "background 0.15s, color 0.15s",
-    background: active ? "#1a1a1a" : "transparent",
-    color: active ? "#ededed" : "#555",
-    borderColor: active ? "#2a2a2a" : "#1f1f1f",
+    background: active ? "var(--surface-2)" : "transparent",
+    color: active ? "var(--text)" : "var(--text-3)",
+    borderColor: active ? "#555" : "var(--border)",
   });
 
   return (
@@ -268,7 +268,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         );
       })}
       {filteredDivisionPlans.length === 0 && (
-        <div style={{ gridColumn: "1 / -1", padding: 48, textAlign: "center", color: "#555", fontSize: 13 }}>
+        <div style={{ gridColumn: "1 / -1", padding: 48, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
           No plans match filters.
         </div>
       )}
@@ -293,7 +293,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       label: "Plan Name",
       sortable: true,
       render: (_v, row) => (
-        <span style={{ color: "#ededed", fontWeight: 500 }}>{row.marketing_name}</span>
+        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.marketing_name}</span>
       ),
     },
     { key: "_division_name", label: "Division", sortable: true },
@@ -322,7 +322,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   ];
 
   const byPlanTableStats: DataTableStatItem[] = [
-    { label: "Plans", value: filteredDivisionPlans.length, color: "#ededed" },
+    { label: "Plans", value: filteredDivisionPlans.length, color: "var(--text)" },
   ];
 
   // ── Card view — By Community ───────────────────────────────────────────────
@@ -339,7 +339,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
               gap: 12,
               marginBottom: 14,
               paddingBottom: 10,
-              borderBottom: "1px solid #1f1f1f",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             {community.featured_image_url && (
@@ -350,7 +350,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                   borderRadius: 6,
                   overflow: "hidden",
                   flexShrink: 0,
-                  background: "#1a1a1a",
+                  background: "var(--surface-2)",
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -367,12 +367,12 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                   fontFamily: "var(--font-display, serif)",
                   fontSize: 15,
                   fontWeight: 600,
-                  color: "#ededed",
+                  color: "var(--text)",
                 }}
               >
                 {community.name}
               </div>
-              <div style={{ fontSize: 11, color: "#555" }}>
+              <div style={{ fontSize: 11, color: "var(--text-3)" }}>
                 {[community.city, community.state].filter(Boolean).join(", ")} ·{" "}
                 {plans.length} plan{plans.length !== 1 ? "s" : ""}
               </div>
@@ -409,7 +409,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         </div>
       ))}
       {groupedByCommunity.length === 0 && (
-        <div style={{ padding: 48, textAlign: "center", color: "#555", fontSize: 13 }}>
+        <div style={{ padding: 48, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
           No plans match filters.
         </div>
       )}
@@ -438,7 +438,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       label: "Plan Name",
       sortable: true,
       render: (_v, row) => (
-        <span style={{ color: "#ededed", fontWeight: 500 }}>{row.plan_name}</span>
+        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.plan_name}</span>
       ),
     },
     { key: "_community_name", label: "Community",  sortable: true },
@@ -466,7 +466,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   ];
 
   const byCommunityTableStats: DataTableStatItem[] = [
-    { label: "Plans", value: filteredCommunityPlans.length, color: "#ededed" },
+    { label: "Plans", value: filteredCommunityPlans.length, color: "var(--text)" },
     { label: "Communities", value: groupedByCommunity.length, color: "#818cf8" },
   ];
 
@@ -509,11 +509,11 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       filtersBar={
         <>
           {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
             </div>
           )}
           <FiltersBar
@@ -580,7 +580,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                   borderRadius: 8,
                   overflow: "hidden",
                   marginBottom: 20,
-                  background: "#1a1a1a",
+                  background: "var(--surface-2)",
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -593,32 +593,32 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
             )}
 
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: "#555", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Plan Details
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {selectedPlan.style && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#666", fontSize: 12 }}>Style</span>
-                    <span style={{ color: "#a1a1a1", fontSize: 12 }}>{selectedPlan.style}</span>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Style</span>
+                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.style}</span>
                   </div>
                 )}
                 {selectedPlan.beds != null && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#666", fontSize: 12 }}>Bedrooms</span>
-                    <span style={{ color: "#a1a1a1", fontSize: 12 }}>{selectedPlan.beds}</span>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span>
+                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.beds}</span>
                   </div>
                 )}
                 {selectedPlan.baths != null && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#666", fontSize: 12 }}>Bathrooms</span>
-                    <span style={{ color: "#a1a1a1", fontSize: 12 }}>{selectedPlan.baths}</span>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span>
+                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.baths}</span>
                   </div>
                 )}
                 {(selectedPlan.sqft ?? selectedPlan.sqft_min) != null && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#666", fontSize: 12 }}>Sq Ft</span>
-                    <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span>
+                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>
                       {formatSqft(selectedPlan.sqft_min, selectedPlan.sqft)}
                     </span>
                   </div>
@@ -650,7 +650,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
             {/* Communities offering this plan */}
             <div>
-              <div style={{ fontSize: 12, color: "#555", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Available In ({planCommunities.length} {planCommunities.length === 1 ? "community" : "communities"})
               </div>
               {planCommunities.length === 0 ? (
@@ -661,8 +661,8 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                     <div
                       key={cp.id}
                       style={{
-                        background: "#161616",
-                        border: "1px solid #1f1f1f",
+                        background: "var(--surface-2)",
+                        border: "1px solid #555",
                         borderRadius: 8,
                         padding: "10px 12px",
                         display: "flex",
@@ -672,10 +672,10 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 12, color: "#ededed", fontWeight: 500 }}>
+                        <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>
                           {community?.name ?? "Unknown"}
                         </div>
-                        <div style={{ fontSize: 11, color: "#555" }}>
+                        <div style={{ fontSize: 11, color: "var(--text-3)" }}>
                           {[community?.city, community?.state].filter(Boolean).join(", ")}
                         </div>
                       </div>
@@ -684,7 +684,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                           style={{
                             fontSize: 13,
                             fontWeight: 600,
-                            color: "#8a7a5a",
+                            color: "var(--blue)",
                             fontFamily: "var(--font-display, serif)",
                           }}
                         >
@@ -732,7 +732,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
                   borderRadius: 8,
                   overflow: "hidden",
                   marginBottom: 20,
-                  background: "#1a1a1a",
+                  background: "var(--surface-2)",
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -746,39 +746,39 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               {selectedCommunityPlan.beds != null && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#666", fontSize: 12 }}>Bedrooms</span>
-                  <span style={{ color: "#a1a1a1", fontSize: 12 }}>{selectedCommunityPlan.beds}</span>
+                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span>
+                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.beds}</span>
                 </div>
               )}
               {selectedCommunityPlan.baths != null && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#666", fontSize: 12 }}>Bathrooms</span>
-                  <span style={{ color: "#a1a1a1", fontSize: 12 }}>{selectedCommunityPlan.baths}</span>
+                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span>
+                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.baths}</span>
                 </div>
               )}
               {(selectedCommunityPlan.sqft_min != null || selectedCommunityPlan.sqft_max != null) && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#666", fontSize: 12 }}>Sq Ft</span>
-                  <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span>
+                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>
                     {formatSqft(selectedCommunityPlan.sqft_min, selectedCommunityPlan.sqft_max)}
                   </span>
                 </div>
               )}
               {selectedCommunityPlan.base_price != null && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#666", fontSize: 12 }}>Base Price</span>
-                  <span style={{ color: "#a1a1a1", fontSize: 12 }}>{formatPrice(selectedCommunityPlan.base_price)}</span>
+                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Base Price</span>
+                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{formatPrice(selectedCommunityPlan.base_price)}</span>
                 </div>
               )}
               {selectedCommunityPlan.incentive_amount != null && selectedCommunityPlan.incentive_amount > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#666", fontSize: 12 }}>Incentive</span>
+                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Incentive</span>
                   <span style={{ color: "#4ade80", fontSize: 12 }}>-{formatPrice(selectedCommunityPlan.incentive_amount)}</span>
                 </div>
               )}
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid #1f1f1f", marginTop: 4 }}>
-                <span style={{ color: "#ededed", fontSize: 13, fontWeight: 600 }}>Net Price</span>
-                <span style={{ color: "#8a7a5a", fontSize: 14, fontWeight: 700, fontFamily: "var(--font-display, serif)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid var(--border)", marginTop: 4 }}>
+                <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>Net Price</span>
+                <span style={{ color: "var(--blue)", fontSize: 14, fontWeight: 700, fontFamily: "var(--font-display, serif)" }}>
                   {displayPrice(selectedCommunityPlan)}
                 </span>
               </div>

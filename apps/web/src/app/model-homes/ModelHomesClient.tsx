@@ -141,9 +141,6 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       setDivFilter("");
     }
     if (filter.communityId) {
-      // For model_homes community matching: try by community_id field (HB string)
-      // community_id in model_homes is a string like "123" not our UUID
-      // Fall back to communityId param as the community_name lookup if no match
       setCommFilter(filter.communityId);
     } else {
       setCommFilter("");
@@ -192,7 +189,6 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
     .filter((r) => {
       if (!filter.communityId && !commFilter) return true;
       if (filter.communityId) {
-        // Match by community_name label if available, otherwise pass through
         return globalCommName ? r.community_name === globalCommName : true;
       }
       return r.community_name === commFilter;
@@ -207,16 +203,16 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
 
   // Stats
   const statsBarItems = [
-    { label: "Total", value: rows.length, color: "#666" },
+    { label: "Total", value: rows.length, color: "var(--text-3)" },
     {
       label: "Communities",
       value: new Set(rows.map((r) => r.community_name)).size,
-      color: "#a1a1a1",
+      color: "var(--text-2)",
     },
     {
       label: "States",
       value: new Set(rows.map((r) => r.state)).size,
-      color: "#0070f3",
+      color: "var(--blue)",
     },
     {
       label: "Leaseback",
@@ -227,15 +223,15 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
 
   // Table stat config (filter-reactive via DataTable)
   const statConfig: StatConfigItem<ModelHomeRow>[] = [
-    { label: "Total", color: "#666", getValue: (r) => r.length },
+    { label: "Total", color: "var(--text-3)", getValue: (r) => r.length },
     {
       label: "Communities",
-      color: "#a1a1a1",
+      color: "var(--text-2)",
       getValue: (r) => new Set(r.map((x) => x.community_name)).size,
     },
     {
       label: "States",
-      color: "#0070f3",
+      color: "var(--blue)",
       getValue: (r) => new Set(r.map((x) => x.state)).size,
     },
     {
@@ -255,7 +251,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
         <span
           style={{
             fontFamily: "var(--font-display)",
-            color: "#ededed",
+            color: "var(--text)",
             fontWeight: 500,
             fontSize: 13,
           }}
@@ -280,7 +276,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       key: "lot_block_number",
       label: "Lot",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.lot_block_number ?? row.lot_number ?? "—"}
         </span>
       ),
@@ -289,7 +285,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       key: "bedrooms",
       label: "Beds",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.bedrooms ?? "—"}
         </span>
       ),
@@ -298,7 +294,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       key: "bathrooms",
       label: "Baths",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.bathrooms ?? "—"}
         </span>
       ),
@@ -307,7 +303,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       key: "heated_sqft",
       label: "Sqft",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.heated_sqft ? row.heated_sqft.toLocaleString() : "—"}
         </span>
       ),
@@ -317,7 +313,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       label: "Base Price",
       render: (_v, row) =>
         row.base_price ? (
-          <span style={{ color: "#8a7a5a", fontWeight: 600, fontSize: 13 }}>
+          <span style={{ color: "var(--blue)", fontWeight: 600, fontSize: 13 }}>
             {row.base_price_formatted ?? formatCurrency(row.base_price)}
           </span>
         ) : (
@@ -345,7 +341,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            style={{ color: "#0070f3", fontSize: 13, textDecoration: "none" }}
+            style={{ color: "var(--blue)", fontSize: 13, textDecoration: "none" }}
           >
             ↗
           </a>
@@ -371,14 +367,14 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
           onClick={() => setSelectedHome(home)}
           style={{
             borderRadius: 8,
-            border: "1px solid #1f1f1f",
-            backgroundColor: "#111",
+            border: "1px solid #555",
+            backgroundColor: "#3E3F44",
             overflow: "hidden",
             cursor: "pointer",
             transition: "border-color 0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1f1f1f")}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#555")}
         >
           {home.featured_image_url ? (
             <img
@@ -391,7 +387,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
               style={{
                 width: "100%",
                 height: 160,
-                backgroundColor: "#1a1a1a",
+                backgroundColor: "var(--surface-2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -401,36 +397,36 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
             </div>
           )}
           <div style={{ padding: 12 }}>
-            {/* Plan name — Playfair Display */}
+            {/* Plan name */}
             <div
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: 15,
                 fontWeight: 600,
-                color: "#ededed",
+                color: "var(--text)",
                 marginBottom: 2,
               }}
             >
               {home.model_marketing_name ?? home.model_name ?? home.name ?? "—"}
             </div>
-            <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>
               {home.community_name}
             </div>
-            <div style={{ fontSize: 11, color: "#666", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
               {home.city}, {home.state}
             </div>
 
             {/* Price */}
             {home.base_price && (
               <div
-                style={{ fontSize: 14, fontWeight: 600, color: "#8a7a5a", marginBottom: 6 }}
+                style={{ fontSize: 14, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}
               >
                 {home.base_price_formatted ?? formatCurrency(home.base_price)}
               </div>
             )}
 
             {/* Specs */}
-            <div style={{ fontSize: 11, color: "#666", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 8 }}>
               {home.bedrooms ?? "—"} bd · {home.bathrooms ?? "—"} ba ·{" "}
               {home.heated_sqft ? home.heated_sqft.toLocaleString() : "—"} sqft
             </div>
@@ -465,11 +461,11 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       filtersBar={
         <>
           {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
             </div>
           )}
           <FiltersBar
@@ -545,7 +541,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
                 style={{
                   width: "100%",
                   height: 160,
-                  backgroundColor: "#1a1a1a",
+                  backgroundColor: "var(--surface-2)",
                   borderRadius: 8,
                   marginBottom: 20,
                   display: "flex",
@@ -561,7 +557,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
               <Row
                 label="Base Price"
                 value={
-                  <span style={{ color: "#8a7a5a", fontWeight: 600 }}>
+                  <span style={{ color: "var(--blue)", fontWeight: 600 }}>
                     {selectedHome.base_price_formatted ?? formatCurrency(selectedHome.base_price)}
                   </span>
                 }
@@ -683,9 +679,9 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
                     gap: 6,
                     padding: "8px 16px",
                     borderRadius: 6,
-                    border: "1px solid #1a2a3f",
-                    backgroundColor: "#1a1f2e",
-                    color: "#0070f3",
+                    border: "1px solid #1a3f50",
+                    backgroundColor: "#0d2229",
+                    color: "var(--blue)",
                     fontSize: 13,
                     textDecoration: "none",
                     fontWeight: 500,

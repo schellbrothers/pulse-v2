@@ -209,39 +209,39 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
     : null;
 
   const statsBarItems = [
-    { label: "Total", value: rows.length, color: "#666" },
+    { label: "Total", value: rows.length, color: "var(--text-3)" },
     {
       label: "Communities",
       value: new Set(rows.map((r) => r.community_name)).size,
-      color: "#a1a1a1",
+      color: "var(--text-2)",
     },
     {
       label: "States",
       value: new Set(rows.map((r) => r.state)).size,
-      color: "#a1a1a1",
+      color: "var(--text-2)",
     },
     {
       label: "Avg Price",
       value: avgPrice != null ? `$${Math.round(avgPrice / 1000)}k` : "—",
-      color: "#c9a84c",
+      color: "var(--blue)",
     },
   ];
 
   const statConfig: StatConfigItem<SpecHomeRow>[] = [
-    { label: "Total", color: "#666", getValue: (r) => r.length },
+    { label: "Total", color: "var(--text-3)", getValue: (r) => r.length },
     {
       label: "Communities",
-      color: "#a1a1a1",
+      color: "var(--text-2)",
       getValue: (r) => new Set(r.map((x) => x.community_name)).size,
     },
     {
       label: "States",
-      color: "#a1a1a1",
+      color: "var(--text-2)",
       getValue: (r) => new Set(r.map((x) => x.state)).size,
     },
     {
       label: "Avg Price",
-      color: "#c9a84c",
+      color: "var(--blue)",
       isString: true,
       getValue: (r) => {
         const wp = r.filter((x) => x.net_price && x.net_price > 0);
@@ -259,7 +259,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       label: "Community",
       sticky: true,
       render: (_v, row) => (
-        <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>
+        <span style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}>
           {row.community_name ?? "—"}
         </span>
       ),
@@ -286,7 +286,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       key: "bedrooms",
       label: "Beds/Baths",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.bedrooms ?? "—"} / {row.bathrooms ?? "—"}
         </span>
       ),
@@ -295,7 +295,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       key: "heated_sqft",
       label: "Sqft",
       render: (_v, row) => (
-        <span style={{ color: "#a1a1a1", fontSize: 12 }}>
+        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
           {row.heated_sqft ? row.heated_sqft.toLocaleString() : "—"}
         </span>
       ),
@@ -305,7 +305,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       label: "Net Price",
       render: (_v, row) =>
         row.net_price ? (
-          <span style={{ color: "#c9a84c", fontWeight: 700, fontSize: 14 }}>
+          <span style={{ color: "var(--blue)", fontWeight: 700, fontSize: 14 }}>
             {row.price_formatted ?? formatCurrency(row.net_price)}
           </span>
         ) : (
@@ -320,9 +320,9 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
           <Badge
             variant="active"
             label={savingsLabel(row.incentive_price)}
-            customColor="#5a8a5a"
-            customBg="#0a1e0a"
-            customBorder="#1a4a1a"
+            customColor="#80B602"
+            customBg="#162800"
+            customBorder="#2a4a00"
           />
         ) : (
           <span style={{ color: "#333" }}>—</span>
@@ -332,7 +332,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       key: "address",
       label: "Address",
       render: (_v, row) => (
-        <span style={{ color: "#666", fontSize: 12 }}>{row.address ?? "—"}</span>
+        <span style={{ color: "var(--text-3)", fontSize: 12 }}>{row.address ?? "—"}</span>
       ),
     },
     {
@@ -346,7 +346,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            style={{ color: "#0070f3", fontSize: 13, textDecoration: "none" }}
+            style={{ color: "var(--blue)", fontSize: 13, textDecoration: "none" }}
           >
             ↗
           </a>
@@ -372,14 +372,14 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
           onClick={() => setSelectedHome(home)}
           style={{
             borderRadius: 10,
-            border: "1px solid #1a1a1a",
-            backgroundColor: "#111",
+            border: "1px solid #555",
+            backgroundColor: "#3E3F44",
             overflow: "hidden",
             cursor: "pointer",
             transition: "border-color 0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#555")}
         >
           {home.featured_image_url ? (
             <img
@@ -392,7 +392,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
               style={{
                 width: "100%",
                 height: 160,
-                backgroundColor: "#1a1a1a",
+                backgroundColor: "var(--surface-2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -402,32 +402,32 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
             </div>
           )}
           <div style={{ padding: 12 }}>
-            {/* Plan name — Playfair Display */}
+            {/* Plan name */}
             <div
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: 15,
                 fontWeight: 600,
-                color: "#ededed",
+                color: "var(--text)",
                 marginBottom: 2,
               }}
             >
               {home.model_marketing_name ?? home.model_name ?? home.name ?? "—"}
             </div>
-            <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>
               {home.community_name}
             </div>
-            <div style={{ fontSize: 11, color: "#666", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
               {home.city}, {home.state}
             </div>
 
-            {/* Net price — prominent amber */}
+            {/* Net price — HBv1 blue (#59a6bd) */}
             {home.net_price && (
               <div
                 style={{
                   fontSize: 18,
                   fontWeight: 700,
-                  color: "#c9a84c",
+                  color: "var(--blue)",
                   marginBottom: 4,
                   fontFamily: "var(--font-display)",
                 }}
@@ -437,7 +437,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
             )}
 
             {/* Specs */}
-            <div style={{ fontSize: 11, color: "#666", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 8 }}>
               {home.bedrooms ?? "—"} bd · {home.bathrooms ?? "—"} ba ·{" "}
               {home.heated_sqft ? home.heated_sqft.toLocaleString() : "—"} sqft
             </div>
@@ -448,9 +448,9 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
                 <Badge
                   variant="active"
                   label={savingsLabel(home.incentive_price)}
-                  customColor="#5a8a5a"
-                  customBg="#0a1e0a"
-                  customBorder="#1a4a1a"
+                  customColor="#80B602"
+                  customBg="#162800"
+                  customBorder="#2a4a00"
                 />
               </div>
             )}
@@ -481,11 +481,11 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
       filtersBar={
         <>
           {(globalFilter.divisionId || globalFilter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {globalLabels.division && <span style={{ color: "#a1a1a1" }}>{globalLabels.division}</span>}
-              {globalLabels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{globalLabels.community}</span></>}
-              {globalLabels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{globalLabels.plan}</span></>}
+              {globalLabels.division && <span style={{ color: "var(--text-2)" }}>{globalLabels.division}</span>}
+              {globalLabels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{globalLabels.community}</span></>}
+              {globalLabels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{globalLabels.plan}</span></>}
             </div>
           )}
           <FiltersBar
@@ -548,9 +548,9 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
             <Badge
               variant="active"
               label={savingsLabel(selectedHome?.incentive_price ?? null)}
-              customColor="#5a8a5a"
-              customBg="#0a1e0a"
-              customBorder="#1a4a1a"
+              customColor="#80B602"
+              customBg="#162800"
+              customBorder="#2a4a00"
             />
           ) : undefined
         }
@@ -577,7 +577,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
                 style={{
                   width: "100%",
                   height: 160,
-                  backgroundColor: "#1a1a1a",
+                  backgroundColor: "var(--surface-2)",
                   borderRadius: 8,
                   marginBottom: 20,
                   display: "flex",
@@ -590,12 +590,12 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
             )}
 
             <Section title="Pricing">
-              {/* Net price — prominent */}
+              {/* Net price — prominent HBv1 blue */}
               <div
                 style={{
                   fontSize: 22,
                   fontWeight: 700,
-                  color: "#c9a84c",
+                  color: "var(--blue)",
                   fontFamily: "var(--font-display)",
                   marginBottom: 8,
                 }}
@@ -612,7 +612,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
                 <Row
                   label="Incentive"
                   value={
-                    <span style={{ color: "#5a8a5a" }}>
+                    <span style={{ color: "#80B602" }}>
                       −{" "}
                       {selectedHome.incentive_price_formatted ??
                         formatCurrency(selectedHome.incentive_price)}
@@ -684,7 +684,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
                     borderRadius: 6,
                     border: "1px solid #1a3f1a",
                     backgroundColor: "#1a2e1a",
-                    color: "#5a8a5a",
+                    color: "#80B602",
                     fontSize: 13,
                     textDecoration: "none",
                     fontWeight: 500,
@@ -705,9 +705,9 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
                     gap: 6,
                     padding: "8px 16px",
                     borderRadius: 6,
-                    border: "1px solid #1a2a3f",
-                    backgroundColor: "#1a1f2e",
-                    color: "#0070f3",
+                    border: "1px solid #1a3f50",
+                    backgroundColor: "#0d2229",
+                    color: "var(--blue)",
                     fontSize: 13,
                     textDecoration: "none",
                     fontWeight: 500,

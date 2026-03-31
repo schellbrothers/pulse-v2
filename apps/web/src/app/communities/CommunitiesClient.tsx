@@ -119,9 +119,9 @@ function StatusBadge({ status }: { status: string | null }) {
   return (
     <span style={{
       fontSize: 11, padding: "2px 7px", borderRadius: 4,
-      background: active ? "#1a2a1a" : "#1a1a1a",
-      color: active ? "#4ade80" : "#555",
-      border: `1px solid ${active ? "#1f3f1f" : "#2a2a2a"}`,
+      background: active ? "#1a2a1a" : "var(--surface-2)",
+      color: active ? "#4ade80" : "var(--text-3)",
+      border: `1px solid ${active ? "#1f3f1f" : "var(--border)"}`,
       fontWeight: 500, whiteSpace: "nowrap",
     }}>
       {getStatusLabel(status)}
@@ -132,7 +132,7 @@ function StatusBadge({ status }: { status: string | null }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 24 }}>
-      <h3 style={{ color: "#555", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
+      <h3 style={{ color: "var(--text-3)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
         {title}
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -145,8 +145,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-      <span style={{ color: "#666", fontSize: 12, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: "#a1a1a1", fontSize: 12, textAlign: "right" }}>{value ?? "—"}</span>
+      <span style={{ color: "var(--text-3)", fontSize: 12, flexShrink: 0 }}>{label}</span>
+      <span style={{ color: "var(--text-2)", fontSize: 12, textAlign: "right" }}>{value ?? "—"}</span>
     </div>
   );
 }
@@ -227,7 +227,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
     { label: "Coming Soon",value: filtered.filter((c) => c.status === "coming-soon").length, color: "#f5a623" },
     { label: "States",     value: new Set(filtered.map((c) => c.state).filter(Boolean)).size },
     { label: "Divisions",  value: new Set(filtered.map((c) => c.division_slug).filter(Boolean)).size },
-    { label: "Price Range",value: priceRange, color: "#8a7a5a" },
+    { label: "Price Range",value: priceRange, color: "#59a6bd" },
   ];
 
   // ── Table setup ────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
       label: "Community",
       sortable: true,
       render: (_v, row) => (
-        <span style={{ color: "#ededed", fontWeight: 500 }}>{row.name}</span>
+        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.name}</span>
       ),
     },
     {
@@ -302,7 +302,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
   ];
 
   const dataTableStats: DataTableStatItem[] = [
-    { label: "Communities", value: filtered.length, color: "#ededed" },
+    { label: "Communities", value: filtered.length, color: "var(--text)" },
     { label: "Active", value: filtered.filter((c) => isActiveStatus(c.status)).length, color: "#4ade80" },
   ];
 
@@ -343,7 +343,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
             gridColumn: "1 / -1",
             padding: 48,
             textAlign: "center",
-            color: "#555",
+            color: "var(--text-3)",
             fontSize: 13,
           }}
         >
@@ -407,11 +407,11 @@ function CommunitiesInner({ communities, divisions }: Props) {
       filtersBar={
         <>
           {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
             </div>
           )}
           <FiltersBar
@@ -469,7 +469,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
                   borderRadius: 8,
                   overflow: "hidden",
                   marginBottom: 20,
-                  background: "#1a1a1a",
+                  background: "var(--surface-2)",
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -551,9 +551,9 @@ function CommunitiesInner({ communities, divisions }: Props) {
                     <span
                       key={a}
                       style={{
-                        background: "#1a1a1a",
-                        border: "1px solid #2a2a2a",
-                        color: "#a1a1a1",
+                        background: "var(--surface-2)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-2)",
                         borderRadius: 6,
                         fontSize: 11,
                         padding: "3px 9px",
@@ -611,9 +611,9 @@ function CommunitiesInner({ communities, divisions }: Props) {
                     fontSize: 12,
                     padding: "6px 14px",
                     borderRadius: 6,
-                    background: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    color: "#a1a1a1",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-2)",
                     textDecoration: "none",
                     fontWeight: 500,
                   }}

@@ -65,18 +65,21 @@ export default function DivisionsClient({ divisions }: Props) {
         <div
           key={d.id}
           style={{
-            background: "#111",
-            border: `1px solid ${selectedDivId === d.id ? "#818cf8" : "#1f1f1f"}`,
+            background: "#3E3F44",
+            border: `1px solid ${selectedDivId === d.id ? "#59a6bd" : "#555"}`,
             borderRadius: 12,
             overflow: "hidden",
+            transition: "border-color 0.15s",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = selectedDivId === d.id ? "#59a6bd" : "#555")}
         >
-          {/* Navy header */}
+          {/* Header */}
           <div
             style={{
-              background: "#223347",
+              background: "#222323",
               padding: "14px 16px 12px",
-              borderBottom: "1px solid #1a2a3a",
+              borderBottom: "1px solid #333",
             }}
           >
             <div
@@ -133,7 +136,7 @@ export default function DivisionsClient({ divisions }: Props) {
               }}
             >
               {[
-                { label: "Communities", value: d.community_count, color: "#ededed" },
+                { label: "Communities", value: d.community_count, color: "var(--text)" },
                 { label: "Plans",       value: d.plan_count,       color: "#818cf8" },
                 { label: "Active",      value: d.active_count,     color: "#4ade80" },
                 { label: "Coming Soon", value: d.coming_soon_count, color: "#f5a623" },
@@ -141,19 +144,19 @@ export default function DivisionsClient({ divisions }: Props) {
                 <div
                   key={stat.label}
                   style={{
-                    background: "#161616",
+                    background: "var(--surface-2)",
                     borderRadius: 8,
                     padding: "8px 12px",
-                    border: "1px solid #1f1f1f",
+                    border: "1px solid #555",
                   }}
                 >
                   <div
                     style={{
-                      color: "#555",
+                      color: "rgba(255,255,255,0.5)",
                       fontSize: 10,
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      letterSpacing: "0.07em",
+                      letterSpacing: "0.08em",
                       marginBottom: 3,
                     }}
                   >
@@ -165,6 +168,7 @@ export default function DivisionsClient({ divisions }: Props) {
                       fontSize: 18,
                       fontWeight: 700,
                       lineHeight: 1,
+                      fontFamily: "var(--font-display, serif)",
                     }}
                   >
                     {stat.value}
@@ -177,7 +181,7 @@ export default function DivisionsClient({ divisions }: Props) {
             <div
               style={{
                 fontSize: 12,
-                color: "#8a7a5a",
+                color: "var(--blue)",
                 marginBottom: 14,
                 fontWeight: 500,
               }}
@@ -213,23 +217,23 @@ export default function DivisionsClient({ divisions }: Props) {
   // ── Table view ─────────────────────────────────────────────────────────────
 
   const thStyle: React.CSSProperties = {
-    background: "#0d0d0d",
-    color: "#555",
-    fontSize: 11,
-    fontWeight: 500,
+    background: "var(--surface-2)",
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 10,
+    fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.08em",
     padding: "8px 14px",
     whiteSpace: "nowrap",
-    borderBottom: "1px solid #1f1f1f",
+    borderBottom: "1px solid #555",
     textAlign: "left",
   };
 
   const tdStyle: React.CSSProperties = {
     padding: "8px 14px",
-    color: "#a1a1a1",
+    color: "var(--text-2)",
     fontSize: 13,
-    borderBottom: "1px solid #161616",
+    borderBottom: "1px solid #444",
     whiteSpace: "nowrap",
   };
 
@@ -262,13 +266,13 @@ export default function DivisionsClient({ divisions }: Props) {
               key={d.id}
               style={{ cursor: "pointer" }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#111")
+                (e.currentTarget.style.background = "rgba(255,255,255,0.05)")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.background = "transparent")
               }
             >
-              <td style={{ ...tdStyle, color: "#ededed", fontWeight: 600 }}>
+              <td style={{ ...tdStyle, color: "var(--text)", fontWeight: 600 }}>
                 <Link
                   href={`/communities?division=${d.slug}`}
                   style={{ color: "inherit", textDecoration: "none" }}
@@ -282,7 +286,7 @@ export default function DivisionsClient({ divisions }: Props) {
               <td style={{ ...tdStyle, textAlign: "center", color: "#818cf8" }}>{d.plan_count}</td>
               <td style={{ ...tdStyle, textAlign: "center", color: "#4ade80" }}>{d.active_count}</td>
               <td style={{ ...tdStyle, textAlign: "center", color: "#f5a623" }}>{d.coming_soon_count}</td>
-              <td style={tdStyle}>{formatPriceRange(d.price_min, d.price_max)}</td>
+              <td style={{ ...tdStyle, color: "var(--blue)" }}>{formatPriceRange(d.price_min, d.price_max)}</td>
             </tr>
           ))}
         </tbody>
@@ -305,11 +309,11 @@ export default function DivisionsClient({ divisions }: Props) {
       filtersBar={
         <>
           {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
               <span>Filtered:</span>
-              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
             </div>
           )}
           <StatsBar stats={stats} />

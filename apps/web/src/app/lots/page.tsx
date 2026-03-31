@@ -3,39 +3,72 @@ import LotsClient from "./LotsClient";
 
 export const revalidate = 30;
 
+export interface LotRow {
+  id: string | number;
+  community_id: string | null;
+  community_name_raw: string | null;
+  division_raw: string | null;
+  lot_number: string | null;
+  block: string | null;
+  phase: string | null;
+  lot_status: string | null;
+  construction_status: string | null;
+  is_buildable: boolean | null;
+  is_available: boolean | null;
+  is_hide_from_marketing: boolean | null;
+  address: string | null;
+  lot_premium: number | null;
+  foundation: string | null;
+  synced_at: string | null;
+  [key: string]: unknown;
+}
+
+export interface CommunityRow {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  division_id: string | null;
+}
+
+export interface DivisionRow {
+  id: string;
+  slug: string;
+  name: string;
+}
+
 export default async function LotsPage() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
-  // Fetch all lots — Supabase default limit is 1000, must paginate for 3,486 rows
+  // Fetch all lots — paginate for large datasets
   const PAGE_SIZE = 1000;
-  let allLots: any[] = [];
+  let allLots: LotRow[] = [];
   let page = 0;
   while (true) {
     const { data, error } = await supabase
       .from("lots")
-      .select(
-        "id, community_id, community_name_raw, division_raw, lot_number, block, phase, lot_status, construction_status, is_buildable, is_available, is_hide_from_marketing, address, lot_premium, foundation"
-      )
-      .order("division_raw")
+      .select("*")
       .order("community_name_raw")
-      .order("lot_number")
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     if (error || !data || data.length === 0) break;
-    allLots = allLots.concat(data);
+    allLots = allLots.concat(data as LotRow[]);
     if (data.length < PAGE_SIZE) break;
     page++;
   }
 
-  const [{ data: divisions }, { data: communities }] = await Promise.all([
-    supabase.from("divisions").select("id, slug, name").order("name"),
-    supabase.from("communities").select("id, name, division_id").order("name"),
+  const [{ data: communities }, { data: divisions }] = await Promise.all([
+    supabase.from("communities").select("id,name,city,state,division_id").order("name"),
+    supabase.from("divisions").select("id,slug,name").order("name"),
   ]);
-  const lots = allLots;
 
   return (
-    <LotsClient lots={lots ?? []} />
+    <LotsClient
+      lots={allLots}
+      communities={(communities ?? []) as CommunityRow[]}
+      divisions={(divisions ?? []) as DivisionRow[]}
+    />
   );
 }

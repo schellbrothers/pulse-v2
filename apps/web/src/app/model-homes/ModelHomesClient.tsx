@@ -408,7 +408,6 @@ export default function ModelHomesClient({ modelHomes }: Props) {
 
   return (
     <PageShell
-      activeHref="/model-homes"
       topBar={
         <TopBar
           title="Model Homes"

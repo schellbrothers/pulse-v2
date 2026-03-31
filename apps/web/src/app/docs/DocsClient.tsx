@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+
 
 interface Doc {
   id: string;
@@ -234,10 +234,7 @@ export default function DocsClient({ docs }: Props) {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-      {/* Global nav sidebar */}
-      <Sidebar activeHref="/docs" />
-
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}

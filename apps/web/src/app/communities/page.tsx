@@ -54,18 +54,27 @@ interface Division {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function CommunitiesPage() {
+export default async function CommunitiesPage({
+  searchParams,
+}: {
+  searchParams: { div?: string; comm?: string; plan?: string };
+}) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
+  let commQuery = supabase
+    .from("communities")
+    .select(`*, divisions(slug, name, region, timezone, state_codes)`)
+    .order("name")
+    .returns<RawCommunity[]>();
+  if (searchParams.div) {
+    commQuery = commQuery.eq("division_id", searchParams.div) as typeof commQuery;
+  }
+
   const [{ data: communities }, { data: divisions }] = await Promise.all([
-    supabase
-      .from("communities")
-      .select(`*, divisions(slug, name, region, timezone, state_codes)`)
-      .order("name")
-      .returns<RawCommunity[]>(),
+    commQuery,
     supabase
       .from("divisions")
       .select("*")

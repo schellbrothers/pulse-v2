@@ -476,7 +476,6 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   return (
     <PageShell
-      activeHref="/plans"
       topBar={
         <TopBar
           title="Plans"

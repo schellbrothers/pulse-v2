@@ -380,7 +380,6 @@ function CommunitiesInner({ communities, divisions }: Props) {
 
   return (
     <PageShell
-      activeHref="/communities"
       topBar={
         <TopBar
           title="Communities"

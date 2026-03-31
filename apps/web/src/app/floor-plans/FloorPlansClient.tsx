@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
+
 import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -967,8 +967,7 @@ export default function FloorPlansClient({ plans, communities, divisions }: Prop
   // ── Layout ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-      <Sidebar activeHref="/floor-plans" />
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <main
         style={{
           flex: 1,

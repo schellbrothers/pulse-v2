@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Suspense } from "react";
+import { GlobalFilterProvider } from "@/context/GlobalFilterProvider";
+import Sidebar from "@/components/Sidebar";
+import GlobalFilterBar from "@/components/GlobalFilterBar";
 import ChatWidget from "@/components/ChatWidget";
 
 export const metadata: Metadata = {
@@ -11,7 +15,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {children}
+        <Suspense fallback={null}>
+          <GlobalFilterProvider>
+            <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+              <Sidebar />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <Suspense fallback={null}>
+                  <GlobalFilterBar />
+                </Suspense>
+                <main style={{ flex: 1, overflow: "hidden" }}>
+                  {children}
+                </main>
+              </div>
+            </div>
+          </GlobalFilterProvider>
+        </Suspense>
         <ChatWidget />
       </body>
     </html>

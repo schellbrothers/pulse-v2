@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+
 
 export const revalidate = 60;
 
@@ -92,12 +92,6 @@ export default async function DivisionsPage() {
       price_max:        prices.length ? Math.max(...prices) : null,
     };
   });
-
-  // ── Sidebar ────────────────────────────────────────────────────────────────
-
-  const sidebar = (
-    <Sidebar activeHref="/" />
-  );
 
   // ── Card grid ──────────────────────────────────────────────────────────────
 
@@ -224,10 +218,7 @@ export default async function DivisionsPage() {
   // ── Full layout ────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0d0d0d", overflow: "hidden" }}>
-      {sidebar}
-
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#0d0d0d" }}>
         {/* Top bar */}
         <div style={{
           display: "flex", alignItems: "center",
@@ -261,7 +252,6 @@ export default async function DivisionsPage() {
 
           {comparisonTable}
         </div>
-      </div>
     </div>
   );
 }

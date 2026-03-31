@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
 import FiltersBar from "@/components/FiltersBar";
@@ -100,6 +101,7 @@ function savingsLabel(incentive: number | null): string {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function QuickDeliveryClient({ specHomes }: Props) {
+  const { filter: globalFilter, labels: globalLabels } = useGlobalFilter();
   const [view, setView] = useState<"card" | "table">("table");
   const [divFilter, setDivFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -428,7 +430,6 @@ export default function QuickDeliveryClient({ specHomes }: Props) {
 
   return (
     <PageShell
-      activeHref="/quick-delivery"
       topBar={
         <TopBar
           title="Quick Delivery"
@@ -437,6 +438,11 @@ export default function QuickDeliveryClient({ specHomes }: Props) {
       }
       filtersBar={
         <>
+          {(globalFilter.divisionId || globalFilter.communityId) && (
+            <div style={{ padding: "4px 16px", fontSize: 11, color: "#555", backgroundColor: "#0a0a0a", borderBottom: "1px solid #151515", flexShrink: 0 }}>
+              Filtered: {[globalLabels.division, globalLabels.community].filter(Boolean).join(" › ")}
+            </div>
+          )}
           <FiltersBar
             filters={[
               {

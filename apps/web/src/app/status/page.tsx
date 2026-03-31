@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import Sidebar from "@/components/Sidebar";
+
 
 export const revalidate = 60;
 
@@ -74,11 +74,7 @@ export default async function StatusPage() {
   const recentErrors = (syncStatus ?? []).filter(r => r.status === "error").slice(0, 5);
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-
-      {/* Sidebar */}
-      <Sidebar activeHref="/status" />
-
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       {/* Main */}
       <main className="flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3">

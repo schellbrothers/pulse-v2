@@ -287,7 +287,6 @@ export default function DivisionsClient({ divisions }: Props) {
 
   return (
     <PageShell
-      activeHref="/divisions"
       topBar={
         <TopBar
           title="Divisions"

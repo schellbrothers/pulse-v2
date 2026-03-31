@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Sidebar from "@/components/Sidebar";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -284,9 +284,7 @@ export default function CommunityDetailClient({ community, plans, lots }: Props)
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-      <Sidebar activeHref="/communities" />
-
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* ── Hero Bar ─────────────────────────────────────────────────────── */}

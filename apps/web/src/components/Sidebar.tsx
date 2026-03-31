@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // ── Canonical nav items — single source of truth ─────────────────────────────
 // To add a new page: add one entry here. All client pages inherit it automatically.
@@ -22,11 +23,8 @@ export const NAV_ITEMS = [
   { icon: "◧", label: "Docs",           href: "/docs",           group: "tools" },
 ] as const;
 
-interface SidebarProps {
-  activeHref: string;
-}
-
-export default function Sidebar({ activeHref }: SidebarProps) {
+export default function Sidebar() {
+  const pathname = usePathname();
   return (
     <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a] h-screen sticky top-0">
       {/* Brand */}
@@ -53,7 +51,7 @@ export default function Sidebar({ activeHref }: SidebarProps) {
               <Link
                 href={item.href}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-colors ${
-                  item.href === activeHref
+                  item.href === pathname || (item.href !== "/" && pathname.startsWith(item.href))
                     ? "bg-[#1a1a1a] text-[#ededed]"
                     : "text-[#888] hover:text-[#ededed] hover:bg-[#111111]"
                 }`}

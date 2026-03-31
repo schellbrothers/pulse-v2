@@ -438,7 +438,6 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
 
   return (
     <PageShell
-      activeHref="/lots"
       topBar={
         <TopBar
           title="Lots"

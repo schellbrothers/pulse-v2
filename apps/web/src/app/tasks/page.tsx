@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Sidebar from "@/components/Sidebar";
+
 import TaskDetailPanel from "@/components/TaskDetailPanel";
 import type { Task, TaskStatus, TaskType } from "@/types/tasks";
 
@@ -105,8 +105,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-      <Sidebar activeHref="/tasks" />
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <main className="flex-1 overflow-hidden flex flex-col">
 
         {/* Top bar */}

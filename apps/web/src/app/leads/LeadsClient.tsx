@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -813,10 +813,7 @@ export default function LeadsClient({ leads, communities }: Props) {
   });
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#0a0a0a", color: "#ededed" }}>
-      {/* ── Sidebar ── */}
-      <Sidebar activeHref="/leads" />
-
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", backgroundColor: "#0a0a0a", color: "#ededed" }}>
       {/* ── Main ── */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Top bar */}

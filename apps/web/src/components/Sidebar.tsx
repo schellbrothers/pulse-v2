@@ -207,6 +207,17 @@ export default function Sidebar() {
             </div>
           </div>
         </div>
+        {/* Version */}
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 10,
+            color: "rgba(255,255,255,0.2)",
+            textAlign: "right",
+          }}
+        >
+          v2.0.0-hbv1
+        </div>
       </div>
     </aside>
   );

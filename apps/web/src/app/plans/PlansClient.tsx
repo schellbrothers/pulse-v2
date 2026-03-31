@@ -268,8 +268,20 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         );
       })}
       {filteredDivisionPlans.length === 0 && (
-        <div style={{ gridColumn: "1 / -1", padding: 48, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
-          No plans match filters.
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: "rgba(255,255,255,0.3)",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 32 }}>⊘</span>
+          <span style={{ fontSize: 13 }}>No results match the current filter</span>
         </div>
       )}
     </div>
@@ -409,8 +421,19 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         </div>
       ))}
       {groupedByCommunity.length === 0 && (
-        <div style={{ padding: 48, textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
-          No plans match filters.
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: "rgba(255,255,255,0.3)",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 32 }}>⊘</span>
+          <span style={{ fontSize: 13 }}>No results match the current filter</span>
         </div>
       )}
     </div>

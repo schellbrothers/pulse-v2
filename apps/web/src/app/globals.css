@@ -67,6 +67,8 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Card base */
 .pv2-card {
   background: var(--surface);

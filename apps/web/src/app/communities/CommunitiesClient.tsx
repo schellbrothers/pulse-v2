@@ -341,13 +341,17 @@ function CommunitiesInner({ communities, divisions }: Props) {
         <div
           style={{
             gridColumn: "1 / -1",
-            padding: 48,
-            textAlign: "center",
-            color: "var(--text-3)",
-            fontSize: 13,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: "rgba(255,255,255,0.3)",
+            gap: 12,
           }}
         >
-          No communities match filters.
+          <span style={{ fontSize: 32 }}>⊘</span>
+          <span style={{ fontSize: 13 }}>No results match the current filter</span>
         </div>
       )}
     </div>

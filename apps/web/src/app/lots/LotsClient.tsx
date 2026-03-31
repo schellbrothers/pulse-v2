@@ -362,6 +362,23 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
         padding: 16,
       }}
     >
+      {rows.length === 0 && (
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: "rgba(255,255,255,0.3)",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 32 }}>⊘</span>
+          <span style={{ fontSize: 13 }}>No results match the current filter</span>
+        </div>
+      )}
       {rows.map((lot) => {
         const divName = getDivisionName(lot);
         const hasPremium = (lot.lot_premium as number) > 0;

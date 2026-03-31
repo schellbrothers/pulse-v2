@@ -3,9 +3,10 @@
 interface Props {
   title: string;
   right?: React.ReactNode;
+  loading?: boolean;
 }
 
-export default function TopBar({ title, right }: Props) {
+export default function TopBar({ title, right, loading }: Props) {
   return (
     <div
       style={{
@@ -19,17 +20,32 @@ export default function TopBar({ title, right }: Props) {
         flexShrink: 0,
       }}
     >
-      <h1
-        style={{
-          color: "rgba(255,255,255,0.9)",
-          fontSize: 15,
-          fontWeight: 600,
-          margin: 0,
-          fontFamily: "var(--font-display)",
-        }}
-      >
-        {title}
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <h1
+          style={{
+            color: "rgba(255,255,255,0.9)",
+            fontSize: 15,
+            fontWeight: 600,
+            margin: 0,
+            fontFamily: "var(--font-display)",
+          }}
+        >
+          {title}
+        </h1>
+        {loading && (
+          <div
+            style={{
+              width: 16,
+              height: 16,
+              border: "2px solid rgba(89,166,189,0.3)",
+              borderTop: "2px solid #59a6bd",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+              flexShrink: 0,
+            }}
+          />
+        )}
+      </div>
       {right && (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{right}</div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import CommunityCard from "@/components/CommunityCard";
 import PlanCard from "@/components/PlanCard";
@@ -191,35 +192,20 @@ function StatCard({ label, value, accent, comingSoon }: StatCardProps) {
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, count }: { title: string; count?: number }) {
+function SectionHeader({ title, count, right }: { title: string; count?: number; right?: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-      <h2
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 16,
-          fontWeight: 600,
-          color: "#ededed",
-          margin: 0,
-        }}
-      >
-        {title}
-      </h2>
-      {count !== undefined && (
-        <span
-          style={{
-            background: "#1a1a1a",
-            border: "1px solid #2a2a2a",
-            borderRadius: 20,
-            color: "#666",
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "1px 9px",
-          }}
-        >
-          {count}
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 8, borderBottom: "1px solid #444" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+          {title}
         </span>
-      )}
+        {count !== undefined && (
+          <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "1px 7px", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+            {count}
+          </span>
+        )}
+      </div>
+      {right}
     </div>
   );
 }
@@ -335,27 +321,7 @@ function HBv1FunnelPlaceholder() {
   ];
   return (
     <div style={{ marginBottom: 32 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600, color: "#ededed", margin: 0 }}>
-          Sales Funnel
-        </h2>
-        <span
-          style={{
-            display: "inline-block",
-            background: "#1a1a1a",
-            color: "#555",
-            border: "1px solid #2a2a2a",
-            borderRadius: 20,
-            fontSize: 9,
-            fontWeight: 600,
-            padding: "1px 7px",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
-          Coming Soon
-        </span>
-      </div>
+      <SectionHeader title="Sales Funnel" right={<ComingSoonBanner source="Lead System" />} />
       <div
         style={{
           display: "grid",
@@ -996,16 +962,17 @@ function ComingSoonBanner({ source }: { source: string }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 4,
-        padding: "2px 8px",
-        borderRadius: 4,
-        background: "#1a1a1a",
-        border: "1px solid #2a2a2a",
-        fontSize: 10,
-        color: "#555",
+        gap: 6,
+        padding: "3px 10px",
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 3,
+        fontSize: 11,
+        color: "rgba(255,255,255,0.35)",
       }}
     >
-      <span>•</span> {source} • Coming Soon
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "inline-block" }} />
+      {source} · Coming Soon
     </div>
   );
 }

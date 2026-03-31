@@ -115,6 +115,8 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         style={filter.divisionId ? activeSelectStyle : selectStyle}
         value={filter.divisionId ?? ""}
         onChange={(e) => setDivision(e.target.value || null)}
+        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
+        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.divisionId ? "#59a6bd" : "#555"; }}
       >
         <option value="">◈ All Divisions</option>
         {divisions.map((d) => (
@@ -131,6 +133,8 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         style={filter.communityId ? activeSelectStyle : selectStyle}
         value={filter.communityId ?? ""}
         onChange={(e) => setCommunity(e.target.value || null)}
+        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
+        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.communityId ? "#59a6bd" : "#555"; }}
       >
         <option value="">⌂ All Communities</option>
         {filteredCommunities.map((c) => (
@@ -148,6 +152,8 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         value={filter.planModelId ?? ""}
         onChange={(e) => setPlan(e.target.value || null)}
         disabled={!filter.communityId || loadingPlans}
+        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
+        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.planModelId ? "#59a6bd" : "#555"; }}
       >
         <option value="">◱ All Plans</option>
         {plans.map((p) => (
@@ -160,8 +166,8 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Breadcrumb */}
-      {isActive && breadcrumbs.length > 0 && (
+      {/* Breadcrumb or no-filter hint */}
+      {isActive && breadcrumbs.length > 0 ? (
         <span
           style={{
             fontSize: 11,
@@ -176,7 +182,19 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
         >
           {breadcrumbs.join(" › ")}
         </span>
-      )}
+      ) : !isActive ? (
+        <span
+          style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,0.3)",
+            fontStyle: "italic",
+            marginRight: 8,
+            whiteSpace: "nowrap",
+          }}
+        >
+          No filter — showing all data
+        </span>
+      ) : null}
 
       {/* Clear button */}
       {isActive && (

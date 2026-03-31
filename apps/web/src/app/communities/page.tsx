@@ -66,14 +66,14 @@ export default async function CommunitiesPage({
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
-  let commQuery = supabase
+  let baseCommQuery = supabase
     .from("communities")
     .select(`*, divisions(slug, name, region, timezone, state_codes)`)
-    .order("name")
-    .returns<RawCommunity[]>();
+    .order("name");
   if (filterDiv) {
-    commQuery = commQuery.eq("division_id", filterDiv) as typeof commQuery;
+    baseCommQuery = baseCommQuery.eq("division_id", filterDiv) as typeof baseCommQuery;
   }
+  const commQuery = baseCommQuery.returns<RawCommunity[]>();
 
   const [{ data: communities }, { data: divisions }] = await Promise.all([
     commQuery,

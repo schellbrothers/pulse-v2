@@ -72,34 +72,34 @@ export default async function PlansPage({
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
-  let divisionPlansQuery = supabase
+  let baseDivPlansQuery = supabase
     .from("division_plans")
     .select("*")
-    .order("marketing_name")
-    .returns<DivisionPlan[]>();
+    .order("marketing_name");
   if (filterDiv) {
-    divisionPlansQuery = divisionPlansQuery.eq("division_id", filterDiv) as typeof divisionPlansQuery;
+    baseDivPlansQuery = baseDivPlansQuery.eq("division_id", filterDiv) as typeof baseDivPlansQuery;
   }
+  const divisionPlansQuery = baseDivPlansQuery.returns<DivisionPlan[]>();
 
-  let communityPlansQuery = supabase
+  let baseCommPlansQuery = supabase
     .from("community_plans")
     .select("*")
-    .order("plan_name")
-    .returns<CommunityPlan[]>();
+    .order("plan_name");
   if (filterComm) {
-    communityPlansQuery = communityPlansQuery.eq("community_id", filterComm) as typeof communityPlansQuery;
+    baseCommPlansQuery = baseCommPlansQuery.eq("community_id", filterComm) as typeof baseCommPlansQuery;
   } else if (filterDiv) {
-    communityPlansQuery = communityPlansQuery.eq("division_id", filterDiv) as typeof communityPlansQuery;
+    baseCommPlansQuery = baseCommPlansQuery.eq("division_id", filterDiv) as typeof baseCommPlansQuery;
   }
+  const communityPlansQuery = baseCommPlansQuery.returns<CommunityPlan[]>();
 
-  let commQuery = supabase
+  let baseCommQuery = supabase
     .from("communities")
     .select("id,name,city,state,division_id,featured_image_url")
-    .order("name")
-    .returns<Community[]>();
+    .order("name");
   if (filterDiv) {
-    commQuery = commQuery.eq("division_id", filterDiv) as typeof commQuery;
+    baseCommQuery = baseCommQuery.eq("division_id", filterDiv) as typeof baseCommQuery;
   }
+  const commQuery = baseCommQuery.returns<Community[]>();
 
   const [
     { data: divisionPlans },

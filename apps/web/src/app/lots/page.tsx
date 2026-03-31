@@ -76,9 +76,7 @@ export default async function LotsPage({
 
   const [{ data: communities }, { data: divisions }] = await Promise.all([
     commQuery,
-    const { div: filterDiv, comm: filterComm } = await searchParams;
-
-  supabase.from("divisions").select("id,slug,name").order("name"),
+    supabase.from("divisions").select("id,slug,name").order("name"),
   ]);
 
   return (

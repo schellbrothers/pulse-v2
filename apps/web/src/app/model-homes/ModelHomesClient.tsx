@@ -9,6 +9,7 @@ import ViewToggle from "@/components/ViewToggle";
 import SlideOver, { Section, Row } from "@/components/SlideOver";
 import Badge from "@/components/Badge";
 import DataTable, { type Column, type StatConfigItem } from "@/components/DataTable";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,11 +101,26 @@ function formatCurrency(n: number | null): string {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function ModelHomesClient({ modelHomes }: Props) {
+export default function ModelHomesClient({ modelHomes, divisions }: Props) {
+  const { filter, labels } = useGlobalFilter();
+
+  // Map global filter division UUID → division name for matching division_parent_name
+  const globalDivName = filter.divisionId
+    ? divisions.find(d => d.id === filter.divisionId)?.name ?? null
+    : null;
+
   const [view, setView] = useState<"card" | "table">("table");
-  const [divFilter, setDivFilter] = useState("");
+  const [divFilter, setDivFilter] = useState<string>(() =>
+    globalDivName
+      ? (modelHomes.find(r => r.division_parent_name === globalDivName)
+          ? String(modelHomes.find(r => r.division_parent_name === globalDivName)!.division_parent_id ?? "")
+          : "")
+      : ""
+  );
   const [stateFilter, setStateFilter] = useState("");
-  const [commFilter, setCommFilter] = useState("");
+  const [commFilter, setCommFilter] = useState<string>(() =>
+    filter.communityId ? filter.communityId : ""
+  );
   const [search, setSearch] = useState("");
   const [selectedHome, setSelectedHome] = useState<ModelHomeRow | null>(null);
 
@@ -112,6 +128,28 @@ export default function ModelHomesClient({ modelHomes }: Props) {
     const saved = localStorage.getItem("model-homes-view");
     if (saved === "card" || saved === "table") setView(saved);
   }, []);
+
+  // Sync when global filter changes
+  useEffect(() => {
+    const divName = filter.divisionId
+      ? divisions.find(d => d.id === filter.divisionId)?.name ?? null
+      : null;
+    if (divName) {
+      const match = modelHomes.find(r => r.division_parent_name === divName);
+      setDivFilter(match ? String(match.division_parent_id ?? "") : "");
+    } else {
+      setDivFilter("");
+    }
+    if (filter.communityId) {
+      // For model_homes community matching: try by community_id field (HB string)
+      // community_id in model_homes is a string like "123" not our UUID
+      // Fall back to communityId param as the community_name lookup if no match
+      setCommFilter(filter.communityId);
+    } else {
+      setCommFilter("");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter.divisionId, filter.communityId]);
 
   function handleViewChange(v: "card" | "table") {
     setView(v);
@@ -145,10 +183,20 @@ export default function ModelHomesClient({ modelHomes }: Props) {
     .sort()
     .map((n) => ({ value: n as string, label: n as string }));
 
+  // When global filter community is set, match by name label (communityId is UUID, model_homes has HB string id)
+  const globalCommName = filter.communityId ? labels.community : null;
+
   const rows = allRows
-    .filter((r) => !divFilter || String(r.division_parent_id) === divFilter)
+    .filter((r) => !globalDivName ? (!divFilter || String(r.division_parent_id) === divFilter) : r.division_parent_name === globalDivName)
     .filter((r) => !stateFilter || r.state === stateFilter)
-    .filter((r) => !commFilter || r.community_name === commFilter)
+    .filter((r) => {
+      if (!filter.communityId && !commFilter) return true;
+      if (filter.communityId) {
+        // Match by community_name label if available, otherwise pass through
+        return globalCommName ? r.community_name === globalCommName : true;
+      }
+      return r.community_name === commFilter;
+    })
     .filter(
       (r) =>
         !search ||
@@ -416,26 +464,34 @@ export default function ModelHomesClient({ modelHomes }: Props) {
       }
       filtersBar={
         <>
+          {(filter.divisionId || filter.communityId) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+            </div>
+          )}
           <FiltersBar
             filters={[
-              {
+              ...(!filter.divisionId ? [{
                 value: divFilter,
-                onChange: (v) => { setDivFilter(v); setCommFilter(""); },
+                onChange: (v: string) => { setDivFilter(v); setCommFilter(""); },
                 options: divisionOptions,
                 placeholder: "All Divisions",
-              },
+              }] : []),
               {
                 value: stateFilter,
-                onChange: (v) => { setStateFilter(v); setCommFilter(""); },
+                onChange: (v: string) => { setStateFilter(v); setCommFilter(""); },
                 options: stateOptions,
                 placeholder: "All States",
               },
-              {
+              ...(!filter.communityId ? [{
                 value: commFilter,
                 onChange: setCommFilter,
                 options: commOptions,
                 placeholder: "All Communities",
-              },
+              }] : []),
             ]}
             search={search}
             onSearch={setSearch}

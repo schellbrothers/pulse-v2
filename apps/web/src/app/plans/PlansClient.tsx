@@ -11,6 +11,7 @@ import PlanCard from "@/components/PlanCard";
 import SlideOver from "@/components/SlideOver";
 import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
 import type { DivisionPlan, CommunityPlan, Community, Division } from "./page";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,13 +100,18 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
 
 function PlansInner({ divisionPlans, communityPlans, communities, divisions }: Props) {
   const searchParams = useSearchParams();
+  const { filter, labels } = useGlobalFilter();
 
-  const [mode, setMode] = useState<Mode>("by-plan");
+  const [mode, setMode] = useState<Mode>(() =>
+    filter.communityId ? "by-community" : "by-plan"
+  );
   const [view, setView] = useState<"card" | "table">("card");
-  const [divisionFilter, setDivisionFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState<string>(() =>
+    filter.divisionId ?? "all"
+  );
   const [styleFilter, setStyleFilter] = useState("all");
-  const [communityFilter, setCommunityFilter] = useState(
-    searchParams.get("community") ?? "all"
+  const [communityFilter, setCommunityFilter] = useState<string>(() =>
+    filter.communityId ?? searchParams.get("community") ?? "all"
   );
   const [selectedPlan, setSelectedPlan] = useState<DivisionPlan | null>(null);
   const [selectedCommunityPlan, setSelectedCommunityPlan] = useState<CommunityPlan | null>(null);
@@ -116,6 +122,19 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
     if (savedMode === "by-plan" || savedMode === "by-community") setMode(savedMode);
     if (savedView === "card" || savedView === "table") setView(savedView);
   }, []);
+
+  // Sync local state when global filter changes
+  useEffect(() => {
+    if (filter.divisionId) setDivisionFilter(filter.divisionId);
+    else setDivisionFilter("all");
+    if (filter.communityId) {
+      setCommunityFilter(filter.communityId);
+      setMode("by-community");
+    } else {
+      setCommunityFilter(searchParams.get("community") ?? "all");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter.divisionId, filter.communityId]);
 
   const handleModeChange = (m: Mode) => {
     setMode(m);
@@ -465,12 +484,12 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   const activeFilters =
     mode === "by-plan"
       ? [
-          { value: divisionFilter, onChange: setDivisionFilter, options: divisionOptions, placeholder: "All Divisions" },
+          ...(!filter.divisionId ? [{ value: divisionFilter, onChange: setDivisionFilter, options: divisionOptions, placeholder: "All Divisions" }] : []),
           { value: styleFilter,    onChange: setStyleFilter,    options: styleOptions,    placeholder: "All Styles" },
         ]
       : [
-          { value: divisionFilter,  onChange: setDivisionFilter,  options: divisionOptions,  placeholder: "All Divisions" },
-          { value: communityFilter, onChange: setCommunityFilter, options: communityOptions, placeholder: "All Communities" },
+          ...(!filter.divisionId ? [{ value: divisionFilter,  onChange: setDivisionFilter,  options: divisionOptions,  placeholder: "All Divisions" }] : []),
+          ...(!filter.communityId ? [{ value: communityFilter, onChange: setCommunityFilter, options: communityOptions, placeholder: "All Communities" }] : []),
           { value: styleFilter,     onChange: setStyleFilter,     options: styleOptions,     placeholder: "All Styles" },
         ];
 
@@ -489,6 +508,14 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       }
       filtersBar={
         <>
+          {(filter.divisionId || filter.communityId) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+            </div>
+          )}
           <FiltersBar
             filters={activeFilters}
           />

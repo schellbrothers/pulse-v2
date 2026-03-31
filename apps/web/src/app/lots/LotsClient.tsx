@@ -10,6 +10,7 @@ import SlideOver, { Section, Row } from "@/components/SlideOver";
 import Badge from "@/components/Badge";
 import DataTable, { type Column, type StatConfigItem } from "@/components/DataTable";
 import type { LotRow, CommunityRow, DivisionRow } from "./page";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,9 +90,11 @@ function ConstructionBadge({ status }: { status: string | null }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LotsClient({ lots, communities, divisions }: Props) {
+  const { filter, labels } = useGlobalFilter();
+
   const [view, setView] = useState<"card" | "table">("table");
-  const [divFilter, setDivFilter] = useState("");
-  const [commFilter, setCommFilter] = useState("");
+  const [divFilter, setDivFilter] = useState<string>(() => filter.divisionId ?? "");
+  const [commFilter, setCommFilter] = useState<string>(() => filter.communityId ?? "");
   const [statusFilter, setStatusFilter] = useState("");
   const [constructionFilter, setConstructionFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -101,6 +104,15 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
     const saved = localStorage.getItem("lots-view");
     if (saved === "card" || saved === "table") setView(saved);
   }, []);
+
+  // Sync local state when global filter changes
+  useEffect(() => {
+    if (filter.divisionId) setDivFilter(filter.divisionId);
+    else setDivFilter("");
+    if (filter.communityId) setCommFilter(filter.communityId);
+    else setCommFilter("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter.divisionId, filter.communityId]);
 
   function handleViewChange(v: "card" | "table") {
     setView(v);
@@ -446,23 +458,31 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       }
       filtersBar={
         <>
+          {(filter.divisionId || filter.communityId) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+            </div>
+          )}
           <FiltersBar
             filters={[
-              {
+              ...(!filter.divisionId ? [{
                 value: divFilter,
-                onChange: (v) => {
+                onChange: (v: string) => {
                   setDivFilter(v);
                   setCommFilter("");
                 },
                 options: divisionOptions,
                 placeholder: "All Divisions",
-              },
-              {
+              }] : []),
+              ...(!filter.communityId ? [{
                 value: commFilter,
                 onChange: setCommFilter,
                 options: commOptions,
                 placeholder: "All Communities",
-              },
+              }] : []),
               {
                 value: statusFilter,
                 onChange: setStatusFilter,

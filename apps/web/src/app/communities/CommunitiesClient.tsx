@@ -10,6 +10,7 @@ import ViewToggle from "@/components/ViewToggle";
 import CommunityCard from "@/components/CommunityCard";
 import SlideOver from "@/components/SlideOver";
 import Badge from "@/components/Badge";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -154,11 +155,15 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 function CommunitiesInner({ communities, divisions }: Props) {
   const searchParams = useSearchParams();
+  const { filter, labels } = useGlobalFilter();
 
   const [view, setView] = useState<"card" | "table">("card");
-  const [divisionFilter, setDivisionFilter] = useState<string>(
-    searchParams.get("division") ?? "all"
-  );
+  const [divisionFilter, setDivisionFilter] = useState<string>(() => {
+    if (filter.divisionId) {
+      return divisions.find(d => d.id === filter.divisionId)?.slug ?? "all";
+    }
+    return searchParams.get("division") ?? "all";
+  });
   const [stateFilter, setStateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -168,6 +173,17 @@ function CommunitiesInner({ communities, divisions }: Props) {
     const saved = localStorage.getItem("communities-view");
     if (saved === "card" || saved === "table") setView(saved);
   }, []);
+
+  // Sync local division filter when global filter changes
+  useEffect(() => {
+    if (filter.divisionId) {
+      const slug = divisions.find(d => d.id === filter.divisionId)?.slug;
+      setDivisionFilter(slug ?? "all");
+    } else {
+      setDivisionFilter(searchParams.get("division") ?? "all");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter.divisionId]);
 
   const handleViewChange = (v: "card" | "table") => {
     setView(v);
@@ -388,14 +404,22 @@ function CommunitiesInner({ communities, divisions }: Props) {
       }
       filtersBar={
         <>
+          {(filter.divisionId || filter.communityId) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+            </div>
+          )}
           <FiltersBar
             filters={[
-              {
+              ...(!filter.divisionId ? [{
                 value: divisionFilter,
                 onChange: setDivisionFilter,
                 options: divisionOptions,
                 placeholder: "All Divisions",
-              },
+              }] : []),
               {
                 value: stateFilter,
                 onChange: setStateFilter,

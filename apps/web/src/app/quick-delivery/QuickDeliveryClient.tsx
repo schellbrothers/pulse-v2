@@ -100,12 +100,26 @@ function savingsLabel(incentive: number | null): string {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function QuickDeliveryClient({ specHomes }: Props) {
+export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
   const { filter: globalFilter, labels: globalLabels } = useGlobalFilter();
+
+  // Map global filter division UUID → division name for matching division_parent_name
+  const globalDivName = globalFilter.divisionId
+    ? divisions.find(d => d.id === globalFilter.divisionId)?.name ?? null
+    : null;
+
   const [view, setView] = useState<"card" | "table">("table");
-  const [divFilter, setDivFilter] = useState("");
+  const [divFilter, setDivFilter] = useState<string>(() =>
+    globalDivName
+      ? (specHomes.find(r => r.division_parent_name === globalDivName)
+          ? String(specHomes.find(r => r.division_parent_name === globalDivName)!.division_parent_id ?? "")
+          : "")
+      : ""
+  );
   const [stateFilter, setStateFilter] = useState("");
-  const [commFilter, setCommFilter] = useState("");
+  const [commFilter, setCommFilter] = useState<string>(() =>
+    globalFilter.communityId ? globalFilter.communityId : ""
+  );
   const [search, setSearch] = useState("");
   const [selectedHome, setSelectedHome] = useState<SpecHomeRow | null>(null);
 
@@ -113,6 +127,25 @@ export default function QuickDeliveryClient({ specHomes }: Props) {
     const saved = localStorage.getItem("quick-delivery-view");
     if (saved === "card" || saved === "table") setView(saved);
   }, []);
+
+  // Sync when global filter changes
+  useEffect(() => {
+    const divName = globalFilter.divisionId
+      ? divisions.find(d => d.id === globalFilter.divisionId)?.name ?? null
+      : null;
+    if (divName) {
+      const match = specHomes.find(r => r.division_parent_name === divName);
+      setDivFilter(match ? String(match.division_parent_id ?? "") : "");
+    } else {
+      setDivFilter("");
+    }
+    if (globalFilter.communityId) {
+      setCommFilter(globalFilter.communityId);
+    } else {
+      setCommFilter("");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalFilter.divisionId, globalFilter.communityId]);
 
   function handleViewChange(v: "card" | "table") {
     setView(v);
@@ -146,10 +179,19 @@ export default function QuickDeliveryClient({ specHomes }: Props) {
     .sort()
     .map((n) => ({ value: n as string, label: n as string }));
 
+  // When global filter is set, use division name match; otherwise use local divFilter
+  const globalCommName = globalFilter.communityId ? globalLabels.community : null;
+
   const rows = allRows
-    .filter((r) => !divFilter || String(r.division_parent_id) === divFilter)
+    .filter((r) => !globalDivName ? (!divFilter || String(r.division_parent_id) === divFilter) : r.division_parent_name === globalDivName)
     .filter((r) => !stateFilter || r.state === stateFilter)
-    .filter((r) => !commFilter || r.community_name === commFilter)
+    .filter((r) => {
+      if (!globalFilter.communityId && !commFilter) return true;
+      if (globalFilter.communityId) {
+        return globalCommName ? r.community_name === globalCommName : true;
+      }
+      return r.community_name === commFilter;
+    })
     .filter(
       (r) =>
         !search ||
@@ -439,36 +481,39 @@ export default function QuickDeliveryClient({ specHomes }: Props) {
       filtersBar={
         <>
           {(globalFilter.divisionId || globalFilter.communityId) && (
-            <div style={{ padding: "4px 16px", fontSize: 11, color: "#555", backgroundColor: "#0a0a0a", borderBottom: "1px solid #151515", flexShrink: 0 }}>
-              Filtered: {[globalLabels.division, globalLabels.community].filter(Boolean).join(" › ")}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {globalLabels.division && <span style={{ color: "#a1a1a1" }}>{globalLabels.division}</span>}
+              {globalLabels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{globalLabels.community}</span></>}
+              {globalLabels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{globalLabels.plan}</span></>}
             </div>
           )}
           <FiltersBar
             filters={[
-              {
+              ...(!globalFilter.divisionId ? [{
                 value: divFilter,
-                onChange: (v) => {
+                onChange: (v: string) => {
                   setDivFilter(v);
                   setCommFilter("");
                 },
                 options: divisionOptions,
                 placeholder: "All Divisions",
-              },
+              }] : []),
               {
                 value: stateFilter,
-                onChange: (v) => {
+                onChange: (v: string) => {
                   setStateFilter(v);
                   setCommFilter("");
                 },
                 options: stateOptions,
                 placeholder: "All States",
               },
-              {
+              ...(!globalFilter.communityId ? [{
                 value: commFilter,
                 onChange: setCommFilter,
                 options: commOptions,
                 placeholder: "All Communities",
-              },
+              }] : []),
             ]}
             search={search}
             onSearch={setSearch}

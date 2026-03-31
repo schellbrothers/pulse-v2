@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
@@ -27,7 +28,13 @@ interface Props {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function DivisionsClient({ divisions }: Props) {
+  const { filter, labels } = useGlobalFilter();
   const [view, setView] = useState<"card" | "table">("card");
+  const [selectedDivId, setSelectedDivId] = useState<string | null>(() => filter.divisionId ?? null);
+
+  useEffect(() => {
+    setSelectedDivId(filter.divisionId ?? null);
+  }, [filter.divisionId]);
 
   // Aggregate stats
   const totalCommunities = divisions.reduce((s, d) => s + d.community_count, 0);
@@ -59,7 +66,7 @@ export default function DivisionsClient({ divisions }: Props) {
           key={d.id}
           style={{
             background: "#111",
-            border: "1px solid #1f1f1f",
+            border: `1px solid ${selectedDivId === d.id ? "#818cf8" : "#1f1f1f"}`,
             borderRadius: 12,
             overflow: "hidden",
           }}
@@ -295,7 +302,19 @@ export default function DivisionsClient({ divisions }: Props) {
           }
         />
       }
-      filtersBar={<StatsBar stats={stats} />}
+      filtersBar={
+        <>
+          {(filter.divisionId || filter.communityId) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "#0d0d0d", borderBottom: "1px solid #1f1f1f", fontSize: 11, color: "#555" }}>
+              <span>Filtered:</span>
+              {labels.division && <span style={{ color: "#a1a1a1" }}>{labels.division}</span>}
+              {labels.community && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.community}</span></>}
+              {labels.plan && <><span>›</span><span style={{ color: "#a1a1a1" }}>{labels.plan}</span></>}
+            </div>
+          )}
+          <StatsBar stats={stats} />
+        </>
+      }
     >
       {view === "card" ? cardView : tableView}
     </PageShell>

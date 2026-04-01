@@ -68,7 +68,7 @@ function displayPrice(plan: CommunityPlan): string {
 
 function filterSelectStyle(active: boolean): React.CSSProperties {
   return {
-    background: "#1a1a1e",
+    background: "#161718",
     border: `1px solid ${active ? "#80B602" : "#333"}`,
     color: active ? "#80B602" : "#888",
     borderRadius: 3,

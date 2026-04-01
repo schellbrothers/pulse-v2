@@ -97,7 +97,7 @@ function savingsLabel(incentive: number | null): string {
 
 function filterSelectStyle(active: boolean): React.CSSProperties {
   return {
-    background: "#1a1a1e",
+    background: "#161718",
     border: `1px solid ${active ? "#80B602" : "#333"}`,
     color: active ? "#80B602" : "#888",
     borderRadius: 3,
@@ -274,7 +274,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
         placeholder="Search quick delivery homes…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ background: "#1a1a1e", border: "1px solid #333", color: search ? "#ededed" : "#888", borderRadius: 3, height: 28, fontSize: 12, padding: "0 8px", width: 180, outline: "none" }}
+        style={{ background: "#161718", border: "1px solid #333", color: search ? "#ededed" : "#888", borderRadius: 3, height: 28, fontSize: 12, padding: "0 8px", width: 180, outline: "none" }}
       />
     </div>
   );

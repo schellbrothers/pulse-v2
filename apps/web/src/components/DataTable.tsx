@@ -66,7 +66,7 @@ const thStyle = {
   whiteSpace: "nowrap" as const,
   cursor: "pointer",
   userSelect: "none" as const,
-  backgroundColor: "#2a2b2e",
+  backgroundColor: "#0d0e10",
 };
 
 function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) {
@@ -217,7 +217,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
       width: col.width ?? undefined,
       textAlign: col.align ?? "left",
       ...(isSticky
-        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#2a2b2e" }
+        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#0d0e10" }
         : {}),
       position: isSticky ? "sticky" : "relative",
     };
@@ -286,7 +286,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               top: "100%",
               left: 0,
               zIndex: 100,
-              backgroundColor: "#3E3F44",
+              backgroundColor: "#0d0e10",
               border: "1px solid #555",
               borderRadius: 6,
               minWidth: 180,
@@ -376,7 +376,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     color: activeFilters.includes(val) ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
                     cursor: "pointer",
                     backgroundColor: activeFilters.includes(val)
-                      ? "#1a1a2e"
+                      ? "#0d1520"
                       : "transparent",
                   }}
                   onMouseEnter={(e) => {
@@ -386,7 +386,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                   onMouseLeave={(e) => {
                     if (!activeFilters.includes(val))
                       e.currentTarget.style.backgroundColor = "transparent";
-                    else e.currentTarget.style.backgroundColor = "#1a1a2e";
+                    else e.currentTarget.style.backgroundColor = "#0d1520";
                   }}
                 >
                   <div
@@ -395,7 +395,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     style={{
                       width: 14, height: 14, borderRadius: 3, flexShrink: 0,
                       border: `1px solid ${activeFilters.includes(val) ? "#59a6bd" : "#555"}`,
-                      backgroundColor: activeFilters.includes(val) ? "#1a3a5c" : "#2a2a2a",
+                      backgroundColor: activeFilters.includes(val) ? "#0a2540" : "#1a1a1e",
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
                       cursor: "pointer", fontSize: 9, color: "#59a6bd", lineHeight: "1",
                     }}
@@ -452,7 +452,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        backgroundColor: "#323236",
+        backgroundColor: "#121314",
       }}
     >
       {/* Search bar */}
@@ -460,7 +460,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
         <div
           style={{
             padding: "8px 24px",
-            backgroundColor: "#2a2b2e",
+            backgroundColor: "#0d0e10",
             borderBottom: "1px solid #444",
             flexShrink: 0,
           }}
@@ -471,7 +471,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
             style={{
-              background: "#3E3F44",
+              background: "#0d0e10",
               border: "1px solid #555",
               borderRadius: 6,
               padding: "6px 12px",
@@ -491,7 +491,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
           alignItems: "center",
           gap: 20,
           padding: "6px 24px",
-          backgroundColor: "#2a2b2e",
+          backgroundColor: "#0d0e10",
           borderBottom: "1px solid #444",
           flexShrink: 0,
           flexWrap: "wrap",
@@ -556,7 +556,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               setCurrentPage(1);
             }}
             style={{
-              background: "#3E3F44",
+              background: "#0d0e10",
               border: "1px solid #555",
               color: "rgba(255,255,255,0.6)",
               fontSize: 11,
@@ -580,7 +580,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             style={{
-              background: "#3E3F44",
+              background: "#0d0e10",
               border: "1px solid #555",
               fontSize: 12,
               borderRadius: 4,
@@ -595,7 +595,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage >= totalPages}
             style={{
-              background: "#3E3F44",
+              background: "#0d0e10",
               border: "1px solid #555",
               fontSize: 12,
               borderRadius: 4,
@@ -628,7 +628,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
           }}
         >
           <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-            <tr style={{ backgroundColor: "#2a2b2e" }}>
+            <tr style={{ backgroundColor: "#0d0e10" }}>
               {props.columns.map((col, i) => renderHeader(col, i))}
             </tr>
           </thead>
@@ -686,7 +686,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                             ? {
                                 position: "sticky",
                                 left: 0,
-                                backgroundColor: "#3E3F44",
+                                backgroundColor: "#0d0e10",
                                 zIndex: 1,
                               }
                             : {}),

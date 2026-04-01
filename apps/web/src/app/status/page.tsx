@@ -42,15 +42,15 @@ const SYNC_FEEDS: {
   {
     feed: "model_homes",
     label: "Model Homes",
-    description: "Model homes from Heartbeat Page Designer (19 homes)",
-    script: "hbx-sync-quick-delivery.py",
+    description: "Model homes from Heartbeat Page Designer",
+    script: "hbx-sync-model.py",
     times: ["6:00 AM", "12:00 PM", "6:00 PM"],
     seq: 2,
   },
   {
     feed: "spec_homes",
     label: "Quick Delivery",
-    description: "Spec/QD homes live on website — Page Designer source of truth",
+    description: "Spec/QD homes live on schellbrothers.com — Page Designer source of truth",
     script: "hbx-sync-quick-delivery.py",
     times: ["6:00 AM", "12:00 PM", "6:00 PM"],
     seq: 2,

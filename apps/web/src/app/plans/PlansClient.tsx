@@ -169,9 +169,11 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   const communityById = new Map(communities.map((c) => [c.id, c]));
   const divisionById = new Map(divisions.map((d) => [d.id, d]));
   // Map from HB integer ID → division (for tables using division_parent_id)
-  const hbDivisionById = new Map(
+  // Map HB integer division_parent_id → division
+  // Note: community_plans.division_parent_id comes from DB as number
+  const hbDivisionById = new Map<number, typeof divisions[0]>(
     divisions.filter(d => d.heartbeat_division_id != null)
-             .map(d => [d.heartbeat_division_id!, d])
+             .map(d => [Number(d.heartbeat_division_id!), d])
   );
 
   const allStyles = Array.from(
@@ -242,7 +244,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const byPlanTableRows: DivisionPlanTableRow[] = filteredDivisionPlans.map((dp) => ({
     ...dp,
-    _division_name: hbDivisionById.get(dp.division_parent_id ?? 0)?.name ?? dp.division_parent_name ?? "—",
+    _division_name: hbDivisionById.get(Number(dp.division_parent_id ?? 0))?.name ?? dp.division_parent_name ?? "—",
     _beds:  formatBedsOrBaths(dp.beds),
     _baths: formatBedsOrBaths(dp.baths),
     _sqft:  formatSqft(dp.sqft_min, dp.sqft),
@@ -277,7 +279,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const byCommunityTableRows: CommunityPlanTableRow[] = filteredCommunityPlans.map((cp) => {
     const comm = communityById.get(cp.community_id);
-    const div = cp.division_parent_id ? hbDivisionById.get(cp.division_parent_id) : (comm ? divisionById.get(comm.division_id) : null);
+    const div = cp.division_parent_id ? hbDivisionById.get(Number(cp.division_parent_id)) : (comm ? divisionById.get(comm.division_id) : null);
     return {
       ...cp,
       _community_name: comm?.name ?? "—",
@@ -312,7 +314,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const allByPlanRows: DivisionPlanTableRow[] = divisionPlans.map((dp) => ({
     ...dp,
-    _division_name: hbDivisionById.get(dp.division_parent_id ?? 0)?.name ?? dp.division_parent_name ?? "—",
+    _division_name: hbDivisionById.get(Number(dp.division_parent_id ?? 0))?.name ?? dp.division_parent_name ?? "—",
     _beds:  formatBedsOrBaths(dp.beds),
     _baths: formatBedsOrBaths(dp.baths),
     _sqft:  formatSqft(dp.sqft_min, dp.sqft),
@@ -322,7 +324,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const allByCommunityRows: CommunityPlanTableRow[] = communityPlans.map((cp) => {
     const comm = communityById.get(cp.community_id);
-    const div = cp.division_parent_id ? hbDivisionById.get(cp.division_parent_id) : (comm ? divisionById.get(comm.division_id) : null);
+    const div = cp.division_parent_id ? hbDivisionById.get(Number(cp.division_parent_id)) : (comm ? divisionById.get(comm.division_id) : null);
     return {
       ...cp,
       _community_name: comm?.name ?? "—",

@@ -394,7 +394,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
   const dateStr = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#222326" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#121314" }}>
       {/* Top bar — HBv1 style */}
       <div
         style={{
@@ -404,7 +404,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
           padding: "0 24px",
           height: 52,
           borderBottom: "1px solid #3a3b3e",
-          background: "#222326",
+          background: "#121314",
           flexShrink: 0,
         }}
       >
@@ -507,7 +507,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
           </h2>
           <span
             style={{
-              background: "#2a2b2e",
+              background: "#161718",
               border: "1px solid #444",
               borderRadius: 20,
               color: "rgba(255,255,255,0.4)",
@@ -672,7 +672,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
   const topCommunities = [...communities].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 10);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#222326" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#121314" }}>
       {/* Top bar — breadcrumb */}
       <div
         style={{
@@ -682,7 +682,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
           padding: "0 24px",
           height: 52,
           borderBottom: "1px solid #3a3b3e",
-          background: "#2a2b2e",
+          background: "#161718",
           flexShrink: 0,
         }}
       >
@@ -720,7 +720,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
       {/* HBv1 sub-tab bar */}
       <div
         style={{
-          background: "#1a1a1e",
+          background: "#161718",
           borderBottom: "2px solid #444",
           display: "flex",
           gap: 0,
@@ -858,7 +858,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
                     gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
                     padding: "8px 16px",
                     borderBottom: "1px solid #555",
-                    background: "#2a2b2e",
+                    background: "#161718",
                   }}
                 >
                   {["Community", "Avail Lots", "Plans", "Leads", "Contracts"].map((h) => (
@@ -1310,7 +1310,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       </div>
 
       {/* ── Community hero header (always visible) ── */}
-      <div style={{ flexShrink: 0, background: "#2a2b2e", borderBottom: "1px solid #3a3b3e" }}>
+      <div style={{ flexShrink: 0, background: "#161718", borderBottom: "1px solid #3a3b3e" }}>
         <div style={{ width: "100%", height: 160, overflow: "hidden", position: "relative" }}>
           {community.featured_image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -1401,7 +1401,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       {/* ── HBv1-style tab bar ── */}
       <div
         style={{
-          background: "#1a1a1e",
+          background: "#161718",
           borderBottom: "2px solid #444",
           display: "flex",
           gap: 0,
@@ -1758,7 +1758,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: "#2a2b2e" }}>
+                    <tr style={{ background: "#161718" }}>
                       {["Lot #", "Phase", "Address", "Status", "Premium"].map((h) => (
                         <th key={h} style={{ padding: "6px 10px", fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, textAlign: "left", borderBottom: "1px solid #444" }}>
                           {h}
@@ -1807,7 +1807,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
             <div style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, overflow: "hidden", maxWidth: 700 }}>
               {/* AI scoring header */}
-              <div style={{ background: "#2a2b2e", padding: "12px 16px", borderBottom: "1px solid #444", display: "flex", gap: 24, alignItems: "center" }}>
+              <div style={{ background: "#161718", padding: "12px 16px", borderBottom: "1px solid #444", display: "flex", gap: 24, alignItems: "center" }}>
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>AI Lead Scoring</span>
                 <span style={{ fontSize: 12 }}>🔥 <span style={{ color: "#ef4444" }}>High</span> <span style={{ color: "#555" }}>(0)</span></span>
                 <span style={{ fontSize: 12 }}>⚡ <span style={{ color: "#f59e0b" }}>Medium</span> <span style={{ color: "#555" }}>(0)</span></span>
@@ -1984,7 +1984,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             {/* Calendar grid */}
             <div style={{ border: "1px solid #444", borderRadius: 3, overflow: "hidden", maxWidth: 700 }}>
               {/* Day headers */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#2a2b2e", borderBottom: "1px solid #444" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#161718", borderBottom: "1px solid #444" }}>
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                   <div key={d} style={{ padding: "8px 0", textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     {d}
@@ -2001,7 +2001,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                       key={i}
                       style={{
                         height: 40,
-                        background: day == null ? "#1d1d1d" : "#2a2b2e",
+                        background: day == null ? "#1d1d1d" : "#161718",
                         border: isToday ? "1px solid #59a6bd" : "none",
                         borderRight: "1px solid #444",
                         borderBottom: "1px solid #444",

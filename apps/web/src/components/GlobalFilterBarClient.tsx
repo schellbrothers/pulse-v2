@@ -15,12 +15,9 @@ interface Props {
   communities: CommunityOption[];
 }
 
-// ─── Pill styles ──────────────────────────────────────────────────────────────
-
 const pillBase: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
   height: 28,
   padding: "0 12px",
   borderRadius: 3,
@@ -28,9 +25,9 @@ const pillBase: React.CSSProperties = {
   fontWeight: 500,
   cursor: "pointer",
   outline: "none",
-  border: "1px solid #444",
+  border: "1px solid #333",
   background: "transparent",
-  color: "#888",
+  color: "#666",
   fontFamily: "var(--font-body)",
   transition: "all 0.15s",
   appearance: "none" as const,
@@ -52,7 +49,6 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
   const [plans, setPlans] = useState<CommunityPlanOption[]>([]);
   const [search, setSearch] = useState("");
 
-  // Cascade: fetch plans when community selected
   useEffect(() => {
     if (!filter.communityId) { setPlans([]); return; }
     const sb = createClient(
@@ -66,7 +62,6 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
       .then(({ data }) => setPlans(data ?? []));
   }, [filter.communityId]);
 
-  // Update labels for breadcrumb
   useEffect(() => {
     const divLabel = divisions.find(d => d.id === filter.divisionId)?.name;
     const commLabel = communities.find(c => c.id === filter.communityId)?.name;
@@ -83,169 +78,77 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
   const activePillCount = [filter.divisionId, filter.communityId, filter.planModelId].filter(Boolean).length;
 
   return (
-    <div style={{ flexShrink: 0 }}>
-      {/* ── Top bar: Logo · Search · Account ────────────────────────────── */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 16px",
-        height: 44,
-        background: "#121314",
-        borderBottom: "1px solid #222",
-        gap: 16,
-      }}>
-        {/* Left: logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 700, color: "#80B602", letterSpacing: "0.05em" }}>
-            PULSE
-          </span>
-          <span style={{ fontSize: 11, color: "#444", fontWeight: 400 }}>2026</span>
-        </div>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      padding: "0 16px",
+      height: 44,
+      background: "#121314",
+      borderBottom: "1px solid #222",
+      gap: 6,
+      flexShrink: 0,
+    }}>
+      {/* ── Filter pills ── */}
+      <select
+        value={filter.divisionId ?? ""}
+        onChange={e => setDivision(e.target.value || null)}
+        style={filter.divisionId ? pillActive : pillBase}
+      >
+        <option value="">Division ▾</option>
+        {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+      </select>
 
-        {/* Center: search */}
-        <div style={{ flex: 1, maxWidth: 360, position: "relative" }}>
-          <input
-            type="text"
-            placeholder="🔍  Search communities, plans, lots..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              background: "#1e1f22",
-              border: "1px solid #333",
-              borderRadius: 3,
-              color: "#aaa",
-              fontSize: 12,
-              padding: "5px 12px",
-              outline: "none",
-              fontFamily: "var(--font-body)",
-            }}
-          />
-        </div>
+      <select
+        value={filter.communityId ?? ""}
+        onChange={e => setCommunity(e.target.value || null)}
+        style={filter.communityId ? pillActive : pillBase}
+      >
+        <option value="">Community ▾</option>
+        {filteredCommunities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
 
-        {/* Right: account */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-          {/* Notification bell */}
-          <button style={{ background: "none", border: "none", cursor: "pointer", color: "#666", fontSize: 16, padding: 0 }}>
-            🔔
-          </button>
-          {/* Avatar + name */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%",
-              background: "#80B602",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 700, color: "#fff",
-            }}>
-              L
-            </div>
-            <span style={{ fontSize: 12, color: "#aaa", fontFamily: "var(--font-body)" }}>
-              Hello, Lance!
-            </span>
-            <span style={{ color: "#444", fontSize: 12 }}>▾</span>
-          </div>
-        </div>
-      </div>
+      <select
+        value={filter.planModelId ?? ""}
+        onChange={e => setPlan(e.target.value || null)}
+        style={filter.planModelId ? pillActive : pillBase}
+      >
+        <option value="">Floor Plan ▾</option>
+        {plans.map(p => <option key={p.id} value={p.id}>{p.plan_name}</option>)}
+      </select>
 
-      {/* ── Filter bar: Overview · Division · Community · Plan ───────────── */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        padding: "6px 16px",
-        background: "#121314",
-        borderBottom: "1px solid #222",
-        flexWrap: "wrap",
-      }}>
-        {/* Overview pill — always shown, navigates to / */}
-        <a href="/" style={{ textDecoration: "none" }}>
-          <span style={{
-            ...pillBase,
-            color: !filter.divisionId && !filter.communityId ? "#fff" : "#666",
-            borderColor: !filter.divisionId && !filter.communityId ? "#59a6bd" : "#333",
-            background: !filter.divisionId && !filter.communityId ? "rgba(89,166,189,0.15)" : "transparent",
-          }}>
-            Overview
-          </span>
-        </a>
-
-        {/* Division select */}
-        <select
-          value={filter.divisionId ?? ""}
-          onChange={e => { setDivision(e.target.value || null); }}
-          style={filter.divisionId ? pillActive : pillBase}
+      {activePillCount > 0 && (
+        <button
+          onClick={clearFilter}
+          style={{ background:"none", border:"none", color:"#555", cursor:"pointer", fontSize:12, padding:"0 6px", fontFamily:"var(--font-body)" }}
+          onMouseEnter={e => (e.currentTarget.style.color="#E32027")}
+          onMouseLeave={e => (e.currentTarget.style.color="#555")}
         >
-          <option value="">Division ▾</option>
-          {divisions.map(d => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
+          ✕ Clear
+        </button>
+      )}
 
-        {/* Community select */}
-        <select
-          value={filter.communityId ?? ""}
-          onChange={e => { setCommunity(e.target.value || null); }}
-          style={filter.communityId ? pillActive : pillBase}
-        >
-          <option value="">Community ▾</option>
-          {filteredCommunities.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+      {/* ── Breadcrumb ── */}
+      {(filter.divisionId || filter.communityId) && (
+        <div style={{ fontSize:11, color:"#80B602", display:"flex", gap:4, alignItems:"center", marginLeft:8 }}>
+          {filter.divisionId && <span>{divisions.find(d => d.id === filter.divisionId)?.name}</span>}
+          {filter.communityId && <><span style={{color:"#333"}}>›</span><span>{communities.find(c => c.id === filter.communityId)?.name}</span></>}
+        </div>
+      )}
 
-        {/* Plan select */}
-        <select
-          value={filter.planModelId ?? ""}
-          onChange={e => { setPlan(e.target.value || null); }}
-          style={filter.planModelId ? pillActive : pillBase}
-        >
-          <option value="">Floor Plan ▾</option>
-          {plans.map(p => (
-            <option key={p.id} value={p.id}>{p.plan_name}</option>
-          ))}
-        </select>
-
-        {/* Clear — only when filter active */}
-        {activePillCount > 0 && (
-          <button
-            onClick={clearFilter}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#555",
-              cursor: "pointer",
-              fontSize: 12,
-              padding: "0 6px",
-              fontFamily: "var(--font-body)",
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#E32027")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#555")}
-            title="Clear all filters"
-          >
-            ✕ Clear
-          </button>
-        )}
-
-        {/* Breadcrumb — right side */}
-        {(filter.divisionId || filter.communityId) && (
-          <div style={{ marginLeft: "auto", fontSize: 11, color: "#555", display: "flex", gap: 4, alignItems: "center" }}>
-            {filter.divisionId && (
-              <span style={{ color: "#80B602" }}>
-                {divisions.find(d => d.id === filter.divisionId)?.name}
-              </span>
-            )}
-            {filter.communityId && (
-              <>
-                <span style={{ color: "#333" }}>›</span>
-                <span style={{ color: "#80B602" }}>
-                  {communities.find(c => c.id === filter.communityId)?.name}
-                </span>
-              </>
-            )}
-          </div>
-        )}
+      {/* ── Right side: search + account ── */}
+      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:12 }}>
+        <input
+          type="text"
+          placeholder="🔍  Search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ background:"#1e1f22", border:"1px solid #333", borderRadius:3, color:"#aaa", fontSize:12, padding:"4px 10px", outline:"none", fontFamily:"var(--font-body)", width:180 }}
+        />
+        <button style={{ background:"none", border:"none", cursor:"pointer", color:"#555", fontSize:15, padding:0 }}>🔔</button>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <div style={{ width:26, height:26, borderRadius:"50%", background:"#80B602", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff" }}>L</div>
+          <span style={{ fontSize:12, color:"#888" }}>Hello, Lance!</span>
+        </div>
       </div>
     </div>
   );

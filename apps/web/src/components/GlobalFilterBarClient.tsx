@@ -196,8 +196,8 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
 
         {/* Plan select */}
         <select
-          value={filter.planModelId ? String(filter.planModelId) : ""}
-          onChange={e => { setPlan(e.target.value ? Number(e.target.value) : null); }}
+          value={filter.planModelId ?? ""}
+          onChange={e => { setPlan(e.target.value || null); }}
           style={filter.planModelId ? pillActive : pillBase}
         >
           <option value="">Floor Plan ▾</option>

@@ -3,11 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
-import FiltersBar from "@/components/FiltersBar";
-import StatsBar from "@/components/StatsBar";
-import ViewToggle from "@/components/ViewToggle";
 import SlideOver, { Section, Row } from "@/components/SlideOver";
-import Badge from "@/components/Badge";
 import DataTable, { type Column, type StatConfigItem } from "@/components/DataTable";
 import type { LotRow, CommunityRow, DivisionRow } from "./page";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
@@ -24,10 +20,7 @@ interface Props {
 
 // ─── Lot status config ────────────────────────────────────────────────────────
 
-const LOT_STATUS_STYLES: Record<
-  string,
-  { bg: string; color: string; border: string }
-> = {
+const LOT_STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   "Available Homesite": { bg: "#162800", color: "#80B602", border: "#2a4a00" },
   "Quick Delivery":     { bg: "#0d2229", color: "#59a6bd", border: "#1a3f50" },
   "Future Homesite":    { bg: "#2e1800", color: "#e07000", border: "#5c3000" },
@@ -35,17 +28,15 @@ const LOT_STATUS_STYLES: Record<
   "Sold":               { bg: "#2a0a0a", color: "#E32027", border: "#4a1a1a" },
 };
 
-function getLotStatusStyle(status: string | null): { bg: string; color: string; border: string } {
-  if (status && LOT_STATUS_STYLES[status]) {
-    return LOT_STATUS_STYLES[status];
-  }
+function getLotStatusStyle(status: string | null) {
+  if (status && LOT_STATUS_STYLES[status]) return LOT_STATUS_STYLES[status];
   return { bg: "var(--surface-2)", color: "var(--text-3)", border: "var(--border)" };
 }
 
 function LotStatusBadge({ status }: { status: string | null }) {
   if (!status) return <span style={{ color: "#555" }}>—</span>;
   const s = getLotStatusStyle(status);
-  const label = status.replace(" Homesite","").replace(" Home","");
+  const label = status.replace(" Homesite", "").replace(" Home", "");
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
@@ -57,9 +48,21 @@ function LotStatusBadge({ status }: { status: string | null }) {
 function ConstructionBadge({ status }: { status: string | null }) {
   if (!status) return <span style={{ color: "#555" }}>—</span>;
   const color = status === "Under Construction" ? "#59a6bd" : "#666";
-  return (
-    <span style={{ fontSize: 12, color, fontWeight: 400 }}>{status}</span>
-  );
+  return <span style={{ fontSize: 12, color, fontWeight: 400 }}>{status}</span>;
+}
+
+function filterSelectStyle(active: boolean): React.CSSProperties {
+  return {
+    background: "#1a1a1e",
+    border: `1px solid ${active ? "#80B602" : "#333"}`,
+    color: active ? "#80B602" : "#888",
+    borderRadius: 3,
+    height: 28,
+    fontSize: 12,
+    padding: "0 6px",
+    cursor: "pointer",
+    outline: "none",
+  };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -67,18 +70,12 @@ function ConstructionBadge({ status }: { status: string | null }) {
 export default function LotsClient({ lots, communities, divisions }: Props) {
   const { filter, labels } = useGlobalFilter();
 
-  const [view, setView] = useState<"card" | "table">("table");
   const [divFilter, setDivFilter] = useState<string>(() => filter.divisionId ?? "");
   const [commFilter, setCommFilter] = useState<string>(() => filter.communityId ?? "");
   const [statusFilter, setStatusFilter] = useState("");
   const [constructionFilter, setConstructionFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedLot, setSelectedLot] = useState<LotTableRow | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("lots-view");
-    if (saved === "card" || saved === "table") setView(saved);
-  }, []);
 
   // Sync local state when global filter changes
   useEffect(() => {
@@ -89,31 +86,11 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.divisionId, filter.communityId]);
 
-  function handleViewChange(v: "card" | "table") {
-    setView(v);
-    localStorage.setItem("lots-view", v);
-  }
+  const communityMap = useMemo(() => new Map(communities.map((c) => [c.id, c])), [communities]);
+  const divisionMap = useMemo(() => new Map(divisions.map((d) => [d.id, d])), [divisions]);
 
-  // Build a community lookup map for enrichment
-  const communityMap = useMemo(
-    () => new Map(communities.map((c) => [c.id, c])),
-    [communities]
-  );
+  const divisionOptions = useMemo(() => divisions.map((d) => ({ value: d.id, label: d.name })), [divisions]);
 
-  // Build a division lookup map for enrichment
-  const divisionMap = useMemo(
-    () => new Map(divisions.map((d) => [d.id, d])),
-    [divisions]
-  );
-
-  // Build filter options
-  const divisionOptions = useMemo(
-    () =>
-      divisions.map((d) => ({ value: d.id, label: d.name })),
-    [divisions]
-  );
-
-  // Get unique community names filtered by division
   const commOptions = useMemo(() => {
     const relevant = !divFilter
       ? lots
@@ -128,27 +105,18 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   }, [lots, divFilter, communityMap, divisionMap]);
 
   const statusOptions = useMemo(
-    () =>
-      Array.from(new Set(lots.map((l) => l.lot_status).filter(Boolean)))
-        .sort()
-        .map((s) => ({ value: s as string, label: s as string })),
+    () => Array.from(new Set(lots.map((l) => l.lot_status).filter(Boolean))).sort().map((s) => ({ value: s as string, label: s as string })),
     [lots]
   );
 
   const constructionOptions = useMemo(
-    () =>
-      Array.from(new Set(lots.map((l) => l.construction_status).filter(Boolean)))
-        .sort()
-        .map((s) => ({ value: s as string, label: s as string })),
+    () => Array.from(new Set(lots.map((l) => l.construction_status).filter(Boolean))).sort().map((s) => ({ value: s as string, label: s as string })),
     [lots]
   );
 
-  // Filtered rows
   const rows = useMemo<LotTableRow[]>(() => {
     return (lots as LotTableRow[]).filter((l) => {
-      // Global filter: community by UUID takes priority
       if (filter.communityId && l.community_id !== filter.communityId) return false;
-      // Global filter: division by UUID
       if (filter.divisionId && !divFilter) {
         const comm = l.community_id ? communityMap.get(l.community_id as string) : null;
         const div = comm?.division_id ? divisionMap.get(comm.division_id) : null;
@@ -172,120 +140,58 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       }
       return true;
     });
-  }, [lots, divFilter, commFilter, statusFilter, constructionFilter, search, communityMap, divisionMap]);
+  }, [lots, divFilter, commFilter, statusFilter, constructionFilter, search, communityMap, divisionMap, filter]);
 
-  // Stats
-  const statsBarItems = useMemo(
-    () => [
-      { label: "Total Lots", value: rows.length, color: "var(--text-3)" },
-      {
-        label: "Available",
-        value: rows.filter((l) => l.lot_status === "Available Homesite").length,
-        color: "#80B602",
-      },
-      {
-        label: "Under Construction",
-        value: rows.filter(
-          (l) => l.construction_status && l.construction_status !== "Not Started"
-        ).length,
-        color: "#59a6bd",
-      },
-      {
-        label: "Quick Delivery",
-        value: rows.filter((l) => l.lot_status === "Quick Delivery").length,
-        color: "#59a6bd",
-      },
-    ],
-    [rows]
-  );
-
-  // Table stat config (filter-reactive)
   const statConfig: StatConfigItem<LotTableRow>[] = [
-    { label: "Total Lots", color: "var(--text-3)", getValue: (r) => r.length },
-    {
-      label: "Available",
-      color: "#80B602",
-      getValue: (r) => r.filter((l) => l.lot_status === "Available Homesite").length,
-    },
-    {
-      label: "Under Construction",
-      color: "#59a6bd",
-      getValue: (r) =>
-        r.filter(
-          (l) => l.construction_status && l.construction_status !== "Not Started"
-        ).length,
-    },
-    {
-      label: "Quick Delivery",
-      color: "#59a6bd",
-      getValue: (r) => r.filter((l) => l.lot_status === "Quick Delivery").length,
-    },
+    { label: "Total Lots",   color: "var(--text-3)", getValue: (r) => r.length },
+    { label: "Available",    color: "#80B602",       getValue: (r) => r.filter((l) => l.lot_status === "Available Homesite").length },
+    { label: "Under Const.", color: "#59a6bd",       getValue: (r) => r.filter((l) => l.construction_status && l.construction_status !== "Not Started").length },
+    { label: "Quick Delivery", color: "#59a6bd",     getValue: (r) => r.filter((l) => l.lot_status === "Quick Delivery").length },
   ];
 
-  // Helper to get division name for a lot
   function getDivisionName(lot: LotTableRow): string {
-    const comm = lot.community_id
-      ? communityMap.get(lot.community_id as string)
-      : null;
-    if (!comm?.division_id) return lot.division_raw ?? "—";
-    return divisionMap.get(comm.division_id)?.name ?? lot.division_raw ?? "—";
+    const comm = lot.community_id ? communityMap.get(lot.community_id as string) : null;
+    if (!comm?.division_id) return (lot.division_raw as string) ?? "—";
+    return divisionMap.get(comm.division_id)?.name ?? (lot.division_raw as string) ?? "—";
   }
 
-  // Table columns
   const columns: Column<LotTableRow>[] = [
     {
       key: "community_name_raw",
       label: "Community",
       sticky: true,
       sortable: true,
-      filterable: true,
-      render: (_v, row) => (
-        <span style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}>
-          {row.community_name_raw ?? "—"}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>{row.community_name_raw ?? "—"}</span>,
     },
     {
       key: "lot_number",
       label: "Lot #",
       sortable: true,
-      render: (_v, row) => (
-        <span style={{ color: "#c0c0c0", fontSize: 12 }}>
-          {row.lot_number ?? "—"}
-          {row.block ? ` / ${row.block}` : ""}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.lot_number ?? "—"}{row.block ? ` / ${row.block}` : ""}</span>,
     },
     {
       key: "address",
       label: "Address",
       sortable: true,
-      render: (_v, row) => (
-        <span style={{ color: "#888", fontSize: 12 }}>{row.address ?? "—"}</span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.address ?? "—"}</span>,
     },
     {
       key: "lot_status",
       label: "Status",
       sortable: true,
-      filterable: true,
       render: (_v, row) => <LotStatusBadge status={row.lot_status} />,
     },
     {
       key: "construction_status",
       label: "Construction",
       sortable: true,
-      filterable: true,
       render: (_v, row) => <ConstructionBadge status={row.construction_status} />,
     },
     {
-      key: "division_raw",
-      label: "Division",
+      key: "phase",
+      label: "Phase",
       sortable: true,
-      filterable: true,
-      render: (_v, row) => (
-        <span style={{ fontSize: 12, color: "var(--text-2)" }}>{getDivisionName(row)}</span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{(row.phase as string) ?? "—"}</span>,
     },
     {
       key: "lot_premium",
@@ -294,9 +200,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       align: "right" as const,
       render: (_v, row) =>
         (row.lot_premium as number) > 0 ? (
-          <span style={{ color: "var(--blue)", fontSize: 12, fontWeight: 600 }}>
-            +${(row.lot_premium as number).toLocaleString()}
-          </span>
+          <span style={{ color: "var(--blue)", fontSize: 12, fontWeight: 600 }}>+${(row.lot_premium as number).toLocaleString()}</span>
         ) : (
           <span style={{ color: "#333" }}>—</span>
         ),
@@ -305,20 +209,9 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       key: "foundation",
       label: "Foundation",
       sortable: true,
-      filterable: true,
       render: (_v, row) =>
         row.foundation ? (
-          <span
-            style={{
-              fontSize: 11,
-              color:
-                row.foundation === "Basement Only"
-                  ? "#a855f7"
-                  : row.foundation === "Crawl/Basement"
-                  ? "var(--blue)"
-                  : "var(--text-3)",
-            }}
-          >
+          <span style={{ fontSize: 11, color: row.foundation === "Basement Only" ? "#a855f7" : row.foundation === "Crawl/Basement" ? "var(--blue)" : "var(--text-3)" }}>
             {row.foundation as string}
           </span>
         ) : (
@@ -327,206 +220,85 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
     },
   ];
 
-  // ── Card view ───────────────────────────────────────────────────────────────
-  const cardView = (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 10,
-        padding: 16,
-      }}
-    >
-      {rows.length === 0 && (
-        <div
-          style={{
-            gridColumn: "1 / -1",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 24px",
-            color: "rgba(255,255,255,0.3)",
-            gap: 12,
-          }}
+  // Inline filters
+  const inlineFilters = (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {!filter.divisionId && (
+        <select
+          value={divFilter}
+          onChange={(e) => { setDivFilter(e.target.value); setCommFilter(""); }}
+          style={filterSelectStyle(!!divFilter)}
         >
-          <span style={{ fontSize: 32 }}>⊘</span>
-          <span style={{ fontSize: 13 }}>No results match the current filter</span>
-        </div>
+          <option value="">All Divisions</option>
+          {divisionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       )}
-      {rows.map((lot) => {
-        const divName = getDivisionName(lot);
-        const hasPremium = (lot.lot_premium as number) > 0;
-        return (
-          <div
-            key={String(lot.id)}
-            onClick={() => setSelectedLot(lot)}
-            style={{
-              borderRadius: 8,
-              border: "1px solid #555",
-              backgroundColor: "#3E3F44",
-              padding: 12,
-              cursor: "pointer",
-              transition: "border-color 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#555")}
-          >
-            {/* Community name */}
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--text)",
-                marginBottom: 2,
-              }}
-            >
-              {lot.community_name_raw ?? "—"}
-            </div>
-
-            {/* Lot # and block */}
-            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
-              Lot {lot.lot_number ?? "—"}
-              {lot.block ? ` · Block ${lot.block}` : ""}
-              {lot.phase ? ` · Phase ${lot.phase}` : ""}
-            </div>
-
-            {/* Address */}
-            {lot.address && (
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#555",
-                  marginBottom: 8,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {lot.address}
-              </div>
-            )}
-
-            {/* Status badges */}
-            <div
-              style={{
-                display: "flex",
-                gap: 6,
-                flexWrap: "wrap",
-                marginBottom: lot.lot_premium ? 6 : 0,
-              }}
-            >
-              <LotStatusBadge status={lot.lot_status} />
-              {lot.construction_status && (
-                <ConstructionBadge status={lot.construction_status} />
-              )}
-            </div>
-
-            {/* Lot premium */}
-            {hasPremium && (
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--blue)",
-                  marginTop: 6,
-                }}
-              >
-                +${(lot.lot_premium as number).toLocaleString()} premium
-              </div>
-            )}
-
-            {/* Division */}
-            <div style={{ fontSize: 10, color: "#444", marginTop: 6 }}>{divName}</div>
-          </div>
-        );
-      })}
+      {!filter.communityId && (
+        <select
+          value={commFilter}
+          onChange={(e) => setCommFilter(e.target.value)}
+          style={filterSelectStyle(!!commFilter)}
+        >
+          <option value="">All Communities</option>
+          {commOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        style={filterSelectStyle(!!statusFilter)}
+      >
+        <option value="">All Statuses</option>
+        {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <select
+        value={constructionFilter}
+        onChange={(e) => setConstructionFilter(e.target.value)}
+        style={filterSelectStyle(!!constructionFilter)}
+      >
+        <option value="">All Construction</option>
+        {constructionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <input
+        type="text"
+        placeholder="Search address or lot…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ background: "#1a1a1e", border: "1px solid #333", color: search ? "#ededed" : "#888", borderRadius: 3, height: 28, fontSize: 12, padding: "0 8px", width: 180, outline: "none" }}
+      />
     </div>
   );
 
-  // ── Slide-over content ──────────────────────────────────────────────────────
   const selectedDivName = selectedLot ? getDivisionName(selectedLot) : "—";
 
   return (
     <PageShell
-      topBar={
-        <TopBar
-          title="Lots"
-          right={<ViewToggle view={view} onChange={handleViewChange} />}
-        />
-      }
+      topBar={<TopBar title="Lots" right={inlineFilters} />}
       filtersBar={
-        <>
-          {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
-              <span>Filtered:</span>
-              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
-            </div>
-          )}
-          <FiltersBar
-            filters={[
-              ...(!filter.divisionId ? [{
-                value: divFilter,
-                onChange: (v: string) => {
-                  setDivFilter(v);
-                  setCommFilter("");
-                },
-                options: divisionOptions,
-                placeholder: "All Divisions",
-              }] : []),
-              ...(!filter.communityId ? [{
-                value: commFilter,
-                onChange: setCommFilter,
-                options: commOptions,
-                placeholder: "All Communities",
-              }] : []),
-              {
-                value: statusFilter,
-                onChange: setStatusFilter,
-                options: statusOptions,
-                placeholder: "All Statuses",
-              },
-              {
-                value: constructionFilter,
-                onChange: setConstructionFilter,
-                options: constructionOptions,
-                placeholder: "All Construction",
-              },
-            ]}
-            search={search}
-            onSearch={setSearch}
-            searchPlaceholder="Search address or lot…"
-          />
-          {view === "card" && <StatsBar stats={statsBarItems} />}
-        </>
+        (filter.divisionId || filter.communityId) ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
+            <span>Filtered:</span>
+            {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+            {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+            {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
+          </div>
+        ) : undefined
       }
     >
-      {view === "table" ? (
-        <DataTable<LotTableRow>
-          columns={columns}
-          rows={rows}
-          statConfig={statConfig}
-          defaultPageSize={100}
-          onRowClick={setSelectedLot}
-          emptyMessage="No lots match the current filters"
-          minWidth={1000}
-        />
-      ) : (
-        cardView
-      )}
+      <DataTable<LotTableRow>
+        columns={columns}
+        rows={rows}
+        statConfig={statConfig}
+        defaultPageSize={100}
+        onRowClick={setSelectedLot}
+        emptyMessage="No lots match the current filters"
+        minWidth={1000}
+      />
 
-      {/* Slide-over */}
       <SlideOver
         open={!!selectedLot}
         onClose={() => setSelectedLot(null)}
-        title={
-          selectedLot
-            ? `Lot ${selectedLot.lot_number ?? "—"}${selectedLot.block ? ` / Block ${selectedLot.block}` : ""}`
-            : "Lot Detail"
-        }
+        title={selectedLot ? `Lot ${selectedLot.lot_number ?? "—"}${selectedLot.block ? ` / Block ${selectedLot.block}` : ""}` : "Lot Detail"}
         subtitle={selectedLot?.community_name_raw ?? undefined}
         badge={<LotStatusBadge status={selectedLot?.lot_status ?? null} />}
         width={480}
@@ -537,70 +309,27 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
               <Row label="Community" value={selectedLot.community_name_raw} />
               <Row label="Division" value={selectedDivName} />
             </Section>
-
             <Section title="Address">
               <Row label="Address" value={selectedLot.address} />
             </Section>
-
             <Section title="Lot Info">
               <Row label="Lot Number" value={selectedLot.lot_number} />
               <Row label="Block" value={selectedLot.block} />
               <Row label="Phase" value={selectedLot.phase} />
-              <Row
-                label="Lot Premium"
-                value={
-                  (selectedLot.lot_premium as number) > 0 ? (
-                    <span style={{ color: "var(--blue)", fontWeight: 600 }}>
-                      +${(selectedLot.lot_premium as number).toLocaleString()}
-                    </span>
-                  ) : null
-                }
-              />
+              <Row label="Lot Premium" value={(selectedLot.lot_premium as number) > 0 ? <span style={{ color: "var(--blue)", fontWeight: 600 }}>+${(selectedLot.lot_premium as number).toLocaleString()}</span> : null} />
               <Row label="Foundation" value={selectedLot.foundation} />
             </Section>
-
             <Section title="Status">
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginBottom: 8,
-                }}
-              >
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                 <LotStatusBadge status={selectedLot.lot_status} />
-                {selectedLot.construction_status && (
-                  <ConstructionBadge status={selectedLot.construction_status} />
-                )}
+                {selectedLot.construction_status && <ConstructionBadge status={selectedLot.construction_status} />}
               </div>
-              <Row
-                label="Buildable"
-                value={
-                  selectedLot.is_buildable != null
-                    ? selectedLot.is_buildable
-                      ? "Yes"
-                      : "No"
-                    : null
-                }
-              />
-              <Row
-                label="Available"
-                value={
-                  selectedLot.is_available != null
-                    ? selectedLot.is_available
-                      ? "Yes"
-                      : "No"
-                    : null
-                }
-              />
+              <Row label="Buildable" value={selectedLot.is_buildable != null ? (selectedLot.is_buildable ? "Yes" : "No") : null} />
+              <Row label="Available" value={selectedLot.is_available != null ? (selectedLot.is_available ? "Yes" : "No") : null} />
             </Section>
-
             {selectedLot.synced_at && (
               <Section title="System">
-                <Row
-                  label="Last Synced"
-                  value={new Date(selectedLot.synced_at as string).toLocaleString()}
-                />
+                <Row label="Last Synced" value={new Date(selectedLot.synced_at as string).toLocaleString()} />
               </Section>
             )}
           </>

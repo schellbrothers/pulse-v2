@@ -4,10 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
-import FiltersBar from "@/components/FiltersBar";
-import StatsBar from "@/components/StatsBar";
-import ViewToggle from "@/components/ViewToggle";
-import PlanCard from "@/components/PlanCard";
 import SlideOver from "@/components/SlideOver";
 import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
 import type { DivisionPlan, CommunityPlan, Community, Division } from "./page";
@@ -30,7 +26,9 @@ type CommunityPlanTableRow = CommunityPlan & Record<string, unknown> & {
   _beds: string;
   _baths: string;
   _sqft: string;
-  _price_display: string;
+  _base_price: string;
+  _incentive: string;
+  _net_price: string;
 };
 
 type DivisionPlanTableRow = DivisionPlan & Record<string, unknown> & {
@@ -68,6 +66,20 @@ function displayPrice(plan: CommunityPlan): string {
   return formatPrice(net);
 }
 
+function filterSelectStyle(active: boolean): React.CSSProperties {
+  return {
+    background: "#1a1a1e",
+    border: `1px solid ${active ? "#80B602" : "#333"}`,
+    color: active ? "#80B602" : "#888",
+    borderRadius: 3,
+    height: 28,
+    fontSize: 12,
+    padding: "0 6px",
+    cursor: "pointer",
+    outline: "none",
+  };
+}
+
 // ─── Mode toggle ──────────────────────────────────────────────────────────────
 
 function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
@@ -102,13 +114,8 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   const searchParams = useSearchParams();
   const { filter, labels } = useGlobalFilter();
 
-  const [mode, setMode] = useState<Mode>(() =>
-    filter.communityId ? "by-community" : "by-plan"
-  );
-  const [view, setView] = useState<"card" | "table">("card");
-  const [divisionFilter, setDivisionFilter] = useState<string>(() =>
-    filter.divisionId ?? "all"
-  );
+  const [mode, setMode] = useState<Mode>(() => filter.communityId ? "by-community" : "by-plan");
+  const [divisionFilter, setDivisionFilter] = useState<string>(() => filter.divisionId ?? "all");
   const [styleFilter, setStyleFilter] = useState("all");
   const [communityFilter, setCommunityFilter] = useState<string>(() =>
     filter.communityId ?? searchParams.get("community") ?? "all"
@@ -118,12 +125,10 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   useEffect(() => {
     const savedMode = localStorage.getItem("plans-mode") as Mode | null;
-    const savedView = localStorage.getItem("plans-view") as "card" | "table" | null;
     if (savedMode === "by-plan" || savedMode === "by-community") setMode(savedMode);
-    if (savedView === "card" || savedView === "table") setView(savedView);
   }, []);
 
-  // Sync local state when global filter changes
+  // Sync when global filter changes
   useEffect(() => {
     if (filter.divisionId) setDivisionFilter(filter.divisionId);
     else setDivisionFilter("all");
@@ -141,63 +146,34 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
     localStorage.setItem("plans-mode", m);
   };
 
-  const handleViewChange = (v: "card" | "table") => {
-    setView(v);
-    localStorage.setItem("plans-view", v);
-  };
-
-  // Build lookup maps
   const communityById = new Map(communities.map((c) => [c.id, c]));
   const divisionById = new Map(divisions.map((d) => [d.id, d]));
 
-  // Unique styles from community plans
   const allStyles = Array.from(
-    new Set(
-      communityPlans
-        .flatMap((p) => p.style_filters ?? [])
-        .filter(Boolean)
-    )
+    new Set(communityPlans.flatMap((p) => p.style_filters ?? []).filter(Boolean))
   ).sort();
 
-  const divisionOptions = [
-    { value: "all", label: "All Divisions" },
-    ...divisions.map((d) => ({ value: d.id, label: d.name })),
-  ];
-
-  const styleOptions = [
-    { value: "all", label: "All Styles" },
-    ...allStyles.map((s) => ({ value: s, label: s })),
-  ];
-
-  const communityOptions = [
-    { value: "all", label: "All Communities" },
-    ...communities.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const divisionOptions = divisions.map((d) => ({ value: d.id, label: d.name }));
+  const styleOptions = allStyles.map((s) => ({ value: s, label: s }));
+  const communityOptions = communities.map((c) => ({ value: c.id, label: c.name }));
 
   // ── MODE: By Plan ──────────────────────────────────────────────────────────
 
-  // Filter division plans
   const filteredDivisionPlans = divisionPlans.filter((p) => {
     if (divisionFilter !== "all" && p.division_id !== divisionFilter) return false;
     if (styleFilter !== "all" && p.style !== styleFilter) return false;
     return true;
   });
 
-  // For each division plan, find community_plans that reference it (by plan_id or name match)
   function communityPlansForDivPlan(dp: DivisionPlan): CommunityPlan[] {
     return communityPlans.filter(
-      (cp) =>
-        cp.plan_id === dp.id ||
-        cp.plan_name.toLowerCase() === dp.marketing_name.toLowerCase()
+      (cp) => cp.plan_id === dp.id || cp.plan_name.toLowerCase() === dp.marketing_name.toLowerCase()
     );
   }
 
-  // Price range for a division plan across all communities
   function priceRangeForPlan(dp: DivisionPlan): string {
     const cps = communityPlansForDivPlan(dp);
-    const prices = cps
-      .map((cp) => cp.net_price ?? cp.base_price)
-      .filter((p): p is number => p != null);
+    const prices = cps.map((cp) => cp.net_price ?? cp.base_price).filter((p): p is number => p != null);
     if (prices.length === 0) return "—";
     const min = Math.min(...prices);
     const max = Math.max(...prices);
@@ -218,76 +194,11 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
     return true;
   });
 
-  // Group community plans by community
   const groupedByCommunity = communities
-    .map((comm) => ({
-      community: comm,
-      plans: filteredCommunityPlans.filter((cp) => cp.community_id === comm.id),
-    }))
+    .map((comm) => ({ community: comm, plans: filteredCommunityPlans.filter((cp) => cp.community_id === comm.id) }))
     .filter((g) => g.plans.length > 0);
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
-
-  const statsItems =
-    mode === "by-plan"
-      ? [
-          { label: "Plans",      value: filteredDivisionPlans.length },
-          { label: "Divisions",  value: new Set(filteredDivisionPlans.map((p) => p.division_id)).size },
-          { label: "Communities",value: new Set(communityPlans.map((cp) => cp.community_id)).size },
-        ]
-      : [
-          { label: "Plans",       value: filteredCommunityPlans.length },
-          { label: "Communities", value: groupedByCommunity.length },
-        ];
-
-  // ── Card view — By Plan ────────────────────────────────────────────────────
-
-  const byPlanCardView = (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 14,
-        padding: 24,
-      }}
-    >
-      {filteredDivisionPlans.map((dp) => {
-        const div = divisionById.get(dp.division_id);
-        return (
-          <PlanCard
-            key={dp.id}
-            planName={dp.marketing_name}
-            divisionName={div?.name}
-            beds={dp.beds}
-            baths={dp.baths}
-            sqft={dp.sqft ?? dp.sqft_min}
-            priceFormatted={priceRangeForPlan(dp)}
-            imageUrl={dp.featured_image_url}
-            onClick={() => setSelectedPlan(dp)}
-          />
-        );
-      })}
-      {filteredDivisionPlans.length === 0 && (
-        <div
-          style={{
-            gridColumn: "1 / -1",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 24px",
-            color: "rgba(255,255,255,0.3)",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 32 }}>⊘</span>
-          <span style={{ fontSize: 13 }}>No results match the current filter</span>
-        </div>
-      )}
-    </div>
-  );
-
-  // ── Table view — By Plan ───────────────────────────────────────────────────
+  // ── Table — By Plan ────────────────────────────────────────────────────────
 
   const byPlanTableRows: DivisionPlanTableRow[] = filteredDivisionPlans.map((dp) => ({
     ...dp,
@@ -304,31 +215,20 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       key: "marketing_name",
       label: "Plan Name",
       sortable: true,
-      render: (_v, row) => (
-        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.marketing_name}</span>
-      ),
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500 }}>{row.marketing_name}</span>,
     },
-    { key: "_division_name", label: "Division", sortable: true },
-    { key: "style",          label: "Style",    sortable: true },
-    { key: "_beds",          label: "Beds",     sortable: true },
-    { key: "_baths",         label: "Baths",    sortable: true },
-    { key: "_sqft",          label: "Sq Ft",    sortable: true },
-    { key: "_community_count", label: "Communities", sortable: true },
-    { key: "_price_range",   label: "Price Range" },
+    { key: "_division_name", label: "Division", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._division_name}</span> },
+    { key: "_beds",          label: "Beds",     sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._beds}</span> },
+    { key: "_baths",         label: "Baths",    sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._baths}</span> },
+    { key: "_sqft",          label: "Sqft",     sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._sqft}</span> },
+    { key: "_community_count", label: "# Communities", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._community_count}</span> },
+    { key: "_price_range",   label: "Price Range", render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._price_range}</span> },
     {
       key: "page_url",
-      label: "View",
+      label: "Actions",
       render: (_v, row) =>
         row.page_url ? (
-          <a
-            href={row.page_url}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "#818cf8", fontSize: 11, textDecoration: "none" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            ↗
-          </a>
+          <a href={row.page_url} target="_blank" rel="noreferrer" style={{ color: "#818cf8", fontSize: 11, textDecoration: "none" }} onClick={(e) => e.stopPropagation()}>↗</a>
         ) : null,
     },
   ];
@@ -337,109 +237,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
     { label: "Plans", value: filteredDivisionPlans.length, color: "var(--text)" },
   ];
 
-  // ── Card view — By Community ───────────────────────────────────────────────
-
-  const byCommunityCardView = (
-    <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 32 }}>
-      {groupedByCommunity.map(({ community, plans }) => (
-        <div key={community.id}>
-          {/* Community header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 14,
-              paddingBottom: 10,
-              borderBottom: "1px solid var(--border)",
-            }}
-          >
-            {community.featured_image_url && (
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  flexShrink: 0,
-                  background: "var(--surface-2)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={community.featured_image_url}
-                  alt={community.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-            )}
-            <div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display, serif)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "var(--text)",
-                }}
-              >
-                {community.name}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text-3)" }}>
-                {[community.city, community.state].filter(Boolean).join(", ")} ·{" "}
-                {plans.length} plan{plans.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-          </div>
-
-          {/* Plan cards */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 12,
-            }}
-          >
-            {plans.map((cp) => (
-              <PlanCard
-                key={cp.id}
-                planName={cp.plan_name}
-                communityName={community.name}
-                city={community.city}
-                state={community.state}
-                beds={cp.beds}
-                baths={cp.baths}
-                sqft={cp.sqft_max ?? cp.sqft_min}
-                basePrice={cp.base_price}
-                netPrice={cp.net_price}
-                incentiveAmount={cp.incentive_amount}
-                imageUrl={cp.featured_image_url}
-                pageUrl={cp.page_url ?? undefined}
-                onClick={() => setSelectedCommunityPlan(cp)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-      {groupedByCommunity.length === 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 24px",
-            color: "rgba(255,255,255,0.3)",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 32 }}>⊘</span>
-          <span style={{ fontSize: 13 }}>No results match the current filter</span>
-        </div>
-      )}
-    </div>
-  );
-
-  // ── Table view — By Community ──────────────────────────────────────────────
+  // ── Table — By Community ───────────────────────────────────────────────────
 
   const byCommunityTableRows: CommunityPlanTableRow[] = filteredCommunityPlans.map((cp) => {
     const comm = communityById.get(cp.community_id);
@@ -451,117 +249,87 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       _beds:  formatBedsOrBaths(cp.beds),
       _baths: formatBedsOrBaths(cp.baths),
       _sqft:  formatSqft(cp.sqft_min, cp.sqft_max),
-      _price_display: displayPrice(cp),
+      _base_price: formatPrice(cp.base_price),
+      _incentive: cp.incentive_amount && cp.incentive_amount > 0 ? `-${formatPrice(cp.incentive_amount)}` : "—",
+      _net_price: displayPrice(cp),
     };
   });
 
   const byCommunityColumns: Column<CommunityPlanTableRow>[] = [
     {
-      key: "plan_name",
-      label: "Plan Name",
+      key: "_community_name",
+      label: "Community",
       sortable: true,
-      render: (_v, row) => (
-        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.plan_name}</span>
-      ),
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500 }}>{row._community_name}</span>,
     },
-    { key: "_community_name", label: "Community",  sortable: true },
-    { key: "_division_name",  label: "Division",   sortable: true },
-    { key: "_beds",           label: "Beds",       sortable: true },
-    { key: "_baths",          label: "Baths",      sortable: true },
-    { key: "_sqft",           label: "Sq Ft",      sortable: true },
-    { key: "_price_display",  label: "Price",      sortable: true },
-    {
-      key: "page_url",
-      label: "View",
-      render: (_v, row) =>
-        row.page_url ? (
-          <a
-            href={row.page_url}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "#818cf8", fontSize: 11, textDecoration: "none" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            ↗
-          </a>
-        ) : null,
-    },
+    { key: "plan_name",      label: "Plan",       sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.plan_name}</span> },
+    { key: "_base_price",    label: "Base Price", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._base_price}</span> },
+    { key: "_incentive",     label: "Incentive",  sortable: true, render: (_v, row) => <span style={{ color: row._incentive !== "—" ? "#4ade80" : "#555", fontSize: 13 }}>{row._incentive}</span> },
+    { key: "_net_price",     label: "Net Price",  sortable: true, render: (_v, row) => <span style={{ color: "var(--blue)", fontWeight: 600, fontSize: 13 }}>{row._net_price}</span> },
+    { key: "_sqft",          label: "Sqft",       sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._sqft}</span> },
+    { key: "_beds",          label: "Beds",       sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._beds}</span> },
+    { key: "_baths",         label: "Baths",      sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._baths}</span> },
   ];
 
   const byCommunityTableStats: DataTableStatItem[] = [
-    { label: "Plans", value: filteredCommunityPlans.length, color: "var(--text)" },
-    { label: "Communities", value: groupedByCommunity.length, color: "#818cf8" },
+    { label: "Plans",       value: filteredCommunityPlans.length, color: "var(--text)" },
+    { label: "Communities", value: groupedByCommunity.length,     color: "#818cf8" },
   ];
 
-  // ── Slide-over: division plan detail ──────────────────────────────────────
+  // ── Inline filters ─────────────────────────────────────────────────────────
+
+  const inlineFilters = (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <ModeToggle mode={mode} onChange={handleModeChange} />
+      {!filter.divisionId && (
+        <select value={divisionFilter} onChange={(e) => setDivisionFilter(e.target.value)} style={filterSelectStyle(divisionFilter !== "all")}>
+          <option value="all">All Divisions</option>
+          {divisionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      {mode === "by-community" && !filter.communityId && (
+        <select value={communityFilter} onChange={(e) => setCommunityFilter(e.target.value)} style={filterSelectStyle(communityFilter !== "all")}>
+          <option value="all">All Communities</option>
+          {communityOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      <select value={styleFilter} onChange={(e) => setStyleFilter(e.target.value)} style={filterSelectStyle(styleFilter !== "all")}>
+        <option value="all">All Styles</option>
+        {styleOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
+  // ── Slide-over: division plan ──────────────────────────────────────────────
 
   const planCommunities = selectedPlan
-    ? communityPlansForDivPlan(selectedPlan).map((cp) => ({
-        plan: cp,
-        community: communityById.get(cp.community_id),
-      }))
+    ? communityPlansForDivPlan(selectedPlan).map((cp) => ({ plan: cp, community: communityById.get(cp.community_id) }))
     : [];
-
-  // ── Layout ─────────────────────────────────────────────────────────────────
-
-  const activeFilters =
-    mode === "by-plan"
-      ? [
-          ...(!filter.divisionId ? [{ value: divisionFilter, onChange: setDivisionFilter, options: divisionOptions, placeholder: "All Divisions" }] : []),
-          { value: styleFilter,    onChange: setStyleFilter,    options: styleOptions,    placeholder: "All Styles" },
-        ]
-      : [
-          ...(!filter.divisionId ? [{ value: divisionFilter,  onChange: setDivisionFilter,  options: divisionOptions,  placeholder: "All Divisions" }] : []),
-          ...(!filter.communityId ? [{ value: communityFilter, onChange: setCommunityFilter, options: communityOptions, placeholder: "All Communities" }] : []),
-          { value: styleFilter,     onChange: setStyleFilter,     options: styleOptions,     placeholder: "All Styles" },
-        ];
 
   return (
     <PageShell
-      topBar={
-        <TopBar
-          title="Plans"
-          right={
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <ModeToggle mode={mode} onChange={handleModeChange} />
-              <ViewToggle view={view} onChange={handleViewChange} />
-            </div>
-          }
-        />
-      }
+      topBar={<TopBar title="Plans" right={inlineFilters} />}
       filtersBar={
-        <>
-          {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
-              <span>Filtered:</span>
-              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
-            </div>
-          )}
-          <FiltersBar
-            filters={activeFilters}
-          />
-          <StatsBar stats={statsItems} />
-        </>
+        (filter.divisionId || filter.communityId) ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
+            <span>Filtered:</span>
+            {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+            {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+            {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
+          </div>
+        ) : undefined
       }
     >
       {mode === "by-plan" ? (
-        view === "card" ? (
-          byPlanCardView
-        ) : (
-          <DataTable<DivisionPlanTableRow>
-            columns={byPlanColumns}
-            rows={byPlanTableRows}
-            stats={byPlanTableStats}
-            defaultPageSize={100}
-            onRowClick={(row) => setSelectedPlan(row)}
-            emptyMessage="No plans"
-            minWidth={1000}
-          />
-        )
-      ) : view === "card" ? (
-        byCommunityCardView
+        <DataTable<DivisionPlanTableRow>
+          columns={byPlanColumns}
+          rows={byPlanTableRows}
+          stats={byPlanTableStats}
+          defaultPageSize={100}
+          onRowClick={(row) => setSelectedPlan(row)}
+          emptyMessage="No plans"
+          minWidth={1000}
+        />
       ) : (
         <DataTable<CommunityPlanTableRow>
           columns={byCommunityColumns}
@@ -574,21 +342,14 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         />
       )}
 
-      {/* Slide-over: By Plan — shows which communities offer it */}
+      {/* Slide-over: By Plan */}
       <SlideOver
         open={!!selectedPlan}
         onClose={() => setSelectedPlan(null)}
         title={selectedPlan?.marketing_name ?? ""}
         subtitle={
           selectedPlan
-            ? [
-                selectedPlan.style,
-                selectedPlan.beds != null ? `${selectedPlan.beds} bd` : null,
-                selectedPlan.baths != null ? `${selectedPlan.baths} ba` : null,
-                selectedPlan.sqft != null ? `${selectedPlan.sqft.toLocaleString()} sf` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")
+            ? [selectedPlan.style, selectedPlan.beds != null ? `${selectedPlan.beds} bd` : null, selectedPlan.baths != null ? `${selectedPlan.baths} ba` : null, selectedPlan.sqft != null ? `${selectedPlan.sqft.toLocaleString()} sf` : null].filter(Boolean).join(" · ")
             : undefined
         }
         width={500}
@@ -596,82 +357,23 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         {selectedPlan && (
           <div style={{ padding: "20px 24px" }}>
             {selectedPlan.featured_image_url && (
-              <div
-                style={{
-                  width: "100%",
-                  height: 160,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  marginBottom: 20,
-                  background: "var(--surface-2)",
-                }}
-              >
+              <div style={{ width: "100%", height: 160, borderRadius: 8, overflow: "hidden", marginBottom: 20, background: "var(--surface-2)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedPlan.featured_image_url}
-                  alt={selectedPlan.marketing_name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                <img src={selectedPlan.featured_image_url} alt={selectedPlan.marketing_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             )}
-
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Plan Details
-              </div>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Plan Details</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {selectedPlan.style && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Style</span>
-                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.style}</span>
-                  </div>
-                )}
-                {selectedPlan.beds != null && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span>
-                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.beds}</span>
-                  </div>
-                )}
-                {selectedPlan.baths != null && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span>
-                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.baths}</span>
-                  </div>
-                )}
-                {(selectedPlan.sqft ?? selectedPlan.sqft_min) != null && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span>
-                    <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-                      {formatSqft(selectedPlan.sqft_min, selectedPlan.sqft)}
-                    </span>
-                  </div>
-                )}
+                {selectedPlan.style && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Style</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.style}</span></div>}
+                {selectedPlan.beds != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.beds}</span></div>}
+                {selectedPlan.baths != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedPlan.baths}</span></div>}
+                {(selectedPlan.sqft ?? selectedPlan.sqft_min) != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{formatSqft(selectedPlan.sqft_min, selectedPlan.sqft)}</span></div>}
               </div>
             </div>
-
             {selectedPlan.page_url && (
-              <a
-                href={selectedPlan.page_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: "inline-block",
-                  fontSize: 12,
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  background: "#1a1a2e",
-                  border: "1px solid #2a2a4a",
-                  color: "#818cf8",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                  marginBottom: 20,
-                }}
-              >
-                ↗ View Plan
-              </a>
+              <a href={selectedPlan.page_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", fontSize: 12, padding: "6px 14px", borderRadius: 6, background: "#1a1a2e", border: "1px solid #2a2a4a", color: "#818cf8", textDecoration: "none", fontWeight: 500, marginBottom: 20 }}>↗ View Plan</a>
             )}
-
-            {/* Communities offering this plan */}
             <div>
               <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Available In ({planCommunities.length} {planCommunities.length === 1 ? "community" : "communities"})
@@ -681,43 +383,14 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {planCommunities.map(({ plan: cp, community }) => (
-                    <div
-                      key={cp.id}
-                      style={{
-                        background: "var(--surface-2)",
-                        border: "1px solid #555",
-                        borderRadius: 8,
-                        padding: "10px 12px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
-                    >
+                    <div key={cp.id} style={{ background: "var(--surface-2)", border: "1px solid #555", borderRadius: 8, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                       <div>
-                        <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>
-                          {community?.name ?? "Unknown"}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-3)" }}>
-                          {[community?.city, community?.state].filter(Boolean).join(", ")}
-                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>{community?.name ?? "Unknown"}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-3)" }}>{[community?.city, community?.state].filter(Boolean).join(", ")}</div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: "var(--blue)",
-                            fontFamily: "var(--font-display, serif)",
-                          }}
-                        >
-                          {displayPrice(cp)}
-                        </div>
-                        {cp.incentive_amount != null && cp.incentive_amount > 0 && (
-                          <div style={{ fontSize: 10, color: "#4ade80" }}>
-                            Save ${cp.incentive_amount.toLocaleString()}
-                          </div>
-                        )}
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--blue)", fontFamily: "var(--font-display, serif)" }}>{displayPrice(cp)}</div>
+                        {cp.incentive_amount != null && cp.incentive_amount > 0 && <div style={{ fontSize: 10, color: "#4ade80" }}>Save ${cp.incentive_amount.toLocaleString()}</div>}
                       </div>
                     </div>
                   ))}
@@ -737,9 +410,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
           selectedCommunityPlan
             ? (() => {
                 const comm = communityById.get(selectedCommunityPlan.community_id);
-                return comm
-                  ? `${comm.name} · ${[comm.city, comm.state].filter(Boolean).join(", ")}`
-                  : undefined;
+                return comm ? `${comm.name} · ${[comm.city, comm.state].filter(Boolean).join(", ")}` : undefined;
               })()
             : undefined
         }
@@ -748,84 +419,24 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
         {selectedCommunityPlan && (
           <div style={{ padding: "20px 24px" }}>
             {selectedCommunityPlan.featured_image_url && (
-              <div
-                style={{
-                  width: "100%",
-                  height: 160,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  marginBottom: 20,
-                  background: "var(--surface-2)",
-                }}
-              >
+              <div style={{ width: "100%", height: 160, borderRadius: 8, overflow: "hidden", marginBottom: 20, background: "var(--surface-2)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedCommunityPlan.featured_image_url}
-                  alt={selectedCommunityPlan.plan_name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                <img src={selectedCommunityPlan.featured_image_url} alt={selectedCommunityPlan.plan_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              {selectedCommunityPlan.beds != null && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span>
-                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.beds}</span>
-                </div>
-              )}
-              {selectedCommunityPlan.baths != null && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span>
-                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.baths}</span>
-                </div>
-              )}
-              {(selectedCommunityPlan.sqft_min != null || selectedCommunityPlan.sqft_max != null) && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span>
-                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-                    {formatSqft(selectedCommunityPlan.sqft_min, selectedCommunityPlan.sqft_max)}
-                  </span>
-                </div>
-              )}
-              {selectedCommunityPlan.base_price != null && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Base Price</span>
-                  <span style={{ color: "var(--text-2)", fontSize: 12 }}>{formatPrice(selectedCommunityPlan.base_price)}</span>
-                </div>
-              )}
-              {selectedCommunityPlan.incentive_amount != null && selectedCommunityPlan.incentive_amount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-3)", fontSize: 12 }}>Incentive</span>
-                  <span style={{ color: "#4ade80", fontSize: 12 }}>-{formatPrice(selectedCommunityPlan.incentive_amount)}</span>
-                </div>
-              )}
+              {selectedCommunityPlan.beds != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Bedrooms</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.beds}</span></div>}
+              {selectedCommunityPlan.baths != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Bathrooms</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{selectedCommunityPlan.baths}</span></div>}
+              {(selectedCommunityPlan.sqft_min != null || selectedCommunityPlan.sqft_max != null) && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Sq Ft</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{formatSqft(selectedCommunityPlan.sqft_min, selectedCommunityPlan.sqft_max)}</span></div>}
+              {selectedCommunityPlan.base_price != null && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Base Price</span><span style={{ color: "var(--text-2)", fontSize: 12 }}>{formatPrice(selectedCommunityPlan.base_price)}</span></div>}
+              {selectedCommunityPlan.incentive_amount != null && selectedCommunityPlan.incentive_amount > 0 && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--text-3)", fontSize: 12 }}>Incentive</span><span style={{ color: "#4ade80", fontSize: 12 }}>-{formatPrice(selectedCommunityPlan.incentive_amount)}</span></div>}
               <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid var(--border)", marginTop: 4 }}>
                 <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>Net Price</span>
-                <span style={{ color: "var(--blue)", fontSize: 14, fontWeight: 700, fontFamily: "var(--font-display, serif)" }}>
-                  {displayPrice(selectedCommunityPlan)}
-                </span>
+                <span style={{ color: "var(--blue)", fontSize: 14, fontWeight: 700, fontFamily: "var(--font-display, serif)" }}>{displayPrice(selectedCommunityPlan)}</span>
               </div>
             </div>
             {selectedCommunityPlan.page_url && (
-              <a
-                href={selectedCommunityPlan.page_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: "inline-block",
-                  marginTop: 20,
-                  fontSize: 12,
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  background: "#1a1a2e",
-                  border: "1px solid #2a2a4a",
-                  color: "#818cf8",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                }}
-              >
-                ↗ View Plan Details
-              </a>
+              <a href={selectedCommunityPlan.page_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 20, fontSize: 12, padding: "6px 14px", borderRadius: 6, background: "#1a1a2e", border: "1px solid #2a2a4a", color: "#818cf8", textDecoration: "none", fontWeight: 500 }}>↗ View Plan Details</a>
             )}
           </div>
         )}
@@ -834,7 +445,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   );
 }
 
-// ─── Export (wrapped in Suspense) ─────────────────────────────────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
 
 export default function PlansClient(props: Props) {
   return (

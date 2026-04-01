@@ -4,14 +4,10 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
-import FiltersBar from "@/components/FiltersBar";
-import StatsBar from "@/components/StatsBar";
-import ViewToggle from "@/components/ViewToggle";
-import CommunityCard from "@/components/CommunityCard";
 import SlideOver from "@/components/SlideOver";
 import Badge from "@/components/Badge";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
-import DataTable, { type Column, type StatItem as DataTableStatItem } from "@/components/DataTable";
+import DataTable, { type Column } from "@/components/DataTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,12 +42,10 @@ interface Community {
   cable_internet: string | null;
   trash: string | null;
   amenities: string | null;
-  // joined fields
   division_slug: string;
   division_name: string;
   region: string;
   timezone: string;
-  // Heartbeat fields
   heartbeat_community_id: number | null;
   abbr: string | null;
   sales_phone: string | null;
@@ -76,8 +70,6 @@ interface Community {
 }
 
 type CommunityTableRow = Community & Record<string, unknown> & {
-  _status_display: string;
-  _city_state: string;
   _hoa_display: string;
   _price_display: string;
 };
@@ -114,6 +106,20 @@ function formatHoa(fee: number | null, period: string | null): string {
   return `$${fee.toLocaleString()}/${period ?? "mo"}`;
 }
 
+function filterSelectStyle(active: boolean): React.CSSProperties {
+  return {
+    background: "#1a1a1e",
+    border: `1px solid ${active ? "#80B602" : "#333"}`,
+    color: active ? "#80B602" : "#888",
+    borderRadius: 3,
+    height: 28,
+    fontSize: 12,
+    padding: "0 6px",
+    cursor: "pointer",
+    outline: "none",
+  };
+}
+
 function StatusBadge({ status }: { status: string | null }) {
   const active = isActiveStatus(status);
   return (
@@ -132,7 +138,7 @@ function StatusBadge({ status }: { status: string | null }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 24 }}>
-      <h3 style={{ color: "var(--text-3)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
+      <h3 style={{ color: "var(--text-3)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 10px" }}>
         {title}
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -142,7 +148,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
       <span style={{ color: "var(--text-3)", fontSize: 12, flexShrink: 0 }}>{label}</span>
@@ -157,7 +163,6 @@ function CommunitiesInner({ communities, divisions }: Props) {
   const searchParams = useSearchParams();
   const { filter, labels } = useGlobalFilter();
 
-  const [view, setView] = useState<"card" | "table">("card");
   const [divisionFilter, setDivisionFilter] = useState<string>(() => {
     if (filter.divisionId) {
       return divisions.find(d => d.id === filter.divisionId)?.slug ?? "all";
@@ -168,11 +173,6 @@ function CommunitiesInner({ communities, divisions }: Props) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Community | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("communities-view");
-    if (saved === "card" || saved === "table") setView(saved);
-  }, []);
 
   // Sync local division filter when global filter changes
   useEffect(() => {
@@ -185,11 +185,6 @@ function CommunitiesInner({ communities, divisions }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.divisionId]);
 
-  const handleViewChange = (v: "card" | "table") => {
-    setView(v);
-    localStorage.setItem("communities-view", v);
-  };
-
   // Unique states
   const allStates = Array.from(
     new Set(communities.map((c) => c.state).filter(Boolean))
@@ -197,7 +192,6 @@ function CommunitiesInner({ communities, divisions }: Props) {
 
   // Filter
   const filtered = communities.filter((c) => {
-    // Global filter takes priority
     if (filter.communityId && c.id !== filter.communityId) return false;
     if (divisionFilter !== "all" && c.division_slug !== divisionFilter) return false;
     if (!filter.communityId && stateFilter !== "all" && c.state !== stateFilter) return false;
@@ -213,29 +207,9 @@ function CommunitiesInner({ communities, divisions }: Props) {
     return true;
   });
 
-  // Aggregate stats
-  const allPrices = communities.map((c) => c.price_from).filter((p): p is number => p != null);
-  const priceMin = allPrices.length ? Math.min(...allPrices) : null;
-  const priceMax = allPrices.length ? Math.max(...allPrices) : null;
-  const priceRange = priceMin != null && priceMax != null
-    ? `$${(priceMin / 1000).toFixed(0)}K – $${(priceMax / 1000).toFixed(0)}K`
-    : "—";
-
-  const statsBarItems = [
-    { label: "Total",      value: filtered.length },
-    { label: "Active",     value: filtered.filter((c) => isActiveStatus(c.status)).length, color: "#4ade80" },
-    { label: "Coming Soon",value: filtered.filter((c) => c.status === "coming-soon").length, color: "#f5a623" },
-    { label: "States",     value: new Set(filtered.map((c) => c.state).filter(Boolean)).size },
-    { label: "Divisions",  value: new Set(filtered.map((c) => c.division_slug).filter(Boolean)).size },
-    { label: "Price Range",value: priceRange, color: "#59a6bd" },
-  ];
-
-  // ── Table setup ────────────────────────────────────────────────────────────
-
+  // Table rows
   const tableRows: CommunityTableRow[] = filtered.map((c) => ({
     ...c,
-    _status_display: getStatusLabel(c.status),
-    _city_state: [c.city, c.state].filter(Boolean).join(", "),
     _hoa_display: formatHoa(c.hoa_fee, c.hoa_period),
     _price_display: formatPrice(c.price_from),
   }));
@@ -246,23 +220,32 @@ function CommunitiesInner({ communities, divisions }: Props) {
       label: "Community",
       sortable: true,
       render: (_v, row) => (
-        <span style={{ color: "var(--text)", fontWeight: 500 }}>{row.name}</span>
+        <span style={{ color: "#ededed", fontWeight: 500 }}>{row.name}</span>
       ),
     },
     {
-      key: "_city_state",
-      label: "Location",
+      key: "city",
+      label: "City",
       sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.city ?? "—"}</span>,
+    },
+    {
+      key: "state",
+      label: "State",
+      sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.state ?? "—"}</span>,
     },
     {
       key: "division_name",
       label: "Division",
       sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.division_name}</span>,
     },
     {
       key: "_price_display",
       label: "Price From",
       sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._price_display}</span>,
     },
     {
       key: "status",
@@ -271,108 +254,88 @@ function CommunitiesInner({ communities, divisions }: Props) {
     },
     {
       key: "_hoa_display",
-      label: "HOA",
+      label: "HOA/mo",
       sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._hoa_display}</span>,
+    },
+    {
+      key: "model_homes",
+      label: "Plans",
+      render: () => <span style={{ color: "#555", fontSize: 13 }}>—</span>,
     },
     {
       key: "has_model",
-      label: "Model",
+      label: "Model Home",
       render: (_v, row) => (
-        <span style={{ color: row.has_model ? "#4ade80" : "#333", fontSize: 12 }}>
+        <span style={{ color: row.has_model ? "#4ade80" : "#555", fontSize: 12 }}>
           {row.has_model ? "Yes" : "—"}
         </span>
       ),
     },
-    {
-      key: "page_url",
-      label: "View",
-      render: (_v, row) =>
-        row.page_url ? (
-          <a
-            href={`https://schellbrothers.com${row.page_url}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "#818cf8", fontSize: 11, textDecoration: "none" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            ↗
-          </a>
-        ) : null,
-    },
   ];
 
-  const dataTableStats: DataTableStatItem[] = [
-    { label: "Communities", value: filtered.length, color: "var(--text)" },
-    { label: "Active", value: filtered.filter((c) => isActiveStatus(c.status)).length, color: "#4ade80" },
-  ];
+  // Filter options
+  const divisionOptions = divisions.map((d) => ({ value: d.slug, label: d.name }));
+  const stateOptions = allStates.map((s) => ({ value: s, label: s }));
 
-  // ── Card view ──────────────────────────────────────────────────────────────
-
-  const cardView = (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        gap: 14,
-        padding: 24,
-      }}
-    >
-      {filtered.map((c) => {
-        const amenityList = c.amenities
-          ? c.amenities.split(",").map((a) => a.trim()).filter(Boolean)
-          : [];
-        return (
-          <CommunityCard
-            key={c.id}
-            name={c.name}
-            city={c.city}
-            state={c.state}
-            priceFrom={c.price_from}
-            tagline={c.short_description}
-            imageUrl={c.featured_image_url}
-            modelHomeName={c.has_model ? "Model Home" : null}
-            status={getStatusLabel(c.status)}
-            amenities={amenityList}
-            onClick={() => setSelected(c)}
-          />
-        );
-      })}
-      {filtered.length === 0 && (
-        <div
-          style={{
-            gridColumn: "1 / -1",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 24px",
-            color: "rgba(255,255,255,0.3)",
-            gap: 12,
-          }}
+  // Inline filters for TopBar
+  const inlineFilters = (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {!filter.divisionId && (
+        <select
+          value={divisionFilter}
+          onChange={(e) => setDivisionFilter(e.target.value)}
+          style={filterSelectStyle(divisionFilter !== "all")}
         >
-          <span style={{ fontSize: 32 }}>⊘</span>
-          <span style={{ fontSize: 13 }}>No results match the current filter</span>
-        </div>
+          <option value="all">All Divisions</option>
+          {divisionOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       )}
+      {!filter.communityId && (
+        <select
+          value={stateFilter}
+          onChange={(e) => setStateFilter(e.target.value)}
+          style={filterSelectStyle(stateFilter !== "all")}
+        >
+          <option value="all">All States</option>
+          {stateOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      )}
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        style={filterSelectStyle(statusFilter !== "all")}
+      >
+        <option value="all">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="coming-soon">Coming Soon</option>
+        <option value="sold-out">Sold Out</option>
+      </select>
+      <input
+        type="text"
+        placeholder="Search communities…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          background: "#1a1a1e",
+          border: "1px solid #333",
+          color: search ? "#ededed" : "#888",
+          borderRadius: 3,
+          height: 28,
+          fontSize: 12,
+          padding: "0 8px",
+          width: 180,
+          outline: "none",
+        }}
+      />
     </div>
   );
 
-  // ── Table view ─────────────────────────────────────────────────────────────
-
-  const tableView = (
-    <DataTable<CommunityTableRow>
-      columns={tableColumns}
-      rows={tableRows}
-      stats={dataTableStats}
-      defaultPageSize={100}
-      onRowClick={(row) => setSelected(row)}
-      emptyMessage="No communities"
-      minWidth={1100}
-    />
-  );
-
-  // ── Slide-over content ─────────────────────────────────────────────────────
-
+  // Amenities for slide-over
   const amenities = selected?.amenities
     ? selected.amenities.split(",").map((a) => a.trim()).filter(Boolean)
     : [];
@@ -381,73 +344,28 @@ function CommunitiesInner({ communities, divisions }: Props) {
     ? [selected.natural_gas, selected.electric, selected.water, selected.sewer, selected.cable_internet, selected.trash].every((v) => v == null)
     : true;
 
-  // ── Filters ────────────────────────────────────────────────────────────────
-
-  const divisionOptions = [
-    { value: "all", label: "All Divisions" },
-    ...divisions.map((d) => ({ value: d.slug, label: d.name })),
-  ];
-
-  const stateOptions = [
-    { value: "all", label: "All States" },
-    ...allStates.map((s) => ({ value: s, label: s })),
-  ];
-
-  const statusOptions = [
-    { value: "all",         label: "All Statuses" },
-    { value: "active",      label: "Active" },
-    { value: "coming-soon", label: "Coming Soon" },
-    { value: "sold-out",    label: "Sold Out" },
-  ];
-
   return (
     <PageShell
-      topBar={
-        <TopBar
-          title="Communities"
-          right={<ViewToggle view={view} onChange={handleViewChange} />}
-        />
-      }
+      topBar={<TopBar title="Communities" right={inlineFilters} />}
       filtersBar={
-        <>
-          {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
-              <span>Filtered:</span>
-              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
-            </div>
-          )}
-          <FiltersBar
-            filters={[
-              ...(!filter.divisionId ? [{
-                value: divisionFilter,
-                onChange: setDivisionFilter,
-                options: divisionOptions,
-                placeholder: "All Divisions",
-              }] : []),
-              ...(!filter.communityId ? [{
-                value: stateFilter,
-                onChange: setStateFilter,
-                options: stateOptions,
-                placeholder: "All States",
-              }] : []),
-              {
-                value: statusFilter,
-                onChange: setStatusFilter,
-                options: statusOptions,
-                placeholder: "All Statuses",
-              },
-            ]}
-            search={search}
-            onSearch={setSearch}
-            searchPlaceholder="Search communities…"
-          />
-          <StatsBar stats={statsBarItems} />
-        </>
+        (filter.divisionId || filter.communityId) ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
+            <span>Filtered:</span>
+            {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+            {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+            {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
+          </div>
+        ) : undefined
       }
     >
-      {view === "card" ? cardView : tableView}
+      <DataTable<CommunityTableRow>
+        columns={tableColumns}
+        rows={tableRows}
+        defaultPageSize={100}
+        onRowClick={(row) => setSelected(row)}
+        emptyMessage="No communities match the current filter"
+        minWidth={1100}
+      />
 
       {/* Slide-over */}
       <SlideOver
@@ -464,28 +382,13 @@ function CommunitiesInner({ communities, divisions }: Props) {
       >
         {selected && (
           <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 0 }}>
-            {/* Hero image */}
             {selected.featured_image_url && (
-              <div
-                style={{
-                  width: "100%",
-                  height: 180,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  marginBottom: 20,
-                  background: "var(--surface-2)",
-                }}
-              >
+              <div style={{ width: "100%", height: 180, borderRadius: 8, overflow: "hidden", marginBottom: 20, background: "var(--surface-2)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selected.featured_image_url}
-                  alt={selected.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                <img src={selected.featured_image_url} alt={selected.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             )}
 
-            {/* Badges */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
               {selected.division_name && (
                 <Badge variant="custom" label={selected.division_name} customColor="#818cf8" customBg="#1a1a2e" customBorder="#2a2a4a" />
@@ -496,55 +399,46 @@ function CommunitiesInner({ communities, divisions }: Props) {
               {selected.has_model && <Badge variant="model" />}
             </div>
 
-            {/* Description */}
             {selected.short_description && (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "#888",
-                  lineHeight: 1.5,
-                  marginBottom: 20,
-                  margin: "0 0 20px",
-                }}
-              >
+              <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, margin: "0 0 20px" }}>
                 {selected.short_description}
               </p>
             )}
 
             <Section title="Overview">
-              <Row label="Division" value={selected.division_name || selected.division_slug} />
-              <Row label="Location" value={[selected.city, selected.state].filter(Boolean).join(", ") || null} />
-              <Row label="Price From" value={formatPrice(selected.price_from)} />
-              <Row label="Price To"   value={formatPrice(selected.price_to)} />
+              <InfoRow label="Division" value={selected.division_name || selected.division_slug} />
+              <InfoRow label="Location" value={[selected.city, selected.state].filter(Boolean).join(", ") || null} />
+              <InfoRow label="Price From" value={formatPrice(selected.price_from)} />
+              <InfoRow label="Price To" value={formatPrice(selected.price_to)} />
               {selected.hoa_fee != null && (
-                <Row label="HOA" value={formatHoa(selected.hoa_fee, selected.hoa_period)} />
+                <InfoRow label="HOA" value={formatHoa(selected.hoa_fee, selected.hoa_period)} />
               )}
             </Section>
 
             {selected.school_district && (
               <Section title="Schools">
-                <Row label="District"   value={selected.school_district} />
-                <Row label="Elementary" value={selected.school_elementary} />
-                <Row label="Middle"     value={selected.school_middle} />
-                <Row label="High"       value={selected.school_high} />
+                <InfoRow label="District"   value={selected.school_district} />
+                <InfoRow label="Elementary" value={selected.school_elementary} />
+                <InfoRow label="Middle"     value={selected.school_middle} />
+                <InfoRow label="High"       value={selected.school_high} />
               </Section>
             )}
 
             {(selected.sales_phone || selected.sales_center_address) && (
               <Section title="Sales">
-                <Row label="Phone"   value={selected.sales_phone} />
-                <Row label="Address" value={selected.sales_center_address} />
+                <InfoRow label="Phone"   value={selected.sales_phone} />
+                <InfoRow label="Address" value={selected.sales_center_address} />
               </Section>
             )}
 
             {!allUtilsNull && (
               <Section title="Utilities">
-                {selected.natural_gas    != null && <Row label="Natural Gas"    value={selected.natural_gas} />}
-                {selected.electric       != null && <Row label="Electric"       value={selected.electric} />}
-                {selected.water          != null && <Row label="Water"          value={selected.water} />}
-                {selected.sewer          != null && <Row label="Sewer"          value={selected.sewer} />}
-                {selected.cable_internet != null && <Row label="Cable/Internet" value={selected.cable_internet} />}
-                {selected.trash          != null && <Row label="Trash"          value={selected.trash} />}
+                {selected.natural_gas    != null && <InfoRow label="Natural Gas"    value={selected.natural_gas} />}
+                {selected.electric       != null && <InfoRow label="Electric"       value={selected.electric} />}
+                {selected.water          != null && <InfoRow label="Water"          value={selected.water} />}
+                {selected.sewer          != null && <InfoRow label="Sewer"          value={selected.sewer} />}
+                {selected.cable_internet != null && <InfoRow label="Cable/Internet" value={selected.cable_internet} />}
+                {selected.trash          != null && <InfoRow label="Trash"          value={selected.trash} />}
               </Section>
             )}
 
@@ -552,17 +446,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
               <Section title="Amenities">
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {amenities.map((a) => (
-                    <span
-                      key={a}
-                      style={{
-                        background: "var(--surface-2)",
-                        border: "1px solid var(--border)",
-                        color: "var(--text-2)",
-                        borderRadius: 6,
-                        fontSize: 11,
-                        padding: "3px 9px",
-                      }}
-                    >
+                    <span key={a} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-2)", borderRadius: 6, fontSize: 11, padding: "3px 9px" }}>
                       {a}
                     </span>
                   ))}
@@ -570,58 +454,20 @@ function CommunitiesInner({ communities, divisions }: Props) {
               </Section>
             )}
 
-            {/* Action buttons */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {selected.page_url && (
-                <a
-                  href={`https://schellbrothers.com${selected.page_url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 6,
-                    background: "#1a2a3a",
-                    border: "1px solid #223347",
-                    color: "#7aafdf",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                  }}
-                >
+                <a href={`https://schellbrothers.com${selected.page_url}`} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 12, padding: "6px 14px", borderRadius: 6, background: "#1a2a3a", border: "1px solid #223347", color: "#7aafdf", textDecoration: "none", fontWeight: 500 }}>
                   ↗ SchellBrothers.com
                 </a>
               )}
-              <a
-                href={`/plans?community=${selected.id}`}
-                style={{
-                  fontSize: 12,
-                  padding: "6px 14px",
-                  borderRadius: 6,
-                  background: "#1a1a2e",
-                  border: "1px solid #2a2a4a",
-                  color: "#818cf8",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                }}
-              >
+              <a href={`/plans?community=${selected.id}`}
+                style={{ fontSize: 12, padding: "6px 14px", borderRadius: 6, background: "#1a1a2e", border: "1px solid #2a2a4a", color: "#818cf8", textDecoration: "none", fontWeight: 500 }}>
                 View Plans →
               </a>
               {selected.brochure_url && (
-                <a
-                  href={selected.brochure_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 6,
-                    background: "var(--surface-2)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-2)",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                  }}
-                >
+                <a href={selected.brochure_url} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 12, padding: "6px 14px", borderRadius: 6, background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-2)", textDecoration: "none", fontWeight: 500 }}>
                   ⬇ Brochure
                 </a>
               )}
@@ -633,7 +479,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
   );
 }
 
-// ─── Export (wrapped in Suspense for useSearchParams) ─────────────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
 
 export default function CommunitiesClient(props: Props) {
   return (

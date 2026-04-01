@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import TopBar from "@/components/TopBar";
-import FiltersBar from "@/components/FiltersBar";
-import StatsBar from "@/components/StatsBar";
-import ViewToggle from "@/components/ViewToggle";
 import SlideOver, { Section, Row } from "@/components/SlideOver";
 import Badge from "@/components/Badge";
 import DataTable, { type Column, type StatConfigItem } from "@/components/DataTable";
@@ -99,17 +96,29 @@ function formatCurrency(n: number | null): string {
   return "$" + n.toLocaleString();
 }
 
+function filterSelectStyle(active: boolean): React.CSSProperties {
+  return {
+    background: "#1a1a1e",
+    border: `1px solid ${active ? "#80B602" : "#333"}`,
+    color: active ? "#80B602" : "#888",
+    borderRadius: 3,
+    height: 28,
+    fontSize: 12,
+    padding: "0 6px",
+    cursor: "pointer",
+    outline: "none",
+  };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function ModelHomesClient({ modelHomes, divisions }: Props) {
   const { filter, labels } = useGlobalFilter();
 
-  // Map global filter division UUID → division name for matching division_parent_name
   const globalDivName = filter.divisionId
     ? divisions.find(d => d.id === filter.divisionId)?.name ?? null
     : null;
 
-  const [view, setView] = useState<"card" | "table">("table");
   const [divFilter, setDivFilter] = useState<string>(() =>
     globalDivName
       ? (modelHomes.find(r => r.division_parent_name === globalDivName)
@@ -118,16 +127,9 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       : ""
   );
   const [stateFilter, setStateFilter] = useState("");
-  const [commFilter, setCommFilter] = useState<string>(() =>
-    filter.communityId ? filter.communityId : ""
-  );
+  const [commFilter, setCommFilter] = useState<string>(() => filter.communityId ? filter.communityId : "");
   const [search, setSearch] = useState("");
   const [selectedHome, setSelectedHome] = useState<ModelHomeRow | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("model-homes-view");
-    if (saved === "card" || saved === "table") setView(saved);
-  }, []);
 
   // Sync when global filter changes
   useEffect(() => {
@@ -140,47 +142,25 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
     } else {
       setDivFilter("");
     }
-    if (filter.communityId) {
-      setCommFilter(filter.communityId);
-    } else {
-      setCommFilter("");
-    }
+    if (filter.communityId) setCommFilter(filter.communityId);
+    else setCommFilter("");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.divisionId, filter.communityId]);
 
-  function handleViewChange(v: "card" | "table") {
-    setView(v);
-    localStorage.setItem("model-homes-view", v);
-  }
-
   const allRows: ModelHomeRow[] = modelHomes as ModelHomeRow[];
 
-  // Build filter options
   const divisionOptions = Array.from(
-    new Map(
-      allRows
-        .filter((r) => r.division_parent_id && r.division_parent_name)
-        .map((r) => [String(r.division_parent_id), r.division_parent_name!])
-    ).entries()
-  )
-    .sort((a, b) => a[1].localeCompare(b[1]))
-    .map(([value, label]) => ({ value, label }));
+    new Map(allRows.filter((r) => r.division_parent_id && r.division_parent_name).map((r) => [String(r.division_parent_id), r.division_parent_name!])).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1])).map(([value, label]) => ({ value, label }));
 
-  const stateOptions = Array.from(new Set(allRows.map((r) => r.state).filter(Boolean)))
-    .sort()
-    .map((s) => ({ value: s as string, label: s as string }));
+  const stateOptions = Array.from(new Set(allRows.map((r) => r.state).filter(Boolean))).sort().map((s) => ({ value: s as string, label: s as string }));
 
   const filteredForComm = allRows
     .filter((r) => !divFilter || String(r.division_parent_id) === divFilter)
     .filter((r) => !stateFilter || r.state === stateFilter);
 
-  const commOptions = Array.from(
-    new Set(filteredForComm.map((r) => r.community_name).filter(Boolean))
-  )
-    .sort()
-    .map((n) => ({ value: n as string, label: n as string }));
+  const commOptions = Array.from(new Set(filteredForComm.map((r) => r.community_name).filter(Boolean))).sort().map((n) => ({ value: n as string, label: n as string }));
 
-  // When global filter community is set, match by name label (communityId is UUID, model_homes has HB string id)
   const globalCommName = filter.communityId ? labels.community : null;
 
   const rows = allRows
@@ -188,347 +168,136 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
     .filter((r) => !stateFilter || r.state === stateFilter)
     .filter((r) => {
       if (!filter.communityId && !commFilter) return true;
-      if (filter.communityId) {
-        return globalCommName ? r.community_name === globalCommName : true;
-      }
+      if (filter.communityId) return globalCommName ? r.community_name === globalCommName : true;
       return r.community_name === commFilter;
     })
-    .filter(
-      (r) =>
-        !search ||
-        (r.community_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.model_marketing_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.address ?? "").toLowerCase().includes(search.toLowerCase())
+    .filter((r) =>
+      !search ||
+      (r.community_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.model_marketing_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.address ?? "").toLowerCase().includes(search.toLowerCase())
     );
 
-  // Stats
-  const statsBarItems = [
-    { label: "Total", value: rows.length, color: "var(--text-3)" },
-    {
-      label: "Communities",
-      value: new Set(rows.map((r) => r.community_name)).size,
-      color: "var(--text-2)",
-    },
-    {
-      label: "States",
-      value: new Set(rows.map((r) => r.state)).size,
-      color: "var(--blue)",
-    },
-    {
-      label: "Leaseback",
-      value: rows.filter((r) => r.is_leaseback).length,
-      color: "#7a5a8a",
-    },
-  ];
-
-  // Table stat config (filter-reactive via DataTable)
   const statConfig: StatConfigItem<ModelHomeRow>[] = [
-    { label: "Total", color: "var(--text-3)", getValue: (r) => r.length },
-    {
-      label: "Communities",
-      color: "var(--text-2)",
-      getValue: (r) => new Set(r.map((x) => x.community_name)).size,
-    },
-    {
-      label: "States",
-      color: "var(--blue)",
-      getValue: (r) => new Set(r.map((x) => x.state)).size,
-    },
-    {
-      label: "Leaseback",
-      color: "#7a5a8a",
-      getValue: (r) => r.filter((x) => x.is_leaseback).length,
-    },
+    { label: "Total",       color: "var(--text-3)", getValue: (r) => r.length },
+    { label: "Communities", color: "var(--text-2)", getValue: (r) => new Set(r.map((x) => x.community_name)).size },
+    { label: "States",      color: "var(--blue)",   getValue: (r) => new Set(r.map((x) => x.state)).size },
+    { label: "Leaseback",   color: "#7a5a8a",       getValue: (r) => r.filter((x) => x.is_leaseback).length },
   ];
 
-  // Table columns
   const columns: Column<ModelHomeRow>[] = [
     {
       key: "model_marketing_name",
       label: "Plan Name",
       sticky: true,
-      render: (_v, row) => (
-        <span
-          style={{
-            fontFamily: "var(--font-display)",
-            color: "var(--text)",
-            fontWeight: 500,
-            fontSize: 13,
-          }}
-        >
-          {row.model_marketing_name ?? row.model_name ?? "—"}
-        </span>
-      ),
+      sortable: true,
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500, fontSize: 13 }}>{row.model_marketing_name ?? row.model_name ?? "—"}</span>,
     },
     {
       key: "community_name",
       label: "Community",
-      render: (_v, row) => (
-        <span style={{ color: "#c0c0c0", fontSize: 13 }}>
-          {row.community_name ?? "—"}
-        </span>
-      ),
+      sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.community_name ?? "—"}</span>,
     },
-    { key: "city", label: "City", filterable: true },
-    { key: "state", label: "State", filterable: true },
-    { key: "division_parent_name", label: "Division", filterable: true },
+    { key: "city",  label: "City",  sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{(row.city as string) ?? "—"}</span> },
+    { key: "state", label: "State", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{(row.state as string) ?? "—"}</span> },
+    { key: "division_parent_name", label: "Division", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{(row.division_parent_name as string) ?? "—"}</span> },
     {
       key: "lot_block_number",
       label: "Lot",
-      render: (_v, row) => (
-        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-          {row.lot_block_number ?? row.lot_number ?? "—"}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.lot_block_number ?? row.lot_number ?? "—"}</span>,
     },
     {
       key: "bedrooms",
       label: "Beds",
-      render: (_v, row) => (
-        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-          {row.bedrooms ?? "—"}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.bedrooms ?? "—"}</span>,
     },
     {
       key: "bathrooms",
       label: "Baths",
-      render: (_v, row) => (
-        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-          {row.bathrooms ?? "—"}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.bathrooms ?? "—"}</span>,
     },
     {
       key: "heated_sqft",
       label: "Sqft",
-      render: (_v, row) => (
-        <span style={{ color: "var(--text-2)", fontSize: 12 }}>
-          {row.heated_sqft ? row.heated_sqft.toLocaleString() : "—"}
-        </span>
-      ),
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row.heated_sqft ? (row.heated_sqft as number).toLocaleString() : "—"}</span>,
     },
     {
       key: "base_price",
       label: "Base Price",
+      sortable: true,
       render: (_v, row) =>
         row.base_price ? (
           <span style={{ color: "var(--blue)", fontWeight: 600, fontSize: 13 }}>
-            {row.base_price_formatted ?? formatCurrency(row.base_price)}
+            {row.base_price_formatted ?? formatCurrency(row.base_price as number | null)}
           </span>
-        ) : (
-          <span style={{ color: "#444" }}>—</span>
-        ),
+        ) : <span style={{ color: "#444" }}>—</span>,
     },
     {
       key: "is_leaseback",
-      label: "Leaseback",
+      label: "Status",
       render: (_v, row) =>
-        row.is_leaseback ? (
-          <Badge variant="leaseback" />
-        ) : (
-          <span style={{ color: "#333" }}>—</span>
-        ),
-    },
-    {
-      key: "url",
-      label: "View",
-      sortable: false,
-      render: (_v, row) =>
-        row.url ? (
-          <a
-            href={`https://www.schellbrothers.com${row.url}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            style={{ color: "var(--blue)", fontSize: 13, textDecoration: "none" }}
-          >
-            ↗
-          </a>
-        ) : (
-          <span style={{ color: "#444" }}>—</span>
-        ),
+        row.is_leaseback ? <Badge variant="leaseback" /> : <span style={{ color: "#555", fontSize: 12 }}>Model</span>,
     },
   ];
 
-  // ── Card view ───────────────────────────────────────────────────────────────
-  const cardView = (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        gap: 12,
-        padding: 16,
-      }}
-    >
-      {rows.length === 0 && (
-        <div
-          style={{
-            gridColumn: "1 / -1",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 24px",
-            color: "rgba(255,255,255,0.3)",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 32 }}>⊘</span>
-          <span style={{ fontSize: 13 }}>No results match the current filter</span>
-        </div>
+  // Inline filters
+  const inlineFilters = (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {!filter.divisionId && (
+        <select value={divFilter} onChange={(e) => { setDivFilter(e.target.value); setCommFilter(""); }} style={filterSelectStyle(!!divFilter)}>
+          <option value="">All Divisions</option>
+          {divisionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       )}
-      {rows.map((home) => (
-        <div
-          key={home.id}
-          onClick={() => setSelectedHome(home)}
-          style={{
-            borderRadius: 8,
-            border: "1px solid #555",
-            backgroundColor: "#3E3F44",
-            overflow: "hidden",
-            cursor: "pointer",
-            transition: "border-color 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#59a6bd")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#555")}
-        >
-          {home.featured_image_url ? (
-            <img
-              src={home.featured_image_url}
-              alt={home.model_marketing_name ?? ""}
-              style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: 160,
-                backgroundColor: "var(--surface-2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span style={{ fontSize: 32, opacity: 0.2 }}>⌂</span>
-            </div>
-          )}
-          <div style={{ padding: 12 }}>
-            {/* Plan name */}
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 15,
-                fontWeight: 600,
-                color: "var(--text)",
-                marginBottom: 2,
-              }}
-            >
-              {home.model_marketing_name ?? home.model_name ?? home.name ?? "—"}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>
-              {home.community_name}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
-              {home.city}, {home.state}
-            </div>
-
-            {/* Price */}
-            {home.base_price && (
-              <div
-                style={{ fontSize: 14, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}
-              >
-                {home.base_price_formatted ?? formatCurrency(home.base_price)}
-              </div>
-            )}
-
-            {/* Specs */}
-            <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 8 }}>
-              {home.bedrooms ?? "—"} bd · {home.bathrooms ?? "—"} ba ·{" "}
-              {home.heated_sqft ? home.heated_sqft.toLocaleString() : "—"} sqft
-            </div>
-
-            {/* Leaseback badge */}
-            {home.is_leaseback && (
-              <div style={{ marginTop: 2 }}>
-                <Badge variant="leaseback" />
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
+      {!filter.communityId && (
+        <select value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); setCommFilter(""); }} style={filterSelectStyle(!!stateFilter)}>
+          <option value="">All States</option>
+          {stateOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      {!filter.communityId && (
+        <select value={commFilter} onChange={(e) => setCommFilter(e.target.value)} style={filterSelectStyle(!!commFilter)}>
+          <option value="">All Communities</option>
+          {commOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      <input
+        type="text"
+        placeholder="Search model homes…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ background: "#1a1a1e", border: "1px solid #333", color: search ? "#ededed" : "#888", borderRadius: 3, height: 28, fontSize: 12, padding: "0 8px", width: 180, outline: "none" }}
+      />
     </div>
   );
 
-  // ── Slide-over ──────────────────────────────────────────────────────────────
-  const planName =
-    selectedHome?.model_marketing_name ??
-    selectedHome?.model_name ??
-    selectedHome?.name ??
-    "—";
+  const planName = selectedHome?.model_marketing_name ?? selectedHome?.model_name ?? selectedHome?.name ?? "—";
 
   return (
     <PageShell
-      topBar={
-        <TopBar
-          title="Model Homes"
-          right={<ViewToggle view={view} onChange={handleViewChange} />}
-        />
-      }
+      topBar={<TopBar title="Model Homes" right={inlineFilters} />}
       filtersBar={
-        <>
-          {(filter.divisionId || filter.communityId) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
-              <span>Filtered:</span>
-              {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
-              {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
-              {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
-            </div>
-          )}
-          <FiltersBar
-            filters={[
-              ...(!filter.divisionId ? [{
-                value: divFilter,
-                onChange: (v: string) => { setDivFilter(v); setCommFilter(""); },
-                options: divisionOptions,
-                placeholder: "All Divisions",
-              }] : []),
-              ...(!filter.communityId ? [{
-                value: stateFilter,
-                onChange: (v: string) => { setStateFilter(v); setCommFilter(""); },
-                options: stateOptions,
-                placeholder: "All States",
-              }] : []),
-              ...(!filter.communityId ? [{
-                value: commFilter,
-                onChange: setCommFilter,
-                options: commOptions,
-                placeholder: "All Communities",
-              }] : []),
-            ]}
-            search={search}
-            onSearch={setSearch}
-            searchPlaceholder="Search model homes…"
-          />
-          {view === "card" && <StatsBar stats={statsBarItems} />}
-        </>
+        (filter.divisionId || filter.communityId) ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 24px", background: "var(--bg)", borderBottom: "1px solid var(--border)", fontSize: 11, color: "var(--text-3)" }}>
+            <span>Filtered:</span>
+            {labels.division && <span style={{ color: "var(--text-2)" }}>{labels.division}</span>}
+            {labels.community && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.community}</span></>}
+            {labels.plan && <><span>›</span><span style={{ color: "var(--text-2)" }}>{labels.plan}</span></>}
+          </div>
+        ) : undefined
       }
     >
-      {view === "table" ? (
-        <DataTable<ModelHomeRow>
-          columns={columns}
-          rows={rows}
-          statConfig={statConfig}
-          defaultPageSize={100}
-          onRowClick={setSelectedHome}
-          emptyMessage="No model homes"
-          minWidth={1100}
-        />
-      ) : (
-        cardView
-      )}
+      <DataTable<ModelHomeRow>
+        columns={columns}
+        rows={rows}
+        statConfig={statConfig}
+        defaultPageSize={100}
+        onRowClick={setSelectedHome}
+        emptyMessage="No model homes"
+        minWidth={1100}
+      />
 
-      {/* Slide-over */}
       <SlideOver
         open={!!selectedHome}
         onClose={() => setSelectedHome(null)}
@@ -539,171 +308,69 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
       >
         {selectedHome && (
           <>
-            {/* Hero image */}
             {selectedHome.featured_image_url ? (
-              <img
-                src={selectedHome.featured_image_url}
-                alt={planName}
-                style={{
-                  width: "100%",
-                  borderRadius: 8,
-                  marginBottom: 20,
-                  objectFit: "cover",
-                  maxHeight: 220,
-                  display: "block",
-                }}
-              />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={selectedHome.featured_image_url} alt={planName} style={{ width: "100%", borderRadius: 8, marginBottom: 20, objectFit: "cover", maxHeight: 220, display: "block" }} />
             ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: 160,
-                  backgroundColor: "var(--surface-2)",
-                  borderRadius: 8,
-                  marginBottom: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div style={{ width: "100%", height: 160, backgroundColor: "var(--surface-2)", borderRadius: 8, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ fontSize: 32, opacity: 0.2 }}>⌂</span>
               </div>
             )}
 
             <Section title="Pricing">
-              <Row
-                label="Base Price"
-                value={
-                  <span style={{ color: "var(--blue)", fontWeight: 600 }}>
-                    {selectedHome.base_price_formatted ?? formatCurrency(selectedHome.base_price)}
-                  </span>
-                }
-              />
+              <Row label="Base Price" value={<span style={{ color: "var(--blue)", fontWeight: 600 }}>{selectedHome.base_price_formatted ?? formatCurrency(selectedHome.base_price)}</span>} />
             </Section>
 
             <Section title="Home Specs">
-              <Row
-                label="Plan"
-                value={selectedHome.model_marketing_name ?? selectedHome.model_name}
-              />
-              <Row label="Bedrooms" value={selectedHome.bedrooms} />
-              <Row label="Bathrooms" value={selectedHome.bathrooms} />
-              <Row
-                label="Heated Sqft"
-                value={
-                  selectedHome.heated_sqft
-                    ? selectedHome.heated_sqft.toLocaleString()
-                    : null
-                }
-              />
-              <Row
-                label="Total Sqft"
-                value={
-                  selectedHome.total_sqft
-                    ? selectedHome.total_sqft.toLocaleString()
-                    : null
-                }
-              />
-              <Row
-                label="Lot"
-                value={selectedHome.lot_block_number ?? selectedHome.lot_number}
-              />
+              <Row label="Plan"        value={selectedHome.model_marketing_name ?? selectedHome.model_name} />
+              <Row label="Bedrooms"    value={selectedHome.bedrooms} />
+              <Row label="Bathrooms"   value={selectedHome.bathrooms} />
+              <Row label="Heated Sqft" value={selectedHome.heated_sqft ? (selectedHome.heated_sqft as number).toLocaleString() : null} />
+              <Row label="Total Sqft"  value={selectedHome.total_sqft ? (selectedHome.total_sqft as number).toLocaleString() : null} />
+              <Row label="Lot"         value={selectedHome.lot_block_number ?? selectedHome.lot_number} />
             </Section>
 
             <Section title="Location">
-              <Row label="Address" value={selectedHome.address} />
-              <Row label="City" value={selectedHome.city} />
-              <Row label="State" value={selectedHome.state} />
-              <Row label="Zip" value={selectedHome.zip} />
+              <Row label="Address"   value={selectedHome.address} />
+              <Row label="City"      value={selectedHome.city} />
+              <Row label="State"     value={selectedHome.state} />
+              <Row label="Zip"       value={selectedHome.zip} />
               <Row label="Community" value={selectedHome.community_name} />
-              <Row label="Division" value={selectedHome.division_parent_name} />
+              <Row label="Division"  value={selectedHome.division_parent_name} />
             </Section>
 
             {selectedHome.hours_string && (
               <Section title="Hours">
-                <p
-                  style={{
-                    color: "#888",
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    margin: 0,
-                    whiteSpace: "pre-line",
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: selectedHome.hours_string.replace(/<br[^>]*>/g, "\n"),
-                  }}
+                <p style={{ color: "#888", fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}
+                  dangerouslySetInnerHTML={{ __html: (selectedHome.hours_string as string).replace(/<br[^>]*>/g, "\n") }}
                 />
               </Section>
             )}
 
             {selectedHome.is_leaseback && (
               <Section title="Leaseback">
-                <Row label="Start Date" value={selectedHome.leaseback_start_date} />
-                <Row label="End Date" value={selectedHome.leaseback_end_date} />
-                <Row
-                  label="Days Remaining"
-                  value={
-                    selectedHome.days_till_lease_end != null
-                      ? `${selectedHome.days_till_lease_end} days`
-                      : null
-                  }
-                />
+                <Row label="Start Date"     value={selectedHome.leaseback_start_date} />
+                <Row label="End Date"       value={selectedHome.leaseback_end_date} />
+                <Row label="Days Remaining" value={selectedHome.days_till_lease_end != null ? `${selectedHome.days_till_lease_end} days` : null} />
               </Section>
             )}
 
             {selectedHome.description && (
               <Section title="Description">
-                <p
-                  style={{ color: "#888", fontSize: 13, lineHeight: 1.6, margin: 0 }}
-                >
-                  {selectedHome.description}
-                </p>
+                <p style={{ color: "#888", fontSize: 13, lineHeight: 1.6, margin: 0 }}>{selectedHome.description as string}</p>
               </Section>
             )}
 
             <Section title="Actions">
               {selectedHome.virtual_tour_url && (
-                <a
-                  href={selectedHome.virtual_tour_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    border: "1px solid #1a3f1a",
-                    backgroundColor: "#1a2e1a",
-                    color: "#5a8a5a",
-                    fontSize: 13,
-                    textDecoration: "none",
-                    fontWeight: 500,
-                    marginBottom: 8,
-                  }}
-                >
+                <a href={selectedHome.virtual_tour_url as string} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, border: "1px solid #1a3f1a", backgroundColor: "#1a2e1a", color: "#5a8a5a", fontSize: 13, textDecoration: "none", fontWeight: 500, marginBottom: 8 }}>
                   ▶ Virtual Tour
                 </a>
               )}
               {selectedHome.url && (
-                <a
-                  href={`https://www.schellbrothers.com${selectedHome.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    border: "1px solid #1a3f50",
-                    backgroundColor: "#0d2229",
-                    color: "var(--blue)",
-                    fontSize: 13,
-                    textDecoration: "none",
-                    fontWeight: 500,
-                  }}
-                >
+                <a href={`https://www.schellbrothers.com${selectedHome.url}`} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, border: "1px solid #1a3f50", backgroundColor: "#0d2229", color: "var(--blue)", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
                   ↗ View on schellbrothers.com
                 </a>
               )}

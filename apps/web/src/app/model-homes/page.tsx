@@ -11,7 +11,7 @@ export default async function ModelHomesPage() {
 
   const [{ data: modelHomes }, { data: divisions }, { data: communities }] = await Promise.all([
     supabase.from("model_homes").select("*").order("community_name"),
-    supabase.from("divisions").select("id,slug,name").order("name"),
+    supabase.from("divisions").select("id,slug,name,heartbeat_division_id").order("name"),
     supabase.from("communities").select("id,name").order("name"),
   ]);
 

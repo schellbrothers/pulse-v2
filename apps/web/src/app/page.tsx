@@ -38,7 +38,7 @@ export default async function OverviewPage({
         .order("lot_number"),
       supabase.from("model_homes").select("*").eq("community_id", filterComm).maybeSingle(),
       supabase.from("spec_homes").select("*").eq("community_id", filterComm),
-      supabase.from("divisions").select("id,name,slug"),
+      supabase.from("divisions").select("id,name,slug,heartbeat_division_id"),
     ]);
 
     const community = communityData;

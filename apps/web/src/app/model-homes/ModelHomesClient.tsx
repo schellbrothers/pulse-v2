@@ -127,6 +127,9 @@ export default function ModelHomesClient({ modelHomes, divisions, communities }:
   const globalDivName = filter.divisionId
     ? divisions.find((d) => d.id === filter.divisionId)?.name ?? null
     : null;
+  const globalCommName = filter.communityId
+    ? communities.find((c) => c.id === filter.communityId)?.name ?? null
+    : null;
 
   const [divFilter, setDivFilter] = useState<string>(() =>
     globalDivName

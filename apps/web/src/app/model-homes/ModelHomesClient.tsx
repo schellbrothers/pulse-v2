@@ -10,6 +10,14 @@ import { useGlobalFilter } from "@/context/GlobalFilterContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+const SLUG_TO_HB_DIV_ID: Record<string, number> = {
+  "delaware-beaches": 1,
+  "richmond": 2,
+  "nashville": 4,
+  "boise": 6,
+};
+
+
 interface Division {
   id: string;
   slug: string;

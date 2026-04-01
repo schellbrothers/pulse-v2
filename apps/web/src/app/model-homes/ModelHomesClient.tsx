@@ -87,6 +87,7 @@ type ModelHomeRow = ModelHome & Record<string, unknown>;
 interface Props {
   modelHomes: ModelHome[];
   divisions: Division[];
+  communities: { id: string; name: string }[];
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ function filterSelectStyle(active: boolean): React.CSSProperties {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function ModelHomesClient({ modelHomes, divisions }: Props) {
+export default function ModelHomesClient({ modelHomes, divisions, communities }: Props) {
   const { filter, labels } = useGlobalFilter();
 
   const globalDivName = filter.divisionId
@@ -141,22 +142,7 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  // Sync when global filter changes
-  useEffect(() => {
-    const divName = filter.divisionId
-      ? divisions.find((d) => d.id === filter.divisionId)?.name ?? null
-      : null;
-    if (divName) {
-      const match = modelHomes.find((r) => r.division_parent_name === divName);
-      setDivFilter(match ? String(match.division_parent_id ?? "") : "");
-    } else {
-      setDivFilter("");
-    }
-    if (filter.communityId) setCommFilter(filter.communityId);
-    else setCommFilter("");
-    setPage(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter.divisionId, filter.communityId]);
+
 
   // Reset page on filter/search change
   useEffect(() => { setPage(0); }, [search, divFilter, stateFilter, commFilter]);
@@ -175,14 +161,12 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
 
   const commOptions = Array.from(new Set(filteredForComm.map((r) => r.community_name).filter(Boolean))).sort().map((n) => ({ value: n as string, label: n as string }));
 
-  const globalCommName = filter.communityId ? labels.community : null;
-
   const rows = allRows
-    .filter((r) => !globalDivName ? (!divFilter || String(r.division_parent_id) === divFilter) : r.division_parent_name === globalDivName)
+    .filter((r) => !globalDivName || r.division_parent_name === globalDivName)
     .filter((r) => !stateFilter || r.state === stateFilter)
     .filter((r) => {
-      if (!filter.communityId && !commFilter) return true;
-      if (filter.communityId) return globalCommName ? r.community_name === globalCommName : true;
+      if (!globalCommName && !commFilter) return true;
+      if (globalCommName) return r.community_name === globalCommName;
       return r.community_name === commFilter;
     })
     .filter((r) =>

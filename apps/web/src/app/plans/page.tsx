@@ -8,6 +8,7 @@ export const revalidate = 30;
 export interface DivisionPlan {
   id: string;
   division_id: string;
+  division_parent_id?: number | null;
   marketing_name: string;
   plan_type: string | null;
   beds: number | null;
@@ -28,6 +29,7 @@ export interface CommunityPlan {
   plan_id: string | null;
   plan_name: string;
   division_id: string | null;
+  division_parent_id?: number | null;
   beds: number | null;
   baths: number | null;
   sqft_min: number | null;

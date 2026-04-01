@@ -35,20 +35,22 @@ export default function CommunityCard({
     <div
       onClick={onClick}
       style={{
-        background: "#3E3F44",
-        border: "1px solid #555",
+        background: "rgb(0,27,35)",
+        border: "2px solid #59a6bd",
         borderRadius: 3,
         overflow: "hidden",
         cursor: onClick ? "pointer" : "default",
-        transition: "border-color 0.15s",
+        transition: "border-color 0.15s, box-shadow 0.15s",
         display: "flex",
         flexDirection: "column",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "#666";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#7fc8de";
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(89,166,189,0.2)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "#555";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "#59a6bd";
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
       }}
     >
       {/* Image */}
@@ -56,7 +58,7 @@ export default function CommunityCard({
         style={{
           width: "100%",
           height: 180,
-          background: "#2a2b2e",
+          background: "rgb(0,20,28)",
           position: "relative",
           overflow: "hidden",
           flexShrink: 0,
@@ -135,10 +137,10 @@ export default function CommunityCard({
         {/* Community name */}
         <div
           style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 15,
+            fontFamily: "var(--font-body)",
+            fontSize: 14,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.9)",
+            color: "#ffffff",
             lineHeight: 1.3,
           }}
         >

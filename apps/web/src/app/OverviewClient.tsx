@@ -148,23 +148,53 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value, accent, comingSoon }: StatCardProps) {
+  const tintMap: Record<string, string> = {
+    "#59a6bd": "rgb(0,27,35)",
+    "#80B602": "rgb(29,41,0)",
+    "#E32027": "rgb(40,5,5)",
+    "#e07000": "rgb(35,20,0)",
+    "#a855f7": "rgb(25,5,35)",
+    "#f59e0b": "rgb(35,25,0)",
+    "#00c853": "rgb(0,30,10)",
+    "#5b80a0": "rgb(5,15,25)",
+    "#ef4444": "rgb(40,5,5)",
+    "#555": "rgb(20,20,20)",
+    "#8a7a5a": "rgb(25,20,5)",
+  };
+  const bgTint = tintMap[accent] ?? "rgb(20,20,20)";
+
   return (
     <div
       style={{
-        background: "#111",
-        border: "1px solid #1f1f1f",
-        borderLeft: `3px solid ${accent}`,
-        borderRadius: 8,
-        padding: "12px 14px",
+        background: bgTint,
+        border: `2px solid ${accent}`,
+        borderRadius: 3,
+        padding: 16,
+        minHeight: 80,
         minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
       <div
         style={{
-          fontFamily: "var(--font-display)",
+          fontSize: 10,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          color: "rgba(255,255,255,0.5)",
+          marginBottom: 8,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-body)",
           fontSize: 28,
           fontWeight: 700,
-          color: "#ededed",
+          color: comingSoon ? "#333" : "#ffffff",
           lineHeight: 1.1,
           display: "flex",
           alignItems: "center",
@@ -173,18 +203,6 @@ function StatCard({ label, value, accent, comingSoon }: StatCardProps) {
       >
         {value}
         {comingSoon && <ComingSoonBadge />}
-      </div>
-      <div
-        style={{
-          fontSize: 11,
-          color: "#666",
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          marginTop: 4,
-          fontWeight: 500,
-        }}
-      >
-        {label}
       </div>
     </div>
   );
@@ -200,7 +218,7 @@ function SectionHeader({ title, count, right }: { title: string; count?: number;
           {title}
         </span>
         {count !== undefined && (
-          <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "1px 7px", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+          <span style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "1px 7px", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
             {count}
           </span>
         )}
@@ -333,7 +351,7 @@ function HBv1FunnelPlaceholder() {
           <div
             key={stage}
             style={{
-              background: "#3E3F44",
+              background: "#1d1d1d",
               border: "1px solid #555",
               borderRadius: 3,
               padding: "12px 14px",
@@ -376,7 +394,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
   const dateStr = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#323236" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#222326" }}>
       {/* Top bar — HBv1 style */}
       <div
         style={{
@@ -386,7 +404,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
           padding: "0 24px",
           height: 52,
           borderBottom: "1px solid #3a3b3e",
-          background: "#2a2b2e",
+          background: "#222326",
           flexShrink: 0,
         }}
       >
@@ -419,68 +437,59 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
             { label: "Divisions", value: divisions.length, accent: "#59a6bd" },
             { label: "Communities", value: communities.length, accent: "#59a6bd" },
             { label: "Plans", value: "—", accent: "#59a6bd" },
-            { label: "Available Lots", value: availableLots.length || "—", accent: "#59a6bd" },
-            { label: "Leads", value: "—", accent: "#59a6bd", cs: true },
-            { label: "Prospects", value: "—", accent: "#59a6bd", cs: true },
-            { label: "Contracts", value: "—", accent: "#59a6bd", cs: true },
-          ].map((s) => (
+            { label: "Available Lots", value: availableLots.length || "—", accent: "#80B602" },
+            { label: "Leads", value: "—", accent: "#a855f7", cs: true },
+            { label: "Prospects", value: "—", accent: "#f59e0b", cs: true },
+            { label: "Contracts", value: "—", accent: "#80B602", cs: true },
+          ].map((s) => {
+            const tintMap: Record<string, string> = {
+              "#59a6bd": "rgb(0,27,35)",
+              "#80B602": "rgb(29,41,0)",
+              "#a855f7": "rgb(25,5,35)",
+              "#f59e0b": "rgb(35,25,0)",
+            };
+            const bgTint = tintMap[s.accent] ?? "rgb(20,20,20)";
+            return (
             <div
               key={s.label}
               style={{
-                background: "#3E3F44",
-                border: "1px solid #555",
+                background: bgTint,
+                border: `2px solid ${s.accent}`,
                 borderRadius: 3,
-                padding: "12px 14px",
+                padding: 16,
+                minHeight: 80,
                 minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
               }}
             >
               <div
                 style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: s.cs ? "#444" : "#ededed",
-                  lineHeight: 1.1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                {s.value}
-                {s.cs && (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      background: "#1a1a1a",
-                      color: "#555",
-                      border: "1px solid #2a2a2a",
-                      borderRadius: 20,
-                      fontSize: 8,
-                      fontWeight: 600,
-                      padding: "1px 6px",
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    Soon
-                  </span>
-                )}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.45)",
+                  fontSize: 10,
+                  fontWeight: 600,
                   textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                  marginTop: 4,
-                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  color: "rgba(255,255,255,0.5)",
+                  marginBottom: 8,
                 }}
               >
                 {s.label}
               </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: s.cs ? "#333" : "#ffffff",
+                  lineHeight: 1.1,
+                }}
+              >
+                {s.value}
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Division cards — 2×N grid */}
@@ -535,7 +544,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
                 key={div.id}
                 onClick={() => router.push(`/?div=${div.id}`)}
                 style={{
-                  background: "#3E3F44",
+                  background: "#1d1d1d",
                   border: "1px solid #555",
                   borderLeft: "3px solid #59a6bd",
                   borderRadius: 3,
@@ -663,7 +672,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
   const topCommunities = [...communities].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 10);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#323236" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "#222326" }}>
       {/* Top bar — breadcrumb */}
       <div
         style={{
@@ -759,49 +768,63 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
               }}
             >
               {[
-                { label: "Communities", value: communities.length, cs: false },
-                { label: "Plans", value: divisionPlans.length, cs: false },
-                { label: "Available Lots", value: availableLots.length, cs: false },
-                { label: "Under Construction", value: underConstruction.length, cs: false },
-                { label: "Model Homes", value: modelHomeComms.length, cs: false },
-                { label: "QD Homes", value: qdLots.length, cs: false },
-                { label: "Leads", value: "—", cs: true },
-              ].map((s) => (
+                { label: "Communities", value: communities.length, accent: "#59a6bd", cs: false },
+                { label: "Plans", value: divisionPlans.length, accent: "#59a6bd", cs: false },
+                { label: "Available Lots", value: availableLots.length, accent: "#80B602", cs: false },
+                { label: "Under Construction", value: underConstruction.length, accent: "#5b80a0", cs: false },
+                { label: "Model Homes", value: modelHomeComms.length, accent: "#59a6bd", cs: false },
+                { label: "QD Homes", value: qdLots.length, accent: "#e07000", cs: false },
+                { label: "Leads", value: "—", accent: "#a855f7", cs: true },
+              ].map((s) => {
+                const tintMap: Record<string, string> = {
+                  "#59a6bd": "rgb(0,27,35)",
+                  "#80B602": "rgb(29,41,0)",
+                  "#5b80a0": "rgb(5,15,25)",
+                  "#e07000": "rgb(35,20,0)",
+                  "#a855f7": "rgb(25,5,35)",
+                };
+                const bgTint = tintMap[s.accent] ?? "rgb(20,20,20)";
+                return (
                 <div
                   key={s.label}
                   style={{
-                    background: "#3E3F44",
-                    border: "1px solid #555",
+                    background: bgTint,
+                    border: `2px solid ${s.accent}`,
                     borderRadius: 3,
-                    padding: "12px 14px",
+                    padding: 16,
+                    minHeight: 80,
                     minWidth: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
                   }}
                 >
                   <div
                     style={{
-                      fontFamily: "var(--font-display)",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      color: "rgba(255,255,255,0.5)",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
                       fontSize: 28,
                       fontWeight: 700,
-                      color: s.cs ? "#444" : "#ededed",
+                      color: s.cs ? "#333" : "#ffffff",
                       lineHeight: 1.1,
                     }}
                   >
                     {s.value}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "rgba(255,255,255,0.45)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.07em",
-                      marginTop: 4,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {s.label}
-                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Funnel placeholder */}
@@ -822,7 +845,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
               </h2>
               <div
                 style={{
-                  background: "#3E3F44",
+                  background: "#1d1d1d",
                   border: "1px solid #555",
                   borderRadius: 3,
                   overflow: "hidden",
@@ -985,31 +1008,44 @@ function PlaceholderValue() {
 }
 
 // ─── Placeholder Stat Card ────────────────────────────────────────────────────
-function PlaceholderStatCard({ label, accent = "#223347" }: { label: string; accent?: string }) {
+function PlaceholderStatCard({ label, accent = "#59a6bd" }: { label: string; accent?: string }) {
+  const tintMap: Record<string, string> = {
+    "#59a6bd": "rgb(0,27,35)",
+    "#80B602": "rgb(29,41,0)",
+    "#E32027": "rgb(40,5,5)",
+    "#e07000": "rgb(35,20,0)",
+    "#a855f7": "rgb(25,5,35)",
+    "#f59e0b": "rgb(35,25,0)",
+    "#223347": "rgb(5,15,25)",
+  };
+  const bgTint = tintMap[accent] ?? "rgb(20,20,20)";
   return (
     <div
       style={{
-        background: "#111",
-        border: "1px solid #1f1f1f",
-        borderLeft: `3px solid ${accent}`,
-        borderRadius: 8,
-        padding: "12px 14px",
+        background: bgTint,
+        border: `2px solid ${accent}`,
+        borderRadius: 3,
+        padding: 16,
+        minHeight: 80,
         minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
-      <PlaceholderValue />
       <div
         style={{
-          fontSize: 11,
-          color: "#666",
+          fontSize: 10,
+          fontWeight: 600,
           textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          marginTop: 4,
-          fontWeight: 500,
+          letterSpacing: "0.1em",
+          color: "rgba(255,255,255,0.5)",
+          marginBottom: 8,
         }}
       >
         {label}
       </div>
+      <PlaceholderValue />
     </div>
   );
 }
@@ -1309,22 +1345,22 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         {/* Community meta pills */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 24px 12px", alignItems: "center" }}>
           {community.price_from && (
-            <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "#59a6bd", fontWeight: 600 }}>
+            <span style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "#59a6bd", fontWeight: 600 }}>
               From {formatPrice(community.price_from as number)}
             </span>
           )}
           {community.hoa_fee && (
-            <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+            <span style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
               ${community.hoa_fee}/mo HOA
             </span>
           )}
           {community.total_homesites && (
-            <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+            <span style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
               {community.total_homesites} homesites
             </span>
           )}
           {community.school_district && (
-            <span style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+            <span style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "3px 8px", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
               {community.school_district}
             </span>
           )}
@@ -1427,9 +1463,9 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
                   <thead>
                     <tr>
-                      <td style={{ width: 70, fontSize: 10, color: "#444", paddingBottom: 8 }}></td>
+                      <td style={{ width: 70, fontSize: 12, fontWeight: 700, color: "#ffffff", background: "#c0392b", paddingBottom: 8, paddingLeft: 6, paddingTop: 6, textAlign: "center" }}>{currentYear}</td>
                       {MONTHS.map((m) => (
-                        <th key={m} style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, textAlign: "center", paddingBottom: 8, minWidth: 52 }}>
+                        <th key={m} style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600, textAlign: "center", paddingBottom: 8, minWidth: 52, background: "#1d1d1d", border: "1px solid #333", padding: "6px 4px" }}>
                           {m}
                         </th>
                       ))}
@@ -1437,17 +1473,17 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                   </thead>
                   <tbody>
                     {[
-                      { label: "Net", color: "#333", size: 18 },
-                      { label: "Goal", color: "#444", size: 13 },
-                      { label: "Var", color: "#333", size: 13 },
+                      { label: "Net", color: "#ffffff", size: 18 },
+                      { label: "Goal", color: "rgba(255,255,255,0.5)", size: 13 },
+                      { label: "Var", color: "rgba(255,255,255,0.5)", size: 13 },
                     ].map((row) => (
                       <tr key={row.label} style={{ borderTop: "1px solid #1a1a1a" }}>
-                        <td style={{ fontSize: 11, color: "#555", fontWeight: 600, padding: "8px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        <td style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "8px 0", textTransform: "uppercase", letterSpacing: "0.1em" }}>
                           {row.label}
                         </td>
                         {MONTHS.map((m) => (
                           <td key={m} style={{ textAlign: "center", padding: "8px 4px" }}>
-                            <span style={{ fontFamily: "var(--font-display)", fontSize: row.size, color: row.color }}>—</span>
+                            <span style={{ fontFamily: "var(--font-body)", fontSize: row.size, color: row.color }}>—</span>
                           </td>
                         ))}
                       </tr>
@@ -1516,7 +1552,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 12, color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Phase Breakdown</div>
                 <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", background: "#0f0f0f", borderRadius: 8, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", background: "#1d1d1d", borderRadius: 3, overflow: "hidden" }}>
                     <thead>
                       <tr style={{ background: "#161616" }}>
                         {["Phase", "Total", "Available", "Sold", "Under Const", "Future"].map((h) => (
@@ -1664,7 +1700,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                   title="Lot Map"
                 />
               ) : (
-                <div style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "32px 24px", textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+                <div style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "32px 24px", textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
                   Lot map not configured for this community
                 </div>
               )}
@@ -1681,13 +1717,13 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             <div style={{ flex: "0 0 40%", padding: 24, overflowY: "auto" }}>
               <SectionHeader title={`Plans Available (${sortedPlans.length})`} />
               {sortedPlans.length === 0 ? (
-                <div style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "20px", color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 20 }}>
+                <div style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "20px", color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 20 }}>
                   No plans configured for this community
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                   {sortedPlans.map((plan) => (
-                    <div key={plan.id} style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, padding: "12px 14px" }}>
+                    <div key={plan.id} style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, padding: "12px 14px" }}>
                       <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "#ededed", marginBottom: 4 }}>{plan.plan_name}</div>
                       <div style={{ display: "flex", gap: 10, fontSize: 12, color: "rgba(255,255,255,0.5)", flexWrap: "wrap" }}>
                         {plan.beds && <span>{plan.beds} bd</span>}
@@ -1759,7 +1795,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
               <ComingSoonBanner source="Pulse v1" />
             </div>
 
-            <div style={{ background: "#3E3F44", border: "1px solid #555", borderRadius: 3, overflow: "hidden", maxWidth: 700 }}>
+            <div style={{ background: "#1d1d1d", border: "1px solid #555", borderRadius: 3, overflow: "hidden", maxWidth: 700 }}>
               {/* AI scoring header */}
               <div style={{ background: "#2a2b2e", padding: "12px 16px", borderBottom: "1px solid #444", display: "flex", gap: 24, alignItems: "center" }}>
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>AI Lead Scoring</span>
@@ -1955,7 +1991,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                       key={i}
                       style={{
                         height: 40,
-                        background: day == null ? "#3E3F44" : "#2a2b2e",
+                        background: day == null ? "#1d1d1d" : "#2a2b2e",
                         border: isToday ? "1px solid #59a6bd" : "none",
                         borderRight: "1px solid #444",
                         borderBottom: "1px solid #444",

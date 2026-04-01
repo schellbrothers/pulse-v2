@@ -6,16 +6,16 @@
 
 :root {
   /* HBv1 design tokens */
-  --bg:              #323236;
-  --sidebar-bg:      #222323;
+  --bg:              #222326;
+  --sidebar-bg:      #222326;
   --sidebar-border:  #333333;
-  --surface:         #3E3F44;
+  --surface:         #1d1d1d;
   --surface-2:       #2a2b2e;
   --surface-3:       #363739;
   --border:          #444444;
   --border-2:        #555555;
   --border-light:    rgba(255,255,255,0.1);
-  --text:            rgba(255,255,255,0.9);
+  --text:            #666666;
   --text-2:          rgba(255,255,255,0.7);
   --text-3:          rgba(255,255,255,0.4);
   --text-4:          #999999;
@@ -40,7 +40,7 @@
   --schell-bg-light:   #f5f5f5;
 
   /* Typography */
-  --font-display: 'Bitter', 'Georgia', serif;
+  --font-display: 'Open Sans', Arial, sans-serif;
   --font-body:    'Open Sans', 'Roboto Condensed', sans-serif;
   --font-mono:    'Geist Mono', monospace;
 

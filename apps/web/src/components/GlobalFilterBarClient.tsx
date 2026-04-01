@@ -16,24 +16,54 @@ interface Props {
 }
 
 const selectStyle: React.CSSProperties = {
-  background: "#3E3F44",
-  border: "1px solid #555",
+  background: "#2a2b2e",
+  border: "1px solid #444",
   borderRadius: 3,
-  color: "rgba(255,255,255,0.6)",
-  fontSize: 12,
-  padding: "4px 8px",
+  color: "#666666",
+  fontSize: 13,
+  fontWeight: 400,
+  padding: "4px 10px",
   outline: "none",
   cursor: "pointer",
   height: 28,
   minWidth: 140,
-  transition: "border-color 0.15s, color 0.15s",
+  transition: "background 0.15s, color 0.15s, border-color 0.15s",
+  fontFamily: "var(--font-body)",
 };
 
-const activeSelectStyle: React.CSSProperties = {
-  ...selectStyle,
+const activeDivSelectStyle: React.CSSProperties = {
+  background: "#59a6bd",
   border: "1px solid #59a6bd",
-  color: "rgba(255,255,255,0.9)",
+  borderRadius: 3,
+  color: "#ffffff",
+  fontSize: 13,
+  fontWeight: 600,
+  padding: "4px 10px",
+  outline: "none",
+  cursor: "pointer",
+  height: 28,
+  minWidth: 140,
+  transition: "background 0.15s, color 0.15s, border-color 0.15s",
+  fontFamily: "var(--font-body)",
 };
+
+const activeCommSelectStyle: React.CSSProperties = {
+  background: "#80B602",
+  border: "1px solid #80B602",
+  borderRadius: 3,
+  color: "#ffffff",
+  fontSize: 13,
+  fontWeight: 600,
+  padding: "4px 10px",
+  outline: "none",
+  cursor: "pointer",
+  height: 28,
+  minWidth: 140,
+  transition: "background 0.15s, color 0.15s, border-color 0.15s",
+  fontFamily: "var(--font-body)",
+};
+
+const activeSelectStyle: React.CSSProperties = activeDivSelectStyle;
 
 export default function GlobalFilterBarClient({ divisions, communities }: Props) {
   const { filter, setDivision, setCommunity, setPlan, clearFilter, setLabels } =
@@ -112,11 +142,9 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
     >
       {/* Division select */}
       <select
-        style={filter.divisionId ? activeSelectStyle : selectStyle}
+        style={filter.divisionId ? activeDivSelectStyle : selectStyle}
         value={filter.divisionId ?? ""}
         onChange={(e) => setDivision(e.target.value || null)}
-        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
-        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.divisionId ? "#59a6bd" : "#555"; }}
       >
         <option value="">◈ All Divisions</option>
         {divisions.map((d) => (
@@ -130,11 +158,9 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
 
       {/* Community select */}
       <select
-        style={filter.communityId ? activeSelectStyle : selectStyle}
+        style={filter.communityId ? activeCommSelectStyle : selectStyle}
         value={filter.communityId ?? ""}
         onChange={(e) => setCommunity(e.target.value || null)}
-        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
-        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.communityId ? "#59a6bd" : "#555"; }}
       >
         <option value="">⌂ All Communities</option>
         {filteredCommunities.map((c) => (
@@ -148,12 +174,10 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
 
       {/* Plan select */}
       <select
-        style={filter.planModelId ? activeSelectStyle : selectStyle}
+        style={filter.planModelId ? activeDivSelectStyle : selectStyle}
         value={filter.planModelId ?? ""}
         onChange={(e) => setPlan(e.target.value || null)}
         disabled={!filter.communityId || loadingPlans}
-        onFocus={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = "#59a6bd"; }}
-        onBlur={(e) => { (e.currentTarget as HTMLSelectElement).style.borderColor = filter.planModelId ? "#59a6bd" : "#555"; }}
       >
         <option value="">◱ All Plans</option>
         {plans.map((p) => (

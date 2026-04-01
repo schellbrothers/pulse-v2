@@ -180,7 +180,10 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   // ── MODE: By Plan ──────────────────────────────────────────────────────────
 
   const filteredDivisionPlans = divisionPlans.filter((p) => {
-    if (divisionFilter !== "all" && p.division_id !== divisionFilter) return false;
+    if (divisionFilter !== "all") {
+      const hbId = divisions.find(d => d.id === divisionFilter)?.heartbeat_division_id;
+      if (hbId && p.division_parent_id !== hbId) return false;
+    }
     if (styleFilter !== "all" && p.style !== styleFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -209,7 +212,10 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const filteredCommunityPlans = communityPlans.filter((cp) => {
     const comm = communityById.get(cp.community_id);
-    if (divisionFilter !== "all" && cp.division_id !== divisionFilter && comm?.division_id !== divisionFilter) return false;
+    if (divisionFilter !== "all") {
+      const hbId = divisions.find(d => d.id === divisionFilter)?.heartbeat_division_id;
+      if (hbId && cp.division_parent_id !== hbId) return false;
+    }
     if (communityFilter !== "all" && cp.community_id !== communityFilter) return false;
     if (styleFilter !== "all") {
       const styles = cp.style_filters ?? [];

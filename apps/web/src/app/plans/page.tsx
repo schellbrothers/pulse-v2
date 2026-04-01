@@ -56,6 +56,7 @@ export interface Division {
   id: string;
   slug: string;
   name: string;
+  heartbeat_division_id?: number | null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

@@ -168,6 +168,11 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const communityById = new Map(communities.map((c) => [c.id, c]));
   const divisionById = new Map(divisions.map((d) => [d.id, d]));
+  // Map from HB integer ID → division (for tables using division_parent_id)
+  const hbDivisionById = new Map(
+    divisions.filter(d => d.heartbeat_division_id != null)
+             .map(d => [d.heartbeat_division_id!, d])
+  );
 
   const allStyles = Array.from(
     new Set(communityPlans.flatMap((p) => p.style_filters ?? []).filter(Boolean))
@@ -237,7 +242,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const byPlanTableRows: DivisionPlanTableRow[] = filteredDivisionPlans.map((dp) => ({
     ...dp,
-    _division_name: divisionById.get(dp.division_id)?.name ?? "—",
+    _division_name: hbDivisionById.get(dp.division_parent_id ?? 0)?.name ?? dp.division_parent_name ?? "—",
     _beds:  formatBedsOrBaths(dp.beds),
     _baths: formatBedsOrBaths(dp.baths),
     _sqft:  formatSqft(dp.sqft_min, dp.sqft),
@@ -272,7 +277,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const byCommunityTableRows: CommunityPlanTableRow[] = filteredCommunityPlans.map((cp) => {
     const comm = communityById.get(cp.community_id);
-    const div = cp.division_id ? divisionById.get(cp.division_id) : (comm ? divisionById.get(comm.division_id) : null);
+    const div = cp.division_parent_id ? hbDivisionById.get(cp.division_parent_id) : (comm ? divisionById.get(comm.division_id) : null);
     return {
       ...cp,
       _community_name: comm?.name ?? "—",
@@ -293,6 +298,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
       sortable: true,
       render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500 }}>{row._community_name}</span>,
     },
+    { key: "_division_name",  label: "Division",  sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._division_name}</span> },
     { key: "plan_name",      label: "Plan",       sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.plan_name}</span> },
     { key: "_base_price",    label: "Base Price", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._base_price}</span> },
     { key: "_incentive",     label: "Incentive",  sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._incentive}</span> },
@@ -306,7 +312,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const allByPlanRows: DivisionPlanTableRow[] = divisionPlans.map((dp) => ({
     ...dp,
-    _division_name: divisionById.get(dp.division_id)?.name ?? "—",
+    _division_name: hbDivisionById.get(dp.division_parent_id ?? 0)?.name ?? dp.division_parent_name ?? "—",
     _beds:  formatBedsOrBaths(dp.beds),
     _baths: formatBedsOrBaths(dp.baths),
     _sqft:  formatSqft(dp.sqft_min, dp.sqft),
@@ -316,7 +322,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
 
   const allByCommunityRows: CommunityPlanTableRow[] = communityPlans.map((cp) => {
     const comm = communityById.get(cp.community_id);
-    const div = cp.division_id ? divisionById.get(cp.division_id) : (comm ? divisionById.get(comm.division_id) : null);
+    const div = cp.division_parent_id ? hbDivisionById.get(cp.division_parent_id) : (comm ? divisionById.get(comm.division_id) : null);
     return {
       ...cp,
       _community_name: comm?.name ?? "—",

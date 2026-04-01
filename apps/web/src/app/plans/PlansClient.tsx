@@ -359,48 +359,39 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   return (
     <PageShell
       topBar={
-        <>
-          <div style={{
-            display: "flex", alignItems: "center",
-            padding: "0 16px", height: 36, flexShrink: 0,
-            background: "#121314", borderBottom: "1px solid #1a1a1e", gap: 6,
-          }}>
-            {localFilters}
-          </div>
-          {mode === "by-plan" ? (
-            <TableSubHeader<DivisionPlanTableRow>
-              title="Plans"
-              rows={byPlanTableRows}
-              totalRows={activeRows}
-              stats={BY_PLAN_STATS}
-              page={page}
-              pageSize={pageSize}
-              onPageChange={setPage}
-              onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
-              search={search}
-              onSearch={(q) => { setSearch(q); setPage(0); }}
-              searchPlaceholder="Search plans…"
-              onExport={() => exportToCSV(byPlanTableRows as unknown as Record<string, unknown>[], "plans")}
-              onExportAll={() => exportToCSV(allByPlanRows as unknown as Record<string, unknown>[], "plans-all")}
-            />
-          ) : (
-            <TableSubHeader<CommunityPlanTableRow>
-              title="Plans"
-              rows={byCommunityTableRows}
-              totalRows={activeRows}
-              stats={BY_COMMUNITY_STATS}
-              page={page}
-              pageSize={pageSize}
-              onPageChange={setPage}
-              onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
-              search={search}
-              onSearch={(q) => { setSearch(q); setPage(0); }}
-              searchPlaceholder="Search plans or communities…"
-              onExport={() => exportToCSV(byCommunityTableRows as unknown as Record<string, unknown>[], "plans-by-community")}
-              onExportAll={() => exportToCSV(allByCommunityRows as unknown as Record<string, unknown>[], "plans-by-community-all")}
-            />
-          )}
-        </>
+        mode === "by-plan" ? (
+          <TableSubHeader<DivisionPlanTableRow>
+            title="Plans"
+            rows={byPlanTableRows}
+            totalRows={activeRows}
+            stats={BY_PLAN_STATS}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+            search={search}
+            onSearch={(q) => { setSearch(q); setPage(0); }}
+            searchPlaceholder="Search plans…"
+            onExport={() => exportToCSV(byPlanTableRows as unknown as Record<string, unknown>[], "plans")}
+            onExportAll={() => exportToCSV(allByPlanRows as unknown as Record<string, unknown>[], "plans-all")}
+          />
+        ) : (
+          <TableSubHeader<CommunityPlanTableRow>
+            title="Plans"
+            rows={byCommunityTableRows}
+            totalRows={activeRows}
+            stats={BY_COMMUNITY_STATS}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+            search={search}
+            onSearch={(q) => { setSearch(q); setPage(0); }}
+            searchPlaceholder="Search plans or communities…"
+            onExport={() => exportToCSV(byCommunityTableRows as unknown as Record<string, unknown>[], "plans-by-community")}
+            onExportAll={() => exportToCSV(allByCommunityRows as unknown as Record<string, unknown>[], "plans-by-community-all")}
+          />
+        )
       }
     >
       {mode === "by-plan" ? (

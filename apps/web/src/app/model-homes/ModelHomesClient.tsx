@@ -277,30 +277,21 @@ export default function ModelHomesClient({ modelHomes, divisions }: Props) {
   return (
     <PageShell
       topBar={
-        <>
-          <div style={{
-            display: "flex", alignItems: "center",
-            padding: "0 16px", height: 36, flexShrink: 0,
-            background: "#121314", borderBottom: "1px solid #1a1a1e", gap: 6,
-          }}>
-            {localFilters}
-          </div>
-          <TableSubHeader<ModelHomeRow>
-            title="Model Homes"
-            rows={rows}
-            totalRows={rows.length}
-            stats={STATS}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
-            search={search}
-            onSearch={(q) => { setSearch(q); setPage(0); }}
-            searchPlaceholder="Search model homes…"
-            onExport={() => exportToCSV(rows as unknown as Record<string, unknown>[], "model-homes")}
-            onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "model-homes-all")}
-          />
-        </>
+        <TableSubHeader<ModelHomeRow>
+          title="Model Homes"
+          rows={rows}
+          totalRows={rows.length}
+          stats={STATS}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+          search={search}
+          onSearch={(q) => { setSearch(q); setPage(0); }}
+          searchPlaceholder="Search model homes…"
+          onExport={() => exportToCSV(rows as unknown as Record<string, unknown>[], "model-homes")}
+          onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "model-homes-all")}
+        />
       }
     >
       <DataTable<ModelHomeRow>

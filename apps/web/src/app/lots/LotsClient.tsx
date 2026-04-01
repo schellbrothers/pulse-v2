@@ -278,30 +278,21 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   return (
     <PageShell
       topBar={
-        <>
-          <div style={{
-            display: "flex", alignItems: "center",
-            padding: "0 16px", height: 36, flexShrink: 0,
-            background: "#121314", borderBottom: "1px solid #1a1a1e", gap: 6,
-          }}>
-            {localFilters}
-          </div>
-          <TableSubHeader
-            title="Lots"
-            rows={rows}
-            totalRows={rows.length}
-            stats={STATS}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
-            search={search}
-            onSearch={(q) => { setSearch(q); setPage(0); }}
-            searchPlaceholder="Search address or lot…"
-            onExport={() => exportToCSV(rows as unknown as Record<string, unknown>[], "lots")}
-            onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "lots-all")}
-          />
-        </>
+        <TableSubHeader
+          title="Lots"
+          rows={rows}
+          totalRows={rows.length}
+          stats={STATS}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+          search={search}
+          onSearch={(q) => { setSearch(q); setPage(0); }}
+          searchPlaceholder="Search address or lot…"
+          onExport={() => exportToCSV(rows as unknown as Record<string, unknown>[], "lots")}
+          onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "lots-all")}
+        />
       }
     >
       <DataTable<LotTableRow>

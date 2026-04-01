@@ -359,32 +359,21 @@ function CommunitiesInner({ communities, divisions }: Props) {
   return (
     <PageShell
       topBar={
-        <>
-          {localFilters && (
-            <div style={{
-              display: "flex", alignItems: "center",
-              padding: "0 16px", height: 36, flexShrink: 0,
-              background: "#121314", borderBottom: "1px solid #1a1a1e", gap: 6,
-            }}>
-              {localFilters}
-            </div>
-          )}
-          <TableSubHeader
-            title="Communities"
-            rows={tableRows}
-            totalRows={tableRows.length}
-            stats={STATS}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
-            search={search}
-            onSearch={(q) => { setSearch(q); setPage(0); }}
-            searchPlaceholder="Search communities…"
-            onExport={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "communities")}
-            onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "communities-all")}
-          />
-        </>
+        <TableSubHeader
+          title="Communities"
+          rows={tableRows}
+          totalRows={tableRows.length}
+          stats={STATS}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
+          search={search}
+          onSearch={(q) => { setSearch(q); setPage(0); }}
+          searchPlaceholder="Search communities…"
+          onExport={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "communities")}
+          onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "communities-all")}
+        />
       }
     >
       <DataTable<CommunityTableRow>

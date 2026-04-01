@@ -9,6 +9,7 @@ export interface DivisionPlan {
   id: string;
   division_id: string;
   division_parent_id?: number | null;
+  division_parent_name?: string | null;
   marketing_name: string;
   plan_type: string | null;
   beds: number | null;
@@ -30,6 +31,7 @@ export interface CommunityPlan {
   plan_name: string;
   division_id: string | null;
   division_parent_id?: number | null;
+  division_parent_name?: string | null;
   beds: number | null;
   baths: number | null;
   sqft_min: number | null;

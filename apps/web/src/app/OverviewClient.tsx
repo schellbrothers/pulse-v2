@@ -428,7 +428,7 @@ function CorpView({ divisions, communities, lots, modelHomes, specHomes }: CorpV
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+            gridTemplateColumns: "repeat(7, 1fr)",
             gap: 10,
             marginBottom: 28,
           }}
@@ -720,7 +720,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
       {/* HBv1 sub-tab bar */}
       <div
         style={{
-          background: "#2a2b2e",
+          background: "#1a1a1e",
           borderBottom: "2px solid #444",
           display: "flex",
           gap: 0,
@@ -735,13 +735,13 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
             style={{
               background: "none",
               border: "none",
-              borderBottom: divTab === tab.id ? "2px solid #59a6bd" : "2px solid transparent",
+              borderBottom: divTab === tab.id ? "3px solid #59a6bd" : "3px solid transparent",
               marginBottom: -2,
               color: divTab === tab.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
               fontSize: 13,
-              fontFamily: "var(--font-body)",
+              fontFamily: "Open Sans, Arial, sans-serif",
               fontWeight: divTab === tab.id ? 600 : 400,
-              padding: "10px 18px",
+              padding: "12px 20px",
               cursor: "pointer",
               whiteSpace: "nowrap",
               transition: "color 0.15s",
@@ -762,7 +762,7 @@ function DivisionView({ communities, divisionPlans, lots, divisions, selectedDiv
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                gridTemplateColumns: "repeat(7, 1fr)",
                 gap: 10,
                 marginBottom: 28,
               }}
@@ -990,8 +990,8 @@ function ComingSoonBanner({ source }: { source: string }) {
         background: "rgba(255,255,255,0.05)",
         border: "1px solid rgba(255,255,255,0.1)",
         borderRadius: 3,
-        fontSize: 11,
-        color: "rgba(255,255,255,0.35)",
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)",
       }}
     >
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "inline-block" }} />
@@ -1317,25 +1317,35 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             <img
               src={community.featured_image_url as string}
               alt={community.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (
-            <div style={{ width: "100%", height: "100%", background: "#1e1f22" }} />
+            <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", background: "#1e1f22" }} />
           )}
+          {/* Gradient overlay */}
           <div
             style={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              background: "linear-gradient(transparent, rgba(42,43,46,0.95))",
-              padding: "16px 24px 14px",
+              height: "60%",
+              background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)",
+            }}
+          />
+          {/* Text overlay */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 16,
+              left: 24,
+              zIndex: 2,
             }}
           >
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: "#fff" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, color: "#ffffff" }}>
               {community.name}
             </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>
               {[community.city, community.state].filter(Boolean).join(" · ")}
               {division ? ` · ${division.name}` : ""}
             </div>
@@ -1391,7 +1401,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       {/* ── HBv1-style tab bar ── */}
       <div
         style={{
-          background: "#2a2b2e",
+          background: "#1a1a1e",
           borderBottom: "2px solid #444",
           display: "flex",
           gap: 0,
@@ -1406,13 +1416,13 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             style={{
               background: "none",
               border: "none",
-              borderBottom: activeTab === tab.id ? "2px solid #59a6bd" : "2px solid transparent",
+              borderBottom: activeTab === tab.id ? "3px solid #59a6bd" : "3px solid transparent",
               marginBottom: -2,
               color: activeTab === tab.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
               fontSize: 13,
-              fontFamily: "var(--font-body)",
+              fontFamily: "Open Sans, Arial, sans-serif",
               fontWeight: activeTab === tab.id ? 600 : 400,
-              padding: "10px 18px",
+              padding: "12px 20px",
               cursor: "pointer",
               whiteSpace: "nowrap",
               transition: "color 0.15s",
@@ -1435,7 +1445,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                gridTemplateColumns: "repeat(8, 1fr)",
                 gap: 10,
                 marginBottom: 32,
               }}
@@ -1463,7 +1473,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
                   <thead>
                     <tr>
-                      <td style={{ width: 70, fontSize: 12, fontWeight: 700, color: "#ffffff", background: "#c0392b", paddingBottom: 8, paddingLeft: 6, paddingTop: 6, textAlign: "center" }}>{currentYear}</td>
+                      <td style={{ width: 70, fontSize: 12, fontWeight: 700, color: "#ffffff", background: "#E32027", paddingBottom: 8, paddingLeft: 6, paddingTop: 6, textAlign: "center" }}>{currentYear}</td>
                       {MONTHS.map((m) => (
                         <th key={m} style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600, textAlign: "center", paddingBottom: 8, minWidth: 52, background: "#1d1d1d", border: "1px solid #333", padding: "6px 4px" }}>
                           {m}

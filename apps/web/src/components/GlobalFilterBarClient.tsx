@@ -48,8 +48,8 @@ const activeDivSelectStyle: React.CSSProperties = {
 };
 
 const activeCommSelectStyle: React.CSSProperties = {
-  background: "#80B602",
-  border: "1px solid #80B602",
+  background: "#59a6bd",
+  border: "1px solid #59a6bd",
   borderRadius: 3,
   color: "#ffffff",
   fontSize: 13,

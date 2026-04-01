@@ -57,9 +57,9 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  // Map global filter divisionId (UUID) → HB integer via slug lookup
+  // Map global filter divisionId (UUID) → HB integer via heartbeat_division_id FK
   const globalHBDivId = filter.divisionId
-    ? (SLUG_TO_HB_DIV_ID[divisions.find((d) => d.id === filter.divisionId)?.slug ?? ""] ?? null)
+    ? (divisions.find((d) => d.id === filter.divisionId)?.heartbeat_division_id ?? null)
     : null;
 
   // Reset page on search/filter change

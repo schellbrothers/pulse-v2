@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
-
 export const revalidate = 60;
 
 type SystemStatus = "online" | "ready" | "unreachable";
@@ -17,19 +16,67 @@ const systems = [
 ];
 
 const statusMap: Record<SystemStatus, { label: string; dot: string; text: string; pulse: boolean }> = {
-  online:      { label: "Online",      dot: "bg-[#00c853]", text: "text-[#00c853]", pulse: true  },
-  ready:       { label: "Ready",       dot: "bg-[#0070f3]", text: "text-[#0070f3]", pulse: false },
-  unreachable: { label: "Unreachable", dot: "bg-[#ff4444]", text: "text-[#ff4444]", pulse: false },
+  online:      { label: "Online",      dot: "bg-[#80B602]", text: "text-[#80B602]", pulse: true  },
+  ready:       { label: "Ready",       dot: "bg-[#59a6bd]", text: "text-[#59a6bd]", pulse: false },
+  unreachable: { label: "Unreachable", dot: "bg-[#E32027]", text: "text-[#E32027]", pulse: false },
 };
 
-const SYNC_SCHEDULE: Record<string, { label: string; times: string[]; freq: string }> = {
-  "lots":        { label: "HB Lot API",           times: ["6:05 AM", "12:05 PM", "6:05 PM"], freq: "3× daily" },
-  "floor_plans": { label: "HB Page Designer API", times: ["6:00 AM", "12:00 PM", "6:00 PM"], freq: "3× daily" },
-};
+// 6 sync feeds in execution order (some run in parallel at same time)
+// Sequence: division_plans + model_homes + spec_homes fire at :00, lots + community_plans fire at :05
+const SYNC_FEEDS: {
+  feed: string;
+  label: string;
+  description: string;
+  script: string;
+  times: string[];
+  seq: number;
+}[] = [
+  {
+    feed: "division_plans",
+    label: "Division Plans",
+    description: "Plans offered at division level — no community, no pricing",
+    script: "hbx-sync-division-plans.py",
+    times: ["6:00 AM", "12:00 PM", "6:00 PM"],
+    seq: 1,
+  },
+  {
+    feed: "model_homes",
+    label: "Model Homes",
+    description: "Model homes from Heartbeat Page Designer (19 homes)",
+    script: "hbx-sync-homes.py",
+    times: ["6:00 AM", "12:00 PM", "6:00 PM"],
+    seq: 2,
+  },
+  {
+    feed: "spec_homes",
+    label: "Quick Delivery",
+    description: "Spec/QD homes live on website — Page Designer source of truth",
+    script: "hbx-sync-homes.py",
+    times: ["6:00 AM", "12:00 PM", "6:00 PM"],
+    seq: 2,
+  },
+  {
+    feed: "lots",
+    label: "Lots",
+    description: "All lots across all communities from HB Lot API",
+    script: "hbx-sync.py",
+    times: ["6:05 AM", "12:05 PM", "6:05 PM"],
+    seq: 3,
+  },
+  {
+    feed: "community_plans",
+    label: "Community Plans",
+    description: "Plans × community intersection with pricing, images, incentives",
+    script: "hbx-sync-community-plans.py",
+    times: ["6:05 AM", "12:05 PM", "6:05 PM"],
+    seq: 4,
+  },
+];
 
-// Get next run time as single upcoming time string
 function nextRun(times: string[]): string {
-  const et = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: false }).format(new Date());
+  const et = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: false,
+  }).format(new Date());
   const [hStr, mStr] = et.split(":");
   const nowMins = parseInt(hStr) * 60 + parseInt(mStr);
 
@@ -50,6 +97,21 @@ function nextRun(times: string[]): string {
   return fmtDate(1, times[0]);
 }
 
+function fmtDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 export default async function StatusPage() {
   const supabase = createClient(
@@ -58,140 +120,128 @@ export default async function StatusPage() {
   );
 
   // Latest sync per feed
-  const { data: syncStatus } = await supabase
+  const { data: syncRows } = await supabase
     .from("sync_log")
-    .select("feed, status, rows_upserted, rows_total, error_message, duration_ms, synced_at")
+    .select("feed,status,rows_upserted,duration_ms,synced_at")
     .order("synced_at", { ascending: false })
-    .limit(40);
+    .limit(50);
 
-  // Dedupe to latest per feed
-  const latestPerFeed: Record<string, NonNullable<typeof syncStatus>[0]> = {};
-  for (const row of syncStatus ?? []) {
-    if (!latestPerFeed[row.feed]) latestPerFeed[row.feed] = row;
+  // Latest entry per feed
+  const latestByFeed: Record<string, { status: string; rows_upserted: number; duration_ms: number; synced_at: string }> = {};
+  for (const row of syncRows ?? []) {
+    if (!latestByFeed[row.feed]) latestByFeed[row.feed] = row;
   }
 
-  // Recent errors
-  const recentErrors = (syncStatus ?? []).filter(r => r.status === "error").slice(0, 5);
+  const s: React.CSSProperties = {
+    fontFamily: "var(--font-body, 'Open Sans', Arial, sans-serif)",
+    fontSize: 13,
+    color: "#888",
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm border-b border-[#1f1f1f] px-6 py-3">
-          <h1 className="text-[14px] font-semibold text-[#ededed]">System Status</h1>
-        </div>
+    <div style={{ ...s, display: "flex", flexDirection: "column", height: "100%", overflow: "auto", background: "#121314", padding: 24, gap: 32 }}>
 
-        <div className="px-6 py-6 max-w-[1400px]">
-          <div className="grid grid-cols-3 gap-3">
-            {systems.map((system) => {
-              const s = statusMap[system.status];
-              return (
-                <div key={system.name} className="rounded-lg border border-[#1f1f1f] bg-[#111111] p-5 hover:border-[#2a2a2a] transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-md bg-[#1a1a1a] flex items-center justify-center text-lg">
-                        {system.emoji}
-                      </div>
-                      <div className="font-medium text-[13px] text-[#ededed]">{system.name}</div>
-                    </div>
-                    <div className={`flex items-center gap-1.5 text-[11px] font-medium ${s.text}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${s.dot} ${s.pulse ? "animate-pulse" : ""}`} />
-                      {s.label}
-                    </div>
+      {/* Header */}
+      <div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#ededed", marginBottom: 4 }}>System Status</div>
+        <div style={{ fontSize: 12, color: "#555" }}>HBx AI Factory — Pulse v2</div>
+      </div>
+
+      {/* Systems */}
+      <section>
+        <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", marginBottom: 12 }}>
+          Infrastructure
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1, border: "1px solid #1a1a1e", borderRadius: 3, overflow: "hidden" }}>
+          {systems.map((sys) => {
+            const st = statusMap[sys.status];
+            return (
+              <div key={sys.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: "#0d0e10", borderBottom: "1px solid #1a1a1e" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 15 }}>{sys.emoji}</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed" }}>{sys.name}</div>
+                    <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>{sys.description}</div>
                   </div>
-                  <p className="text-[12px] text-[#a1a1a1]">{system.description}</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Data Sync Status ── */}
-        <div className="px-6 pb-6 space-y-4">
-          <h2 style={{ color: "#ededed", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
-            Data Sync
-          </h2>
-
-          {/* Sync table */}
-          <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #1f1f1f" }}>
-            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ backgroundColor: "#0d0d0d" }}>
-                  {["Feed", "Last Run", "Result", "Rows", "Duration", "Next Run", "Schedule"].map(h => (
-                    <th key={h} style={{
-                      padding: "8px 14px", textAlign: "left", whiteSpace: "nowrap",
-                      borderBottom: "1px solid #1f1f1f", fontSize: 11,
-                      textTransform: "uppercase", letterSpacing: "0.07em", color: "#555",
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(SYNC_SCHEDULE).map(([key, cfg]) => {
-                  const row = latestPerFeed[key];
-                  const isSuccess = row?.status === "success";
-                  const isError = row?.status === "error";
-                  const lastRun = row
-                    ? new Date(row.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })
-                    : "—";
-                  const dur = row?.duration_ms
-                    ? row.duration_ms < 1000 ? "< 1s" : `${(row.duration_ms / 1000).toFixed(1)}s`
-                    : "—";
-                  const rows = row?.rows_upserted != null
-                    ? row.rows_upserted.toLocaleString() + (row.rows_total && row.rows_total !== row.rows_upserted ? ` / ${row.rows_total.toLocaleString()}` : "")
-                    : "—";
-                  return (
-                    <tr key={key} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                      <td style={{ padding: "9px 14px", color: "#ededed", fontWeight: 500, whiteSpace: "nowrap" }}>
-                        {cfg.label}
-                      </td>
-                      <td style={{ padding: "9px 14px", color: "#666", whiteSpace: "nowrap" }}>{lastRun}</td>
-                      <td style={{ padding: "9px 14px", whiteSpace: "nowrap" }}>
-                        {!row ? (
-                          <span style={{ color: "#333", fontSize: 11 }}>No data</span>
-                        ) : isSuccess ? (
-                          <span style={{ color: "#00c853", fontSize: 11 }}>✓ success</span>
-                        ) : isError ? (
-                          <span style={{ color: "#ff6b6b", fontSize: 11 }}>✗ error</span>
-                        ) : null}
-                      </td>
-                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{rows}</td>
-                      <td style={{ padding: "9px 14px", color: "#666", whiteSpace: "nowrap" }}>{dur}</td>
-                      <td style={{ padding: "9px 14px", color: "#a1a1a1", whiteSpace: "nowrap" }}>{nextRun(cfg.times)}</td>
-                      <td style={{ padding: "9px 14px", color: "#555", whiteSpace: "nowrap", fontSize: 11 }}>{cfg.freq}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Recent errors — only if any */}
-          {recentErrors.length > 0 && (
-            <div style={{ borderRadius: 8, border: "1px solid #3f1f1f", backgroundColor: "#1a0a0a", padding: "12px 16px" }}>
-              <div style={{ color: "#ff6b6b", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
-                Recent Sync Errors
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: st.dot.replace("bg-[","").replace("]","") }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: st.text.replace("text-[","").replace("]","") }}>{st.label}</span>
+                </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {recentErrors.map((e, i) => (
-                  <div key={i} style={{ fontSize: 11, color: "#a1a1a1" }}>
-                    <span style={{ color: "#ff6b6b", fontWeight: 500 }}>
-                      {SYNC_SCHEDULE[e.feed]?.label ?? e.feed}
-                    </span>
-                    {" · "}
-                    <span style={{ color: "#555" }}>
-                      {new Date(e.synced_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
-                    </span>
-                    {" · "}
-                    {(e.error_message ?? "").slice(0, 120)}
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Data Sync Schedules */}
+      <section>
+        <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", marginBottom: 12 }}>
+          Data Sync — 3× Daily (6 AM · Noon · 6 PM EDT)
+        </div>
+        <div style={{ border: "1px solid #1a1a1e", borderRadius: 3, overflow: "hidden" }}>
+          {/* Table header */}
+          <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px", gap: 0, background: "#0d0e10", borderBottom: "1px solid #222", padding: "8px 16px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444" }}>
+            <span>#</span>
+            <span>Feed</span>
+            <span>Script</span>
+            <span>Last Run</span>
+            <span>Rows</span>
+            <span>Duration</span>
+            <span>Status</span>
+          </div>
+          {SYNC_FEEDS.map((feed) => {
+            const latest = latestByFeed[feed.feed];
+            const isOk = latest?.status === "success";
+            const statusColor = !latest ? "#444" : isOk ? "#80B602" : "#E32027";
+            const statusLabel = !latest ? "Never" : isOk ? "OK" : "Error";
+            return (
+              <div key={feed.feed} style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px", gap: 0, padding: "10px 16px", background: "#0d0e10", borderBottom: "1px solid #1a1a1e", alignItems: "center" }}>
+                {/* Seq */}
+                <span style={{ fontSize: 11, color: "#333", fontWeight: 700 }}>{feed.seq}</span>
+                {/* Feed info */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#ededed" }}>{feed.label}</div>
+                  <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>{feed.description}</div>
+                  <div style={{ fontSize: 10, color: "#333", marginTop: 3 }}>
+                    Fires: {feed.times.join(" · ")} EDT
                   </div>
-                ))}
+                </div>
+                {/* Script */}
+                <div style={{ fontSize: 11, color: "#555", fontFamily: "monospace" }}>{feed.script}</div>
+                {/* Last run */}
+                <div style={{ fontSize: 11, color: "#666" }}>{latest ? timeAgo(latest.synced_at) : "—"}</div>
+                {/* Rows */}
+                <div style={{ fontSize: 12, color: "#aaa", fontWeight: 500 }}>{latest ? latest.rows_upserted.toLocaleString() : "—"}</div>
+                {/* Duration */}
+                <div style={{ fontSize: 11, color: "#666" }}>{latest ? fmtDuration(latest.duration_ms) : "—"}</div>
+                {/* Status */}
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: statusColor }}>{statusLabel}</span>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
+          {/* Next run footer */}
+          <div style={{ padding: "8px 16px", background: "#0a0b0c", fontSize: 11, color: "#444", display: "flex", gap: 16 }}>
+            <span>Next batch: {nextRun(["6:00 AM", "12:00 PM", "6:00 PM"])}</span>
+            <span style={{ color: "#333" }}>·</span>
+            <span>Sequence 1→2 fires at :00 · Sequence 3→4 fires at :05</span>
+          </div>
         </div>
+      </section>
 
-      </main>
+      {/* Links */}
+      <div style={{ display: "flex", gap: 12, fontSize: 12 }}>
+        <Link href="/" style={{ color: "#59a6bd", textDecoration: "none" }}>← Dashboard</Link>
+        <span style={{ color: "#333" }}>·</span>
+        <a href="https://vercel.com/heartbeat-v2/pulse-v2" target="_blank" rel="noopener noreferrer" style={{ color: "#59a6bd", textDecoration: "none" }}>Vercel ↗</a>
+        <span style={{ color: "#333" }}>·</span>
+        <a href="https://github.com/rob-hoeller/pulse-v2" target="_blank" rel="noopener noreferrer" style={{ color: "#59a6bd", textDecoration: "none" }}>GitHub ↗</a>
+        <span style={{ color: "#333" }}>·</span>
+        <a href="https://mrpxtbuezqrlxybnhyne.supabase.co" target="_blank" rel="noopener noreferrer" style={{ color: "#59a6bd", textDecoration: "none" }}>Supabase ↗</a>
+      </div>
     </div>
   );
 }

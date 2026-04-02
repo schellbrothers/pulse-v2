@@ -53,8 +53,12 @@ export default function Sidebar() {
       {/* Brand */}
       <div
         style={{
-          padding: "14px 16px",
+          height: 56,
+          padding: "0 16px",
           borderBottom: "1px solid #333333",
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

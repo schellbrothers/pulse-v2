@@ -222,7 +222,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
       width: col.width ?? undefined,
       textAlign: col.align ?? "left",
       ...(isSticky
-        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#0d0e10" }
+        ? { position: "sticky", left: 0, zIndex: 3, backgroundColor: "#222323" }
         : {}),
       position: isSticky ? "sticky" : "relative",
     };

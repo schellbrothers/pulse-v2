@@ -130,11 +130,11 @@ export default function DivisionPlansClient({ divisionPlans, divisions }: Props)
         {selected && (
           <>
             {/* Elevation image grid */}
-            {Array.isArray(selected.elevations) && (selected.elevations as {kova_name?: string; image_path?: string}[]).filter(e => e.image_path && !e.is_hidden).length > 0 && (
+            {Array.isArray(selected.elevations) && (selected.elevations as {kova_name?: string; image_path?: string; [key: string]: unknown}[]).filter(e => e.image_path).length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#555", marginBottom: 8 }}>Elevations</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                  {(selected.elevations as {kova_name?: string; image_path?: string}[])
+                  {(selected.elevations as {kova_name?: string; image_path?: string; [key: string]: unknown}[])
                     .filter(e => e.image_path)
                     .map((elev, i) => (
                       <div key={i} style={{ textAlign: "center" }}>

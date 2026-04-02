@@ -162,7 +162,7 @@ export default async function StatusPage() {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>
                     {sys.url
-                      ? <a href={sys.url} target="_blank" rel="noopener noreferrer" style={{ color: "#ededed", textDecoration: "none" }} onMouseEnter={e => (e.currentTarget.style.color="#59a6bd")} onMouseLeave={e => (e.currentTarget.style.color="#ededed")}>{sys.name} ↗</a>
+                      ? <a href={sys.url} target="_blank" rel="noopener noreferrer" style={{ color: "#59a6bd", textDecoration: "none" }}>{sys.name} ↗</a>
                       : <span style={{ color: "#ededed" }}>{sys.name}</span>
                     }
                   </div>

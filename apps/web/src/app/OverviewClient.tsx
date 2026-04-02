@@ -1230,7 +1230,20 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 function CommunityView({ community, plans, lots, specHomes, divisions }: CommunityViewProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<CommTab>('overview');
+  const [activeTab, setActiveTab] = useState<CommTab>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('community-active-tab') as CommTab | null;
+      if (saved) return saved;
+    }
+    return 'overview';
+  });
+
+  function handleTabChange(tab: CommTab) {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('community-active-tab', tab);
+    }
+  }
   const [activeCommTab, setActiveCommTab] = useState<"Email" | "SMS" | "Calls">("Email");
   const [selectedMessage, setSelectedMessage] = useState<DummyMessage | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<CommunityPlan | null>(null);
@@ -1401,7 +1414,7 @@ function CommunityView({ community, plans, lots, specHomes, divisions }: Communi
         {COMMUNITY_TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             style={{
               background: "none",
               border: "none",

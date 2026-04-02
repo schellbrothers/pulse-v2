@@ -60,6 +60,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
 
 const thStyle = {
   padding: "6px 16px",
+  borderTop: "1px solid #3a3a3a",
   textAlign: "left" as const,
   fontWeight: 500,
   fontSize: 11,

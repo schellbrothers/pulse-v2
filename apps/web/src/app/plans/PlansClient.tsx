@@ -418,7 +418,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
           controlledPageSize={pageSize}
           defaultPageSize={pageSize}
           onRowClick={(row) => setSelectedPlan(row)}
-        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as DivisionPlan[])}
           emptyMessage="No plans"
           minWidth={1000}
         />
@@ -430,7 +430,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
           controlledPageSize={pageSize}
           defaultPageSize={pageSize}
           onRowClick={(row) => setSelectedCommunityPlan(row)}
-        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as DivisionPlan[])}
           emptyMessage="No plans"
           minWidth={1000}
         />

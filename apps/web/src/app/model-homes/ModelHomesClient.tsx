@@ -293,7 +293,7 @@ export default function ModelHomesClient({ modelHomes, divisions, communities }:
         controlledPageSize={pageSize}
         defaultPageSize={pageSize}
         onRowClick={setSelectedHome}
-        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as ModelHome[])}
         emptyMessage="No model homes"
         minWidth={1100}
       />

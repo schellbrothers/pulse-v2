@@ -148,7 +148,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
         controlledPageSize={pageSize}
         defaultPageSize={pageSize}
         onRowClick={setSelected}
-        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as SpecHome[])}
         emptyMessage="No quick delivery homes"
         minWidth={1100}
       />

@@ -293,16 +293,13 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
 
 
 
-  // Track filtered rows for reactive stats
-  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>([]);
-
   return (
     <PageShell
       topBar={
         <TableSubHeader
           title="Lots"
-          rows={filteredRows.length > 0 ? filteredRows : rows}
-          totalRows={filteredRows.length > 0 ? filteredRows.length : rows.length}
+          rows={rows}
+          totalRows={rows.length}
           stats={STATS}
           page={page}
           pageSize={pageSize}

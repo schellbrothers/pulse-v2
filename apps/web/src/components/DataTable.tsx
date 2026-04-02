@@ -68,6 +68,7 @@ const thStyle = {
   textTransform: "uppercase" as const,
   letterSpacing: "0.06em",
   borderBottom: "1px solid #444",
+  borderRight: "1px solid #1e1e1e",
   whiteSpace: "nowrap" as const,
   cursor: "pointer",
   userSelect: "none" as const,
@@ -157,6 +158,12 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
   useEffect(() => {
     setCurrentPage(1);
   }, [columnFilters, search, sortCol]);
+
+  // Notify parent of filtered rows (for stats sync)
+  useEffect(() => {
+    props.onFilteredRowsChange?.(filtered);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered]);
 
   // Legacy callback support (deprecated — prefer statConfig)
   useEffect(() => {
@@ -670,11 +677,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
-                  {/* Row number */}
-                  <td style={{ padding: "10px 8px 10px 12px", fontSize: 11, color: "#3a3a3a", textAlign: "right", whiteSpace: "nowrap", width: 28, fontFamily: "monospace", userSelect: "none" as const }}>
-                    {ri + 1}
-                  </td>
-                  {props.columns.map((col, ci) => {
+{props.columns.map((col, ci) => {
                     const val = row[col.key as string];
                     const isSticky =
                       col.sticky ||
@@ -691,6 +694,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                           fontWeight: isSticky ? 500 : 400,
                           whiteSpace: "nowrap",
                           borderBottom: "1px solid #444",
+                          borderRight: "1px solid #1e1e1e",
                           textAlign: col.align ?? "left",
                           ...(isSticky
                             ? {
@@ -702,7 +706,13 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                             : {}),
                         }}
                       >
-                        {col.render ? col.render(val, row) : String(val ?? "—")}
+                        {isSticky && ci === 0
+                          ? <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                              <span style={{ fontSize: 10, color: "#3a3a3a", marginRight: 7, fontFamily: "monospace", userSelect: "none" as const, flexShrink: 0 }}>{ri + 1}.</span>
+                              {col.render ? col.render(val, row) : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.9)", fontWeight: 500 }}>{String(val ?? "—")}</span>}
+                            </div>
+                          : col.render ? col.render(val, row) : String(val ?? "—")
+                        }
                       </td>
                     );
                   })}

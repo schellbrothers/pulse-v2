@@ -138,6 +138,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("plans-mode") as Mode | null;
@@ -417,6 +418,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
           controlledPageSize={pageSize}
           defaultPageSize={pageSize}
           onRowClick={(row) => setSelectedPlan(row)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
           emptyMessage="No plans"
           minWidth={1000}
         />
@@ -428,6 +430,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
           controlledPageSize={pageSize}
           defaultPageSize={pageSize}
           onRowClick={(row) => setSelectedCommunityPlan(row)}
+        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
           emptyMessage="No plans"
           minWidth={1000}
         />

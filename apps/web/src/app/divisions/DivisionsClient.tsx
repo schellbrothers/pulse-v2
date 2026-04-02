@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import PageShell from "@/components/PageShell";
@@ -36,6 +36,7 @@ export default function DivisionsClient({ divisions }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
 
   const allRows: DivisionTableRow[] = divisions.map((d) => ({
     ...d,
@@ -127,6 +128,7 @@ export default function DivisionsClient({ divisions }: Props) {
         controlledPageSize={pageSize}
         defaultPageSize={pageSize}
         onRowClick={handleRowClick}
+        onFilteredRowsChange={(r) => setFilteredRows(r as typeof rows)}
         emptyMessage="No divisions"
         minWidth={700}
       />

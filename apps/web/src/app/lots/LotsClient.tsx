@@ -93,6 +93,9 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   const [constructionFilter, setConstructionFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedLot, setSelectedLot] = useState<LotTableRow | null>(null);
+  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>(rows);
+  // Keep filteredRows in sync when global rows change
+  useEffect(() => { setFilteredRows(rows); }, [rows]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
@@ -295,8 +298,8 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       topBar={
         <TableSubHeader
           title="Lots"
-          rows={rows}
-          totalRows={rows.length}
+          rows={filteredRows}
+          totalRows={filteredRows.length}
           stats={STATS}
           page={page}
           pageSize={pageSize}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
 
 // ── Canonical nav items — single source of truth ─────────────────────────────
@@ -32,6 +33,8 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
 
   return (
     <aside
@@ -43,6 +46,8 @@ export default function Sidebar() {
         borderRight: "1px solid #333333",
         background: "#222323",
         height: "100vh",
+        position: "sticky",
+        top: 0,
       }}
     >
       {/* Brand */}
@@ -79,10 +84,9 @@ export default function Sidebar() {
         {NAV_ITEMS.map((item, i) => {
           const prevItem = i > 0 ? NAV_ITEMS[i - 1] : null;
           const isFirstInGroup = !prevItem || prevItem.group !== item.group;
-          const itemBasePath = item.href.split("?")[0];
           const isActive =
-            itemBasePath === pathname ||
-            (itemBasePath !== "/" && itemBasePath !== "#" && pathname.startsWith(itemBasePath));
+            item.href === pathname ||
+            (item.href !== "/" && item.href !== "#" && pathname.startsWith(item.href));
 
           return (
             <div key={item.label}>
@@ -102,7 +106,18 @@ export default function Sidebar() {
                 </div>
               )}
               <Link
-                href={item.href === "#" ? "/" : item.href}
+                href={item.href === "#" ? "#" : (() => {
+                const [basePath, itemQuery] = item.href.split("?");
+                const params = new URLSearchParams();
+                // Preserve global filter params
+                if (searchParams.get("div")) params.set("div", searchParams.get("div")!);
+                if (searchParams.get("comm")) params.set("comm", searchParams.get("comm")!);
+                if (searchParams.get("plan")) params.set("plan", searchParams.get("plan")!);
+                // Apply item's own params (e.g. mode)
+                if (itemQuery) new URLSearchParams(itemQuery).forEach((v, k) => params.set(k, v));
+                const qs = params.toString();
+                return qs ? `${basePath}?${qs}` : basePath;
+              })()}
                 style={{
                   display: "flex",
                   alignItems: "center",

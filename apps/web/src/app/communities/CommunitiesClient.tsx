@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import TableSubHeader, { exportToCSV, type StatConfig } from "@/components/TableSubHeader";
 import SlideOver from "@/components/SlideOver";
@@ -176,14 +175,13 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 // ─── Inner component ──────────────────────────────────────────────────────────
 
 function CommunitiesInner({ communities, divisions }: Props) {
-  const searchParams = useSearchParams();
   const { filter } = useGlobalFilter();
 
   const [divisionFilter, setDivisionFilter] = useState<string>(() => {
     if (filter.divisionId) {
       return divisions.find((d) => d.id === filter.divisionId)?.slug ?? "all";
     }
-    return searchParams.get("division") ?? "all";
+    return "all";
   });
   const [stateFilter, setStateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -506,9 +504,5 @@ function CommunitiesInner({ communities, divisions }: Props) {
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 export default function CommunitiesClient(props: Props) {
-  return (
-    <Suspense>
-      <CommunitiesInner {...props} />
-    </Suspense>
-  );
+  return <CommunitiesInner {...props} />;
 }

@@ -670,6 +670,10 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
+                  {/* Row number */}
+                  <td style={{ padding: "10px 8px 10px 12px", fontSize: 11, color: "#3a3a3a", textAlign: "right", whiteSpace: "nowrap", width: 28, fontFamily: "monospace", userSelect: "none" as const }}>
+                    {ri + 1}
+                  </td>
                   {props.columns.map((col, ci) => {
                     const val = row[col.key as string];
                     const isSticky =

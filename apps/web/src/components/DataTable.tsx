@@ -59,7 +59,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
 }
 
 const thStyle = {
-  padding: "6px 12px",
+  padding: "10px 16px",
   textAlign: "left" as const,
   fontWeight: 500,
   fontSize: 11,
@@ -315,7 +315,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     display: "block",
                     width: "100%",
                     textAlign: "left",
-                    padding: "6px 12px",
+                    padding: "10px 16px",
                     fontSize: 11,
                     color: sortCol === colKey && sortDir === "asc" ? "#59a6bd" : "rgba(255,255,255,0.5)",
                     background: "none",
@@ -336,7 +336,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     display: "block",
                     width: "100%",
                     textAlign: "left",
-                    padding: "6px 12px",
+                    padding: "10px 16px",
                     fontSize: 11,
                     color: sortCol === colKey && sortDir === "desc" ? "#59a6bd" : "rgba(255,255,255,0.5)",
                     background: "none",
@@ -360,7 +360,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
             {filterOptions.length === 0 ? (
               <div
                 style={{
-                  padding: "8px 12px",
+                  padding: "10px 16px",
                   fontSize: 11,
                   color: "rgba(255,255,255,0.3)",
                 }}
@@ -430,7 +430,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                     display: "block",
                     width: "100%",
                     textAlign: "left",
-                    padding: "6px 12px",
+                    padding: "10px 16px",
                     fontSize: 11,
                     color: "#E32027",
                     background: "none",
@@ -479,7 +479,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
               background: "#0d0e10",
               border: "1px solid #555",
               borderRadius: 6,
-              padding: "6px 12px",
+              padding: "10px 16px",
               fontSize: 12,
               color: "rgba(255,255,255,0.6)",
               outline: "none",
@@ -680,7 +680,7 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                       <td
                         key={col.key as string}
                         style={{
-                          padding: "6px 12px",
+                          padding: "10px 16px",
                           fontSize: 12,
                           color: isSticky ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.7)",
                           fontWeight: isSticky ? 500 : 400,

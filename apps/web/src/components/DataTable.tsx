@@ -159,7 +159,14 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
     setCurrentPage(1);
   }, [columnFilters, search, sortCol]);
 
-  // onFilteredRowsChange prop is kept for backwards compatibility but never auto-called.
+  // Call onFilteredRowsChange synchronously after filtering (not in useEffect to avoid re-render loops)
+  // Use useRef to track previous filtered length and only call when it changes
+  const prevFilteredRef = useRef<T[]>([]);
+  if (props.onFilteredRowsChange && filtered !== prevFilteredRef.current) {
+    prevFilteredRef.current = filtered;
+    // Schedule for after render to avoid "cannot update during render"
+    setTimeout(() => props.onFilteredRowsChange!(filtered), 0);
+  }
   // Use statConfig for reactive stats derived from filtered rows.
 
   const hasFilters =

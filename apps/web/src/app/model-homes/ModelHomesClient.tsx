@@ -307,8 +307,8 @@ export default function ModelHomesClient({ modelHomes, divisions, communities }:
           <>
             {/* Images: exterior elevation first, then interior featured image — both full width */}
             {(() => {
-              const elevations = (selected?.elevations ?? selectedHome?.elevations) as {kova_name?: string; image_path?: string; [key: string]: unknown}[] | null;
-              const featuredUrl = (selected as {featured_image_url?: string | null})?.featured_image_url ?? (selectedHome as {featured_image_url?: string | null})?.featured_image_url;
+              const elevations = (selectedHome?.elevations) as {kova_name?: string; image_path?: string; [key: string]: unknown}[] | null;
+              const featuredUrl = selectedHome?.featured_image_url;
               const firstElev = elevations?.find(e => e.image_path);
               const elevUrl = firstElev ? s3ToHttps(firstElev.image_path as string) : null;
               return (

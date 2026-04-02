@@ -93,7 +93,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   const [constructionFilter, setConstructionFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedLot, setSelectedLot] = useState<LotTableRow | null>(null);
-  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>(rows);
+  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>([]);
   // Keep filteredRows in sync when global rows change
   useEffect(() => { setFilteredRows(rows); }, [rows]);
   const [page, setPage] = useState(0);

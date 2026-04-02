@@ -5,7 +5,6 @@ import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import PageShell from "@/components/PageShell";
 import TableSubHeader, { exportToCSV, type StatConfig } from "@/components/TableSubHeader";
 import SlideOver, { Section, Row } from "@/components/SlideOver";
-import Badge from "@/components/Badge";
 import DataTable, { type Column } from "@/components/DataTable";
 
 interface Division { id: string; slug: string; name: string; heartbeat_division_id?: number | null; }
@@ -115,7 +114,7 @@ export default function QuickDeliveryClient({ specHomes, divisions }: Props) {
         : <span style={{ color: "#444" }}>—</span> },
     { key: "incentive_price", label: "Incentive",
       render: (_v, r) => r.incentive_price && (r.incentive_price as number) > 0
-        ? <Badge variant="active" label={`Save $${(r.incentive_price as number).toLocaleString()}`} customColor="#80B602" customBg="#162800" customBorder="#2a4a00" />
+        ? <span style={{ color: "#888", fontSize: 12 }}>-${(r.incentive_price as number).toLocaleString()}</span>
         : <span style={{ color: "#333" }}>—</span> },
   ];
 

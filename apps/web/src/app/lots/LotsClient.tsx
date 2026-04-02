@@ -190,13 +190,17 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       key: "lot_status",
       label: "Status",
       sortable: true,
-      render: (_v, row) => <LotStatusBadge status={row.lot_status} />,
+      render: (_v, row) => row.lot_status
+        ? <span style={{ color: "#888", fontSize: 12 }}>{(row.lot_status as string).replace(" Homesite", "").replace(" Home", "")}</span>
+        : <span style={{ color: "#555" }}>—</span>,
     },
     {
       key: "construction_status",
       label: "Construction",
       sortable: true,
-      render: (_v, row) => <ConstructionBadge status={row.construction_status} />,
+      render: (_v, row) => row.construction_status
+        ? <span style={{ color: "#888", fontSize: 12 }}>{row.construction_status as string}</span>
+        : <span style={{ color: "#555" }}>—</span>,
     },
     {
       key: "phase",

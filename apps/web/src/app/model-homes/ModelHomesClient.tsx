@@ -231,10 +231,10 @@ export default function ModelHomesClient({ modelHomes, divisions, communities }:
         ) : <span style={{ color: "#444" }}>—</span>,
     },
     {
-      key: "is_leaseback",
+      key: "transaction_type",
       label: "Status",
       render: (_v, row) =>
-        row.is_leaseback ? <Badge variant="leaseback" /> : <span style={{ color: "#555", fontSize: 12 }}>Model</span>,
+        <span style={{ color: "#888", fontSize: 12 }}>{row.transaction_type ?? "—"}</span>,
     },
   ];
 

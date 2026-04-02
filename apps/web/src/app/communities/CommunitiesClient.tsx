@@ -279,7 +279,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
     {
       key: "status",
       label: "Status",
-      render: (_v, row) => <StatusBadge status={row.status} />,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{getStatusLabel(row.status)}</span>,
     },
     {
       key: "_hoa_display",

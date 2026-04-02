@@ -159,18 +159,8 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
     setCurrentPage(1);
   }, [columnFilters, search, sortCol]);
 
-  // Notify parent of filtered rows (for stats sync)
-  useEffect(() => {
-    props.onFilteredRowsChange?.(filtered);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered]);
-
-  // Legacy callback support (deprecated — prefer statConfig)
-  useEffect(() => {
-    if (props.onFilteredRowsChange) {
-      props.onFilteredRowsChange(filtered);
-    }
-  }, [filtered, props.onFilteredRowsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+  // onFilteredRowsChange prop is kept for backwards compatibility but never auto-called.
+  // Use statConfig for reactive stats derived from filtered rows.
 
   const hasFilters =
     Object.values(columnFilters).some((v) => v.length > 0) ||

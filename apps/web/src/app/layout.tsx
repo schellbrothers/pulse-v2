@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <GlobalFilterProvider>
             <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
-              <Suspense fallback={null}><Sidebar /></Suspense>
+              <Sidebar />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <Suspense fallback={null}>
                   <GlobalFilterBar />

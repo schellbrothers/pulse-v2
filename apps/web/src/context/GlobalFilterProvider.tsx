@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useCallback, useState } from "react";
 import { GlobalFilterContext, type GlobalFilter, type GlobalFilterContextValue } from "./GlobalFilterContext";
 
 interface Props {
@@ -9,78 +8,32 @@ interface Props {
 }
 
 export function GlobalFilterProvider({ children }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-
   const [labels, setLabels] = useState<{ division?: string; community?: string; plan?: string }>({});
 
-  // Read filter from URL on client only (avoids SSR suspense freeze)
   const [filter, setFilter] = useState<GlobalFilter>({
     divisionId: null,
     communityId: null,
     planModelId: null,
   });
 
-  // Sync filter state from URL on mount and navigation
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setFilter({
-      divisionId: params.get("div"),
-      communityId: params.get("comm"),
-      planModelId: params.get("plan"),
-    });
-  }, [pathname]);
+  const setDivision = useCallback((id: string | null) => {
+    setFilter({ divisionId: id, communityId: null, planModelId: null });
+    setLabels((prev) => ({ ...prev, community: undefined, plan: undefined }));
+  }, []);
 
-  const updateUrl = useCallback(
-    (updates: Partial<Record<"div" | "comm" | "plan", string | null>>) => {
-      const params = new URLSearchParams(window.location.search);
-      for (const [key, val] of Object.entries(updates)) {
-        if (val === null || val === "") {
-          params.delete(key);
-        } else {
-          params.set(key, val);
-        }
-      }
-      const query = params.toString();
-      const newUrl = `${pathname}${query ? `?${query}` : ""}`;
-      router.replace(newUrl, { scroll: false });
-      // Update local state immediately
-      setFilter({
-        divisionId: params.get("div"),
-        communityId: params.get("comm"),
-        planModelId: params.get("plan"),
-      });
-    },
-    [router, pathname]
-  );
+  const setCommunity = useCallback((id: string | null) => {
+    setFilter((prev) => ({ ...prev, communityId: id, planModelId: null }));
+    setLabels((prev) => ({ ...prev, plan: undefined }));
+  }, []);
 
-  const setDivision = useCallback(
-    (id: string | null) => {
-      updateUrl({ div: id, comm: null, plan: null });
-      setLabels((prev) => ({ ...prev, community: undefined, plan: undefined }));
-    },
-    [updateUrl]
-  );
-
-  const setCommunity = useCallback(
-    (id: string | null) => {
-      updateUrl({ comm: id, plan: null });
-      setLabels((prev) => ({ ...prev, plan: undefined }));
-    },
-    [updateUrl]
-  );
-
-  const setPlan = useCallback(
-    (id: string | null) => {
-      updateUrl({ plan: id });
-    },
-    [updateUrl]
-  );
+  const setPlan = useCallback((id: string | null) => {
+    setFilter((prev) => ({ ...prev, planModelId: id }));
+  }, []);
 
   const clearFilter = useCallback(() => {
-    updateUrl({ div: null, comm: null, plan: null });
+    setFilter({ divisionId: null, communityId: null, planModelId: null });
     setLabels({});
-  }, [updateUrl]);
+  }, []);
 
   const value: GlobalFilterContextValue = {
     filter,

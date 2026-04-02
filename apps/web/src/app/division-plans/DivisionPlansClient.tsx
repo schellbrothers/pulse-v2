@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import PageShell from "@/components/PageShell";
 import TableSubHeader, { exportToCSV, type StatConfig } from "@/components/TableSubHeader";
@@ -40,7 +39,6 @@ function s3ToHttps(path: string | null | undefined): string | null {
 
 export default function DivisionPlansClient({ divisionPlans, divisions }: Props) {
   const { filter } = useGlobalFilter();
-  const pathname = usePathname();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);

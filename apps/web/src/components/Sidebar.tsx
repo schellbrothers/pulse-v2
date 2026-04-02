@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { useGlobalFilter } from "@/context/GlobalFilterContext";
 
 // ── Canonical nav items — single source of truth ─────────────────────────────
 // To add a new page: add one entry here. All client pages inherit it automatically.
@@ -33,8 +33,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const queryString = searchParams.toString();
+  const { filter } = useGlobalFilter();
 
   return (
     <aside
@@ -109,10 +108,10 @@ export default function Sidebar() {
                 href={item.href === "#" ? "#" : (() => {
                 const [basePath, itemQuery] = item.href.split("?");
                 const params = new URLSearchParams();
-                // Preserve global filter params
-                if (searchParams.get("div")) params.set("div", searchParams.get("div")!);
-                if (searchParams.get("comm")) params.set("comm", searchParams.get("comm")!);
-                if (searchParams.get("plan")) params.set("plan", searchParams.get("plan")!);
+                // Preserve global filter params from React context
+                if (filter.divisionId) params.set("div", filter.divisionId);
+                if (filter.communityId) params.set("comm", filter.communityId);
+                if (filter.planModelId) params.set("plan", filter.planModelId);
                 // Apply item's own params (e.g. mode)
                 if (itemQuery) new URLSearchParams(itemQuery).forEach((v, k) => params.set(k, v));
                 const qs = params.toString();

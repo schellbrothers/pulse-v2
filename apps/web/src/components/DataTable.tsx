@@ -701,7 +701,6 @@ function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) 
                                 position: "sticky",
                                 left: 0,
                                 backgroundColor: "#0d0e10",
-                                zIndex: 1,
                               }
                             : {}),
                         }}

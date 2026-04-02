@@ -138,7 +138,7 @@ function PlansInner({ divisionPlans, communityPlans, communities, divisions }: P
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
+  const [filteredRows, setFilteredRows] = useState<DivisionPlan[]>([]);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("plans-mode") as Mode | null;

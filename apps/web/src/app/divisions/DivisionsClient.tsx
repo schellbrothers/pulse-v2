@@ -36,7 +36,7 @@ export default function DivisionsClient({ divisions }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
+  const [filteredRows, setFilteredRows] = useState<DivisionStats[]>([]);
 
   const allRows: DivisionTableRow[] = divisions.map((d) => ({
     ...d,

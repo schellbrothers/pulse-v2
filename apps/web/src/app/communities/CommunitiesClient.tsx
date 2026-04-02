@@ -191,7 +191,7 @@ function CommunitiesInner({ communities, divisions }: Props) {
   const [selected, setSelected] = useState<Community | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
+  const [filteredRows, setFilteredRows] = useState<Community[]>([]);
 
   // Sync local division filter when global filter changes
   useEffect(() => {

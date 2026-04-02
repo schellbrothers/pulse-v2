@@ -148,7 +148,7 @@ export default function ModelHomesClient({ modelHomes, divisions, communities }:
   const [selectedHome, setSelectedHome] = useState<ModelHomeRow | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [filteredRows, setFilteredRows] = useState<typeof rows>([]);
+  const [filteredRows, setFilteredRows] = useState<ModelHome[]>([]);
 
 
 

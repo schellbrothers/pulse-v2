@@ -75,20 +75,22 @@ export default function DivisionsClient({ divisions }: Props) {
       render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.plan_count}</span>,
     },
     {
-      key: "active_count",
+      key: "available_lots",
       label: "Available Lots",
       sortable: true,
-      render: () => <span style={{ color: "#888", fontSize: 13 }}>—</span>,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.available_lots ?? 0}</span>,
     },
     {
-      key: "is_active",
+      key: "model_homes",
       label: "Model Homes",
-      render: () => <span style={{ color: "#555", fontSize: 13 }}>—</span>,
+      sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.model_homes ?? 0}</span>,
     },
     {
-      key: "coming_soon_count",
+      key: "qd_homes",
       label: "QD Homes",
-      render: () => <span style={{ color: "#555", fontSize: 13 }}>—</span>,
+      sortable: true,
+      render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.qd_homes ?? 0}</span>,
     },
   ];
 

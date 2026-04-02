@@ -93,9 +93,6 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   const [constructionFilter, setConstructionFilter] = useState("");
   const [search, setSearch] = useState("");
   const [selectedLot, setSelectedLot] = useState<LotTableRow | null>(null);
-  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>([]);
-  // Keep filteredRows in sync when global rows change
-  useEffect(() => { setFilteredRows(rows); }, [rows]);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
@@ -143,6 +140,10 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   const rows = useMemo<LotTableRow[]>(() => {
     return (lots as LotTableRow[]).filter((l) => {
       if (filter.communityId && l.community_id !== filter.communityId) return false;
+  const [filteredRows, setFilteredRows] = useState<LotTableRow[]>([]);
+  // Keep filteredRows in sync when global rows change
+  useEffect(() => { setFilteredRows(rows); }, [rows]);
+
       if (filter.divisionId && !divFilter) {
         const comm = l.community_id ? communityMap.get(l.community_id as string) : null;
         const div = comm?.division_id ? divisionMap.get(comm.division_id) : null;

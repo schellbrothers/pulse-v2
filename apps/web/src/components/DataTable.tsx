@@ -59,7 +59,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
 }
 
 const thStyle = {
-  padding: "10px 16px",
+  padding: "6px 16px",
   textAlign: "left" as const,
   fontWeight: 500,
   fontSize: 11,

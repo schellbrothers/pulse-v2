@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useGlobalFilter } from "@/context/GlobalFilterContext";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // ── Canonical nav items — single source of truth ─────────────────────────────
 // To add a new page: add one entry here. All client pages inherit it automatically.
@@ -32,8 +32,6 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { filter } = useGlobalFilter();
 
   return (
     <aside
@@ -88,19 +86,6 @@ export default function Sidebar() {
             itemBasePath === pathname ||
             (itemBasePath !== "/" && itemBasePath !== "#" && pathname.startsWith(itemBasePath));
 
-          // Build href preserving global filter params
-          const computedHref = (() => {
-            if (item.href === "#") return "#";
-            const [basePath, itemQuery] = item.href.split("?");
-            const params = new URLSearchParams();
-            if (filter.divisionId) params.set("div", filter.divisionId);
-            if (filter.communityId) params.set("comm", filter.communityId);
-            if (filter.planModelId) params.set("plan", String(filter.planModelId));
-            if (itemQuery) new URLSearchParams(itemQuery).forEach((v, k) => params.set(k, v));
-            const qs = params.toString();
-            return qs ? `${basePath}?${qs}` : basePath;
-          })();
-
           return (
             <div key={item.label}>
               {/* Group label */}
@@ -118,8 +103,8 @@ export default function Sidebar() {
                   {GROUP_LABELS[item.group]}
                 </div>
               )}
-              <a
-                onClick={(e) => { e.preventDefault(); if (computedHref !== "#") router.push(computedHref); }}
+              <Link
+                href={item.href === "#" ? "/" : item.href}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -160,7 +145,7 @@ export default function Sidebar() {
                   {item.icon}
                 </span>
                 {item.label}
-              </a>
+              </Link>
             </div>
           );
         })}

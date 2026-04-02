@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { GlobalFilterContext, type GlobalFilter, type GlobalFilterContextValue } from "./GlobalFilterContext";
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
 }
 
 export function GlobalFilterProvider({ children }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const [labels, setLabels] = useState<{ division?: string; community?: string; plan?: string }>({});
@@ -42,16 +41,15 @@ export function GlobalFilterProvider({ children }: Props) {
         }
       }
       const query = params.toString();
-      const newUrl = `${pathname}${query ? `?${query}` : ""}`;
-      router.replace(newUrl, { scroll: false });
-      // Update local state immediately
+      const newUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
+      window.history.replaceState(null, "", newUrl);
       setFilter({
         divisionId: params.get("div"),
         communityId: params.get("comm"),
         planModelId: params.get("plan"),
       });
     },
-    [router, pathname]
+    []
   );
 
   const setDivision = useCallback(

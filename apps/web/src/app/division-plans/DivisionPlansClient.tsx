@@ -30,6 +30,14 @@ function fmtRange(min: number | null, max: number | null): string {
   return `${fmt(min)}–${fmt(max)}`;
 }
 
+
+function s3ToHttps(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return path.replace("s3://heartbeat-page-designer-production/", 
+    "https://heartbeat-page-designer-production.s3.amazonaws.com/");
+}
+
 export default function DivisionPlansClient({ divisionPlans, divisions }: Props) {
   const { filter } = useGlobalFilter();
   const pathname = usePathname();
@@ -121,6 +129,29 @@ export default function DivisionPlansClient({ divisionPlans, divisions }: Props)
         width={480}>
         {selected && (
           <>
+            {/* Elevation image grid */}
+            {Array.isArray(selected.elevations) && (selected.elevations as {kova_name?: string; image_path?: string}[]).filter(e => e.image_path && !e.is_hidden).length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#555", marginBottom: 8 }}>Elevations</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                  {(selected.elevations as {kova_name?: string; image_path?: string}[])
+                    .filter(e => e.image_path)
+                    .map((elev, i) => (
+                      <div key={i} style={{ textAlign: "center" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={s3ToHttps(elev.image_path) ?? ""}
+                          alt={elev.kova_name ?? `Elevation ${i + 1}`}
+                          style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 3, display: "block", background: "#1a1a1e" }}
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <div style={{ fontSize: 10, color: "#555", marginTop: 3 }}>{elev.kova_name ?? `Elevation ${i + 1}`}</div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
             <Section title="Plan Details">
               <Row label="Plan Name"  value={selected.marketing_name ?? selected.name} />
               <Row label="Division"   value={hbDivMap.get(Number(selected.division_parent_id))?.name ?? selected.division_parent_name} />

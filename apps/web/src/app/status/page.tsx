@@ -152,27 +152,29 @@ export default async function StatusPage() {
         <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", marginBottom: 12 }}>
           Infrastructure
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 1, border: "1px solid #1a1a1e", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
           {systems.map((sys) => {
             const st = statusMap[sys.status];
+            const dotColor = st.dot.replace("bg-[","").replace("]","");
+            const textColor = st.text.replace("text-[","").replace("]","");
             return (
-              <div key={sys.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: "#0d0e10", borderBottom: "1px solid #1a1a1e" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 15 }}>{sys.emoji}</span>
-                  <div>
+              <div key={sys.name} style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>{sys.emoji}</span>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>
-                    {sys.url
-                      ? <a href={sys.url} target="_blank" rel="noopener noreferrer" style={{ color: "#59a6bd", textDecoration: "none" }}>{sys.name} ↗</a>
-                      : <span style={{ color: "#ededed" }}>{sys.name}</span>
-                    }
+                      {sys.url
+                        ? <a href={sys.url} target="_blank" rel="noopener noreferrer" style={{ color: "#ffffff", textDecoration: "none" }}>{sys.name}</a>
+                        : <span style={{ color: "#ffffff" }}>{sys.name}</span>
+                      }
+                    </div>
                   </div>
-                    <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>{sys.description}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: dotColor }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: textColor }}>{st.label}</span>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: st.dot.replace("bg-[","").replace("]","") }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: st.text.replace("text-[","").replace("]","") }}>{st.label}</span>
-                </div>
+                <div style={{ fontSize: 11, color: "#555" }}>{sys.description}</div>
               </div>
             );
           })}

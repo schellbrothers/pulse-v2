@@ -113,6 +113,34 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function fmtTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function fmtCost(n: number): string {
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  return `$${n.toFixed(4)}`;
+}
+
+function tokenBar(value: number, max: number, width = 12): string {
+  if (max === 0) return "░".repeat(width);
+  const filled = Math.round((value / max) * width);
+  return "█".repeat(filled) + "░".repeat(width - filled);
+}
+
+// Token usage row type
+type TokenRow = {
+  date: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+};
+
 export default async function StatusPage() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -132,10 +160,108 @@ export default async function StatusPage() {
     if (!latestByFeed[row.feed]) latestByFeed[row.feed] = row;
   }
 
+  // Token usage: last 7 days, aggregated by date
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const { data: tokenRawRows } = await supabase
+    .from("token_usage")
+    .select("date,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,total_tokens,estimated_cost_usd")
+    .gte("date", sevenDaysAgo)
+    .order("date", { ascending: false });
+
+  // Aggregate by date (sum across sessions)
+  const tokenByDate: Record<string, TokenRow> = {};
+  for (const r of tokenRawRows ?? []) {
+    if (!tokenByDate[r.date]) {
+      tokenByDate[r.date] = {
+        date: r.date,
+        input_tokens: 0,
+        output_tokens: 0,
+        cache_read_tokens: 0,
+        cache_write_tokens: 0,
+        total_tokens: 0,
+        estimated_cost_usd: 0,
+      };
+    }
+    tokenByDate[r.date].input_tokens += r.input_tokens ?? 0;
+    tokenByDate[r.date].output_tokens += r.output_tokens ?? 0;
+    tokenByDate[r.date].cache_read_tokens += r.cache_read_tokens ?? 0;
+    tokenByDate[r.date].cache_write_tokens += r.cache_write_tokens ?? 0;
+    tokenByDate[r.date].total_tokens += r.total_tokens ?? 0;
+    tokenByDate[r.date].estimated_cost_usd += r.estimated_cost_usd ?? 0;
+  }
+
+  // Build ordered array (last 7 days)
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const last7Days: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    last7Days.push(d);
+  }
+
+  const todayData = tokenByDate[today];
+  const yestData = tokenByDate[yesterday];
+  const weekTotal: TokenRow = last7Days.reduce(
+    (acc, d) => {
+      const r = tokenByDate[d];
+      if (!r) return acc;
+      return {
+        date: "week",
+        input_tokens: acc.input_tokens + r.input_tokens,
+        output_tokens: acc.output_tokens + r.output_tokens,
+        cache_read_tokens: acc.cache_read_tokens + r.cache_read_tokens,
+        cache_write_tokens: acc.cache_write_tokens + r.cache_write_tokens,
+        total_tokens: acc.total_tokens + r.total_tokens,
+        estimated_cost_usd: acc.estimated_cost_usd + r.estimated_cost_usd,
+      };
+    },
+    { date: "week", input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 }
+  );
+
+  const maxDayTokens = Math.max(...last7Days.map(d => tokenByDate[d]?.total_tokens ?? 0), 1);
+
   const s: React.CSSProperties = {
     fontFamily: "var(--font-body, 'Open Sans', Arial, sans-serif)",
     fontSize: 13,
     color: "#888",
+  };
+
+  const headerStyle: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+    color: "#555",
+    marginBottom: 12,
+  };
+
+  const sectionCardStyle: React.CSSProperties = {
+    border: "1px solid #1a1a1e",
+    borderRadius: 3,
+    overflow: "hidden",
+  };
+
+  const tableHeaderStyle: React.CSSProperties = {
+    background: "#0d0e10",
+    borderBottom: "1px solid #222",
+    padding: "8px 16px",
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: "#444",
+    display: "grid",
+    gap: 0,
+    alignItems: "center",
+  };
+
+  const tableRowStyle: React.CSSProperties = {
+    padding: "10px 16px",
+    background: "#0d0e10",
+    borderBottom: "1px solid #1a1a1e",
+    alignItems: "center",
+    display: "grid",
+    gap: 0,
   };
 
   return (
@@ -149,9 +275,7 @@ export default async function StatusPage() {
 
       {/* Systems */}
       <section>
-        <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", marginBottom: 12 }}>
-          Infrastructure
-        </div>
+        <div style={headerStyle}>Infrastructure</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
           {systems.map((sys) => {
             const st = statusMap[sys.status];
@@ -183,12 +307,10 @@ export default async function StatusPage() {
 
       {/* Data Sync Schedules */}
       <section>
-        <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#555", marginBottom: 12 }}>
-          Data Sync — 3× Daily (6 AM · Noon · 6 PM EDT)
-        </div>
-        <div style={{ border: "1px solid #1a1a1e", borderRadius: 3, overflow: "hidden" }}>
+        <div style={headerStyle}>Data Sync — 3× Daily (6 AM · Noon · 6 PM EDT)</div>
+        <div style={sectionCardStyle}>
           {/* Table header */}
-          <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px", gap: 0, background: "#0d0e10", borderBottom: "1px solid #222", padding: "8px 16px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444" }}>
+          <div style={{ ...tableHeaderStyle, gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px" }}>
             <span>#</span>
             <span>Feed</span>
             <span>Script</span>
@@ -203,7 +325,7 @@ export default async function StatusPage() {
             const statusColor = !latest ? "#444" : isOk ? "#80B602" : "#E32027";
             const statusLabel = !latest ? "Never" : isOk ? "OK" : "Error";
             return (
-              <div key={feed.feed} style={{ display: "grid", gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px", gap: 0, padding: "10px 16px", background: "#0d0e10", borderBottom: "1px solid #1a1a1e", alignItems: "center" }}>
+              <div key={feed.feed} style={{ ...tableRowStyle, gridTemplateColumns: "28px 1fr 1fr 90px 80px 90px 80px" }}>
                 {/* Seq */}
                 <span style={{ fontSize: 11, color: "#333", fontWeight: 700 }}>{feed.seq}</span>
                 {/* Feed info */}
@@ -238,7 +360,71 @@ export default async function StatusPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Token Usage ── */}
+      <section>
+        <div style={headerStyle}>Token Usage — Claude API (Anthropic)</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* Summary table: Today / Yesterday / This week */}
+          <div style={sectionCardStyle}>
+            <div style={{ ...tableHeaderStyle, gridTemplateColumns: "100px 1fr 1fr 1fr 1fr 110px" }}>
+              <span>Period</span>
+              <span>Input</span>
+              <span>Output</span>
+              <span>Cache Read</span>
+              <span>Total</span>
+              <span>Est. Cost</span>
+            </div>
+            {(
+              [
+                { label: "Today", data: todayData },
+                { label: "Yesterday", data: yestData },
+                { label: "This Week", data: weekTotal },
+              ] as { label: string; data: TokenRow | undefined }[]
+            ).map(({ label, data }) => (
+              <div key={label} style={{ ...tableRowStyle, gridTemplateColumns: "100px 1fr 1fr 1fr 1fr 110px" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#aaa" }}>{label}</span>
+                <span style={{ fontSize: 12, color: "#ededed" }}>{data ? fmtTokens(data.input_tokens) : "—"}</span>
+                <span style={{ fontSize: 12, color: "#ededed" }}>{data ? fmtTokens(data.output_tokens) : "—"}</span>
+                <span style={{ fontSize: 12, color: "#666" }}>{data ? fmtTokens(data.cache_read_tokens) : "—"}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#ededed" }}>{data ? fmtTokens(data.total_tokens) : "—"}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: data ? "#80B602" : "#444" }}>
+                  {data ? fmtCost(data.estimated_cost_usd) : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* 7-day bar chart (text-based) */}
+          <div style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", marginBottom: 10 }}>
+              7-Day Activity
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {last7Days.map((d) => {
+                const row = tokenByDate[d];
+                const total = row?.total_tokens ?? 0;
+                const bar = tokenBar(total, maxDayTokens, 16);
+                const label = d === today ? "Today    " : d === yesterday ? "Yesterday" : d.slice(5); // MM-DD
+                const cost = row ? fmtCost(row.estimated_cost_usd) : null;
+                return (
+                  <div key={d} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
+                    <span style={{ color: d === today ? "#ededed" : "#555", minWidth: 74 }}>{label}</span>
+                    <span style={{ color: total > 0 ? "#59a6bd" : "#222", letterSpacing: "-0.02em" }}>{bar}</span>
+                    <span style={{ color: "#666", minWidth: 60 }}>{total > 0 ? fmtTokens(total) : "—"}</span>
+                    {cost && <span style={{ color: "#80B602", fontSize: 11 }}>{cost}</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 12, fontSize: 10, color: "#333" }}>
+              Source: ~/.openclaw/agents/main/sessions/ · Updated by hbx-sync-token-usage.py · Pricing: Claude Sonnet 4.6
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
-
 }

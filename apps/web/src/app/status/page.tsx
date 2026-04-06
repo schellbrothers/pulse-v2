@@ -515,6 +515,8 @@ export default async function StatusPage() {
             ))}
           </div>
 
+          {/* Charts: 3-col grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {/* Chart 1: 7-Day Activity */}
           <div style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "14px 16px" }}>
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", marginBottom: 10 }}>
@@ -545,8 +547,8 @@ export default async function StatusPage() {
               7-Week Activity
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {weekChartData.map((w, i) => {
-                const isCurrentWeek = i === weekChartData.length - 1;
+              {[...weekChartData].reverse().map((w, i) => {
+                const isCurrentWeek = i === 0;
                 const bar = tokenBar(w.total_tokens, maxWeekTokens, 16);
                 return (
                   <div key={w.label} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
@@ -566,8 +568,8 @@ export default async function StatusPage() {
               7-Month Activity
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {monthChartData.map((m, i) => {
-                const isCurrentMonth = i === monthChartData.length - 1;
+              {[...monthChartData].reverse().map((m, i) => {
+                const isCurrentMonth = i === 0;
                 const bar = tokenBar(m.total_tokens, maxMonthTokens, 16);
                 return (
                   <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
@@ -580,9 +582,10 @@ export default async function StatusPage() {
               })}
             </div>
             <div style={{ marginTop: 12, fontSize: 10, color: "#333" }}>
-              Source: ~/.openclaw/agents/main/sessions/ · Updated by hbx-sync-token-usage.py · Pricing: Claude Sonnet 4.6
+              Source: ~/.openclaw/agents/main/sessions/ · Pricing: Claude Sonnet 4.6
             </div>
           </div>
+          </div>{/* end charts grid */}
 
         </div>
       </section>

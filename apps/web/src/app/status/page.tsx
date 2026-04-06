@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { TokenSyncButton } from "./TokenSyncButton";
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 type SystemStatus = "online" | "ready" | "unreachable";
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { TokenSyncButton } from "./TokenSyncButton";
 
 export const revalidate = 60;
 
@@ -136,10 +137,15 @@ type TokenRow = {
   input_tokens: number;
   output_tokens: number;
   cache_read_tokens: number;
-  cache_write_tokens: number;
+  cache_write_tokens?: number;
   total_tokens: number;
   estimated_cost_usd: number;
 };
+
+// Get ET date string (YYYY-MM-DD) without relying on toISOString() which is UTC
+function etDateString(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // en-CA = YYYY-MM-DD
+}
 
 export default async function StatusPage() {
   const supabase = createClient(
@@ -160,24 +166,48 @@ export default async function StatusPage() {
     if (!latestByFeed[row.feed]) latestByFeed[row.feed] = row;
   }
 
-  // Token usage: last 7 days, aggregated by date
-  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-  const { data: tokenRawRows } = await supabase
-    .from("token_usage")
-    .select("date,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,total_tokens,estimated_cost_usd")
-    .gte("date", sevenDaysAgo)
-    .order("date", { ascending: false });
+  // ── Date math (ET-aware) ──────────────────────────────────────────────
+  const now = new Date();
 
-  // Aggregate by date (sum across sessions)
+  // Today in ET
+  const todayET = etDateString(now);
+
+  // Start of current week (Monday 00:00 ET)
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysFromMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartET = etDateString(weekStart);
+
+  // Start of current month in ET
+  const monthStart = new Date(now);
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const monthStartET = etDateString(monthStart);
+
+  // 7 months ago for charts
+  const sevenMonthsAgo = new Date(now);
+  sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
+  sevenMonthsAgo.setDate(1);
+  const sevenMonthsAgoStr = etDateString(sevenMonthsAgo);
+
+  // ── Fetch all token_usage for last 7 months ───────────────────────────
+  const { data: allUsageRaw } = await supabase
+    .from("token_usage")
+    .select("date,input_tokens,output_tokens,cache_read_tokens,total_tokens,estimated_cost_usd")
+    .gte("date", sevenMonthsAgoStr)
+    .order("date", { ascending: true });
+
+  // Aggregate by date
   const tokenByDate: Record<string, TokenRow> = {};
-  for (const r of tokenRawRows ?? []) {
+  for (const r of allUsageRaw ?? []) {
     if (!tokenByDate[r.date]) {
       tokenByDate[r.date] = {
         date: r.date,
         input_tokens: 0,
         output_tokens: 0,
         cache_read_tokens: 0,
-        cache_write_tokens: 0,
         total_tokens: 0,
         estimated_cost_usd: 0,
       };
@@ -185,41 +215,125 @@ export default async function StatusPage() {
     tokenByDate[r.date].input_tokens += r.input_tokens ?? 0;
     tokenByDate[r.date].output_tokens += r.output_tokens ?? 0;
     tokenByDate[r.date].cache_read_tokens += r.cache_read_tokens ?? 0;
-    tokenByDate[r.date].cache_write_tokens += r.cache_write_tokens ?? 0;
     tokenByDate[r.date].total_tokens += r.total_tokens ?? 0;
     tokenByDate[r.date].estimated_cost_usd += r.estimated_cost_usd ?? 0;
   }
 
-  // Build ordered array (last 7 days)
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const last7Days: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-    last7Days.push(d);
+  // ── Summary rows ─────────────────────────────────────────────────────
+
+  // Today
+  const todayData = tokenByDate[todayET];
+
+  // This Week (Monday through today)
+  const emptyRow = (label: string): TokenRow => ({
+    date: label, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, total_tokens: 0, estimated_cost_usd: 0,
+  });
+
+  function sumDates(dates: string[]): TokenRow & { date: string } {
+    return dates.reduce(
+      (acc, d) => {
+        const r = tokenByDate[d];
+        if (!r) return acc;
+        return {
+          date: acc.date,
+          input_tokens: acc.input_tokens + r.input_tokens,
+          output_tokens: acc.output_tokens + r.output_tokens,
+          cache_read_tokens: acc.cache_read_tokens + r.cache_read_tokens,
+          total_tokens: acc.total_tokens + r.total_tokens,
+          estimated_cost_usd: acc.estimated_cost_usd + r.estimated_cost_usd,
+        };
+      },
+      emptyRow("acc")
+    );
   }
 
-  const todayData = tokenByDate[today];
-  const yestData = tokenByDate[yesterday];
-  const weekTotal: TokenRow = last7Days.reduce(
-    (acc, d) => {
-      const r = tokenByDate[d];
-      if (!r) return acc;
-      return {
-        date: "week",
-        input_tokens: acc.input_tokens + r.input_tokens,
-        output_tokens: acc.output_tokens + r.output_tokens,
-        cache_read_tokens: acc.cache_read_tokens + r.cache_read_tokens,
-        cache_write_tokens: acc.cache_write_tokens + r.cache_write_tokens,
-        total_tokens: acc.total_tokens + r.total_tokens,
-        estimated_cost_usd: acc.estimated_cost_usd + r.estimated_cost_usd,
-      };
-    },
-    { date: "week", input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 }
-  );
+  // Build week dates (Monday → today)
+  const weekDates: string[] = [];
+  {
+    const cur = new Date(weekStart);
+    while (etDateString(cur) <= todayET) {
+      weekDates.push(etDateString(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+  const thisWeekData = sumDates(weekDates);
 
+  // Build month dates (1st → today)
+  const monthDates: string[] = [];
+  {
+    const cur = new Date(monthStart);
+    while (etDateString(cur) <= todayET) {
+      monthDates.push(etDateString(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+  const thisMonthData = sumDates(monthDates);
+
+  // ── 7-day chart ───────────────────────────────────────────────────────
+  const last7Days: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    last7Days.push(etDateString(d));
+  }
+  const yesterday = last7Days[1];
   const maxDayTokens = Math.max(...last7Days.map(d => tokenByDate[d]?.total_tokens ?? 0), 1);
 
+  // ── 7-week chart ──────────────────────────────────────────────────────
+  // Build 7 Mon-Sun week buckets ending with the current week
+  const weekBuckets: { label: string; dates: string[] }[] = [];
+  for (let w = 0; w < 7; w++) {
+    // w=0 = current week, w=6 = 6 weeks ago
+    const bucketMonday = new Date(weekStart);
+    bucketMonday.setDate(weekStart.getDate() - w * 7);
+    const bucketSunday = new Date(bucketMonday);
+    bucketSunday.setDate(bucketMonday.getDate() + 6);
+
+    const dates: string[] = [];
+    const cur = new Date(bucketMonday);
+    for (let d = 0; d < 7; d++) {
+      dates.push(etDateString(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    // Label: "Wk Apr 7"
+    const monthName = bucketMonday.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short" });
+    const dayNum = parseInt(etDateString(bucketMonday).slice(8));
+    weekBuckets.push({ label: `Wk ${monthName} ${dayNum}`, dates });
+  }
+  // reverse so oldest first
+  weekBuckets.reverse();
+  const weekChartData = weekBuckets.map(b => ({ label: b.label, ...sumDates(b.dates) }));
+  const maxWeekTokens = Math.max(...weekChartData.map(w => w.total_tokens), 1);
+
+  // ── 7-month chart ─────────────────────────────────────────────────────
+  const monthBuckets: { label: string; dates: string[] }[] = [];
+  for (let m = 0; m < 7; m++) {
+    // m=0 = current month, m=6 = 6 months ago
+    const bucketDate = new Date(now);
+    bucketDate.setDate(1);
+    bucketDate.setMonth(bucketDate.getMonth() - m);
+    const year = bucketDate.getFullYear();
+    const month = bucketDate.getMonth(); // 0-indexed
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0); // last day of month
+
+    const dates: string[] = [];
+    const cur = new Date(firstDay);
+    while (cur <= lastDay) {
+      dates.push(etDateString(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const monthLabel = firstDay.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", year: "numeric" });
+    monthBuckets.push({ label: monthLabel, dates });
+  }
+  monthBuckets.reverse();
+  const monthChartData = monthBuckets.map(b => ({ label: b.label, ...sumDates(b.dates) }));
+  const maxMonthTokens = Math.max(...monthChartData.map(m => m.total_tokens), 1);
+
+  // ── Styles ────────────────────────────────────────────────────────────
   const s: React.CSSProperties = {
     fontFamily: "var(--font-body, 'Open Sans', Arial, sans-serif)",
     fontSize: 13,
@@ -363,10 +477,15 @@ export default async function StatusPage() {
 
       {/* ── Token Usage ── */}
       <section>
-        <div style={headerStyle}>Token Usage — Claude API (Anthropic)</div>
+        {/* Section header with Sync Now button */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ ...headerStyle, marginBottom: 0 }}>Token Usage — Claude API (Anthropic)</div>
+          <TokenSyncButton />
+        </div>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* Summary table: Today / Yesterday / This week */}
+          {/* Summary table: Today / This Week / This Month */}
           <div style={sectionCardStyle}>
             <div style={{ ...tableHeaderStyle, gridTemplateColumns: "100px 1fr 1fr 1fr 1fr 110px" }}>
               <span>Period</span>
@@ -378,9 +497,9 @@ export default async function StatusPage() {
             </div>
             {(
               [
-                { label: "Today", data: todayData },
-                { label: "Yesterday", data: yestData },
-                { label: "This Week", data: weekTotal },
+                { label: "Today",      data: todayData },
+                { label: "This Week",  data: thisWeekData },
+                { label: "This Month", data: thisMonthData },
               ] as { label: string; data: TokenRow | undefined }[]
             ).map(({ label, data }) => (
               <div key={label} style={{ ...tableRowStyle, gridTemplateColumns: "100px 1fr 1fr 1fr 1fr 110px" }}>
@@ -389,14 +508,14 @@ export default async function StatusPage() {
                 <span style={{ fontSize: 12, color: "#ededed" }}>{data ? fmtTokens(data.output_tokens) : "—"}</span>
                 <span style={{ fontSize: 12, color: "#666" }}>{data ? fmtTokens(data.cache_read_tokens) : "—"}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#ededed" }}>{data ? fmtTokens(data.total_tokens) : "—"}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: data ? "#80B602" : "#444" }}>
-                  {data ? fmtCost(data.estimated_cost_usd) : "—"}
+                <span style={{ fontSize: 13, fontWeight: 700, color: data && data.total_tokens > 0 ? "#80B602" : "#444" }}>
+                  {data && data.total_tokens > 0 ? fmtCost(data.estimated_cost_usd) : "—"}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* 7-day bar chart (text-based) */}
+          {/* Chart 1: 7-Day Activity */}
           <div style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "14px 16px" }}>
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", marginBottom: 10 }}>
               7-Day Activity
@@ -406,14 +525,56 @@ export default async function StatusPage() {
                 const row = tokenByDate[d];
                 const total = row?.total_tokens ?? 0;
                 const bar = tokenBar(total, maxDayTokens, 16);
-                const label = d === today ? "Today    " : d === yesterday ? "Yesterday" : d.slice(5); // MM-DD
+                const label = d === todayET ? "Today    " : d === yesterday ? "Yesterday" : d.slice(5); // MM-DD
                 const cost = row ? fmtCost(row.estimated_cost_usd) : null;
                 return (
                   <div key={d} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
-                    <span style={{ color: d === today ? "#ededed" : "#555", minWidth: 74 }}>{label}</span>
+                    <span style={{ color: d === todayET ? "#ededed" : "#555", minWidth: 74 }}>{label}</span>
                     <span style={{ color: total > 0 ? "#59a6bd" : "#222", letterSpacing: "-0.02em" }}>{bar}</span>
                     <span style={{ color: "#666", minWidth: 60 }}>{total > 0 ? fmtTokens(total) : "—"}</span>
-                    {cost && <span style={{ color: "#80B602", fontSize: 11 }}>{cost}</span>}
+                    {cost && total > 0 && <span style={{ color: "#80B602", fontSize: 11 }}>{cost}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Chart 2: 7-Week Activity */}
+          <div style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", marginBottom: 10 }}>
+              7-Week Activity
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {weekChartData.map((w, i) => {
+                const isCurrentWeek = i === weekChartData.length - 1;
+                const bar = tokenBar(w.total_tokens, maxWeekTokens, 16);
+                return (
+                  <div key={w.label} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
+                    <span style={{ color: isCurrentWeek ? "#ededed" : "#555", minWidth: 74 }}>{w.label}</span>
+                    <span style={{ color: w.total_tokens > 0 ? "#59a6bd" : "#222", letterSpacing: "-0.02em" }}>{bar}</span>
+                    <span style={{ color: "#666", minWidth: 60 }}>{w.total_tokens > 0 ? fmtTokens(w.total_tokens) : "—"}</span>
+                    {w.total_tokens > 0 && <span style={{ color: "#80B602", fontSize: 11 }}>{fmtCost(w.estimated_cost_usd)}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Chart 3: 7-Month Activity */}
+          <div style={{ background: "#0d0e10", border: "1px solid #1a1a1e", borderRadius: 3, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", marginBottom: 10 }}>
+              7-Month Activity
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {monthChartData.map((m, i) => {
+                const isCurrentMonth = i === monthChartData.length - 1;
+                const bar = tokenBar(m.total_tokens, maxMonthTokens, 16);
+                return (
+                  <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 12 }}>
+                    <span style={{ color: isCurrentMonth ? "#ededed" : "#555", minWidth: 74 }}>{m.label}</span>
+                    <span style={{ color: m.total_tokens > 0 ? "#59a6bd" : "#222", letterSpacing: "-0.02em" }}>{bar}</span>
+                    <span style={{ color: "#666", minWidth: 60 }}>{m.total_tokens > 0 ? fmtTokens(m.total_tokens) : "—"}</span>
+                    {m.total_tokens > 0 && <span style={{ color: "#80B602", fontSize: 11 }}>{fmtCost(m.estimated_cost_usd)}</span>}
                   </div>
                 );
               })}
@@ -422,6 +583,7 @@ export default async function StatusPage() {
               Source: ~/.openclaw/agents/main/sessions/ · Updated by hbx-sync-token-usage.py · Pricing: Claude Sonnet 4.6
             </div>
           </div>
+
         </div>
       </section>
 

@@ -36,7 +36,7 @@ export default function MCPToolsPage() {
 
       // Health check (public, no auth)
       try {
-        const res = await fetch("https://pv2-mcp.vercel.app/health");
+        const res = await fetch("/api/mcp-proxy?endpoint=health");
         const data = await res.json();
         setHealth(data);
       } catch (e) {
@@ -45,9 +45,7 @@ export default function MCPToolsPage() {
 
       // Tools list (via auth header on the client — list is non-sensitive)
       try {
-        const res = await fetch("https://pv2-mcp.vercel.app/tools", {
-          headers: { Authorization: "Bearer pv2-mcp-secret-key-change-me" },
-        });
+        const res = await fetch("/api/mcp-proxy?endpoint=tools");
         const data = await res.json();
         const list: MCPTool[] = Array.isArray(data)
           ? data

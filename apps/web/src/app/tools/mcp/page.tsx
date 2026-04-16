@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface HealthData {
   status: string;
@@ -29,6 +29,7 @@ export default function MCPToolsPage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -83,6 +84,8 @@ export default function MCPToolsPage() {
       });
       const data = await res.json();
       setResult(JSON.stringify(data, null, 2));
+      // Auto-scroll to result panel
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     } catch (e) {
       setRunError(String(e));
     } finally {
@@ -100,6 +103,7 @@ export default function MCPToolsPage() {
         color: "white",
         padding: "32px",
         fontFamily: "inherit",
+        overflowY: "auto",
       }}
     >
       {/* Page header */}
@@ -395,7 +399,7 @@ export default function MCPToolsPage() {
 
               {/* Result panel */}
               {result !== null && (
-                <div>
+                <div ref={resultRef}>
                   <div
                     style={{
                       fontSize: 12,

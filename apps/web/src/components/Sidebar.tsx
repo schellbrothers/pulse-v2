@@ -7,23 +7,31 @@ import { useGlobalFilter } from "@/context/GlobalFilterContext";
 // ── Canonical nav items — single source of truth ─────────────────────────────
 // To add a new page: add one entry here. All client pages inherit it automatically.
 export const NAV_ITEMS = [
-  { icon: "▤", label: "Overview",       href: "/",               group: "core" },
-  { icon: "⊡", label: "Agents",         href: "#",               group: "core" },
-  { icon: "✓", label: "Tasks",          href: "/tasks",          group: "core" },
-  { icon: "⊕", label: "Leads",          href: "/leads",          group: "core" },
-  { icon: "⊞", label: "Divisions",      href: "/divisions",      group: "data" },
-  { icon: "⌂", label: "Communities",    href: "/communities",    group: "data" },
+  // ── WORKSPACE: role-based command centers ──
+  { icon: "◎", label: "OSC",             href: "/workspace/osc",   group: "core" },
+  { icon: "◉", label: "CSM",             href: "/workspace/csm",   group: "core" },
+  { icon: "◈", label: "DSM",             href: "/workspace/dsm",   group: "core" },
+  // ── DATA: CRM pipeline + reference tables ──
+  { icon: "✓", label: "Tasks",           href: "/tasks",           group: "data" },
+  { icon: "⊕", label: "Leads",           href: "/leads",           group: "data" },
+  { icon: "⊙", label: "Opportunities",   href: "/opportunities",   group: "data" },
+  { icon: "◧", label: "Prospects",       href: "/prospects",       group: "data" },
+  { icon: "⊞", label: "Customers",       href: "/customers",       group: "data" },
+  { icon: "⊞", label: "Divisions",       href: "/divisions",       group: "data" },
+  { icon: "⌂", label: "Communities",     href: "/communities",     group: "data" },
   { icon: "◱", label: "Division Plans",  href: "/division-plans",  group: "data" },
   { icon: "◫", label: "Community Plans", href: "/community-plans", group: "data" },
-  { icon: "⌂", label: "Model Homes",    href: "/model-homes",    group: "data" },
-  { icon: "◈", label: "Quick Delivery", href: "/quick-delivery", group: "data" },
-  { icon: "◫", label: "Lots",           href: "/lots",           group: "data" },
-  { icon: "◷", label: "Calendar",       href: "#",               group: "tools" },
-  { icon: "◉", label: "Notifications",  href: "#",               group: "tools" },
-  { icon: "⚙", label: "Settings",       href: "#",               group: "tools" },
-  { icon: "◈", label: "Status",         href: "/status",         group: "tools" },
-  { icon: "◧", label: "Docs",           href: "/docs",           group: "tools" },
-  { icon: "⬡", label: "MCP Tools",      href: "/tools/mcp",      group: "tools" },
+  { icon: "⌂", label: "Model Homes",     href: "/model-homes",     group: "data" },
+  { icon: "◈", label: "Quick Delivery",  href: "/quick-delivery",  group: "data" },
+  { icon: "◫", label: "Lots",            href: "/lots",            group: "data" },
+  // ── TOOLS ──
+  { icon: "⊡", label: "Agents",          href: "#",               group: "tools" },
+  { icon: "◷", label: "Calendar",        href: "#",               group: "tools" },
+  { icon: "◉", label: "Notifications",   href: "#",               group: "tools" },
+  { icon: "⚙", label: "Settings",        href: "#",               group: "tools" },
+  { icon: "◈", label: "Status",          href: "/status",         group: "tools" },
+  { icon: "◧", label: "Docs",            href: "/docs",           group: "tools" },
+  { icon: "⬡", label: "MCP Tools",       href: "/tools/mcp",      group: "tools" },
 ] as const;
 
 const GROUP_LABELS: Record<string, string> = {
@@ -84,9 +92,10 @@ export default function Sidebar() {
         {NAV_ITEMS.map((item, i) => {
           const prevItem = i > 0 ? NAV_ITEMS[i - 1] : null;
           const isFirstInGroup = !prevItem || prevItem.group !== item.group;
+          const href = item.href as string;
           const isActive =
-            item.href === pathname ||
-            (item.href !== "/" && item.href !== "#" && pathname.startsWith(item.href));
+            href === pathname ||
+            (href !== "/" && href !== "#" && pathname.startsWith(href));
 
           return (
             <div key={item.label}>

@@ -26,7 +26,7 @@ interface Division {
 
 interface Lead {
   id: string;
-  contact_id: string;
+  contact_id: string | null;
   first_name: string;
   last_name: string;
   email: string | null;

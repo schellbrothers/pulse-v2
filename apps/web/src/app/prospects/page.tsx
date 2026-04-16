@@ -12,8 +12,8 @@ export default async function ProspectsPage() {
   const [{ data: prospects }, { data: rawCommunities }, { data: divisions }] = await Promise.all([
     supabase
       .from("prospects")
-      .select("*, contacts(first_name, last_name, email, phone), communities(name), floor_plans(marketing_name)")
-      .order("last_activity_at", { ascending: false }),
+      .select("*, communities(name, division_id)")
+      .order("last_contacted_at", { ascending: false }),
     supabase
       .from("communities")
       .select("id, name, slug, divisions(slug, name)")
@@ -21,26 +21,27 @@ export default async function ProspectsPage() {
     supabase.from("divisions").select("id, slug, name").order("name"),
   ]);
 
+  // Flatten — prospects table has first_name/last_name directly (v1 schema)
   const flatProspects = (prospects ?? []).map((p: any) => ({
     id: p.id,
-    contact_id: p.contact_id,
-    first_name: p.contacts?.first_name ?? "—",
-    last_name: p.contacts?.last_name ?? "",
-    email: p.contacts?.email ?? null,
-    phone: p.contacts?.phone ?? null,
-    crm_stage: p.crm_stage ?? "prospect_c",
+    contact_id: null as string | null,
+    first_name: p.first_name ?? "—",
+    last_name: p.last_name ?? "",
+    email: p.email ?? null,
+    phone: p.phone ?? null,
+    crm_stage: p.stage ?? "prospect_c",
     community_id: p.community_id,
     community_name: p.communities?.name ?? null,
-    division_id: p.division_id ?? null,
-    floor_plan_name: p.floor_plans?.marketing_name ?? null,
-    csm_id: p.csm_id,
+    division_id: p.communities?.division_id ?? null,
+    floor_plan_name: null,
+    csm_id: p.assigned_osc_id ?? null,
     budget_min: p.budget_min,
     budget_max: p.budget_max,
-    contract_date: p.contract_date,
-    estimated_move_in: p.estimated_move_in,
-    last_activity_at: p.last_activity_at,
-    notes: p.notes,
-    is_active: p.is_active ?? true,
+    contract_date: null,
+    estimated_move_in: p.desired_move_in,
+    last_activity_at: p.last_contacted_at,
+    notes: null,
+    is_active: true,
     created_at: p.created_at,
   }));
 

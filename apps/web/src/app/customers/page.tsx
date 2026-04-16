@@ -12,7 +12,7 @@ export default async function CustomersPage() {
   const [{ data: homeOwners }, { data: rawCommunities }, { data: divisions }] = await Promise.all([
     supabase
       .from("home_owners")
-      .select("*, contacts(first_name, last_name, email, phone), communities(name), floor_plans(marketing_name)")
+      .select("*, contacts(first_name, last_name, email, phone), communities(name, division_id), floor_plans(marketing_name)")
       .order("created_at", { ascending: false }),
     supabase
       .from("communities")
@@ -21,6 +21,7 @@ export default async function CustomersPage() {
     supabase.from("divisions").select("id, slug, name").order("name"),
   ]);
 
+  // Flatten — home_owners uses contact_id FK to contacts table
   const flatCustomers = (homeOwners ?? []).map((h: any) => ({
     id: h.id,
     contact_id: h.contact_id,
@@ -30,7 +31,7 @@ export default async function CustomersPage() {
     phone: h.contacts?.phone ?? null,
     community_id: h.community_id,
     community_name: h.communities?.name ?? null,
-    division_id: h.division_id ?? null,
+    division_id: h.division_id ?? h.communities?.division_id ?? null,
     floor_plan_name: h.floor_plans?.marketing_name ?? null,
     purchase_price: h.purchase_price,
     settlement_date: h.settlement_date,

@@ -12,7 +12,8 @@ export default async function LeadsPage() {
   const [{ data: leads }, { data: rawCommunities }, { data: divisions }] = await Promise.all([
     supabase
       .from("leads")
-      .select("*, contacts(first_name, last_name, email, phone)")
+      .select("*, communities(name, division_id)")
+      .neq("stage", "opportunity")
       .order("last_activity_at", { ascending: false }),
     supabase
       .from("communities")
@@ -21,18 +22,19 @@ export default async function LeadsPage() {
     supabase.from("divisions").select("id, slug, name").order("name"),
   ]);
 
+  // Leads table has first_name/last_name directly (v1 schema)
   const flatLeads = (leads ?? []).map((l: any) => ({
     id: l.id,
-    contact_id: l.contact_id,
-    first_name: l.contacts?.first_name ?? l.first_name ?? "—",
-    last_name: l.contacts?.last_name ?? l.last_name ?? "",
-    email: l.contacts?.email ?? l.email ?? null,
-    phone: l.contacts?.phone ?? l.phone ?? null,
-    stage: l.stage ?? l.crm_stage ?? "lead",
+    contact_id: null,
+    first_name: l.first_name ?? "—",
+    last_name: l.last_name ?? "",
+    email: l.email ?? null,
+    phone: l.phone ?? null,
+    stage: l.stage ?? "lead",
     substage: l.substage ?? null,
     source: l.source ?? null,
     community_id: l.community_id ?? null,
-    division_id: l.division_id ?? null,
+    division_id: l.communities?.division_id ?? null,
     budget_min: l.budget_min ?? null,
     budget_max: l.budget_max ?? null,
     desired_move_date: l.desired_move_date ?? null,
@@ -40,7 +42,7 @@ export default async function LeadsPage() {
     agent_name: l.agent_name ?? null,
     last_activity_at: l.last_activity_at ?? l.created_at,
     notes: l.notes ?? null,
-    is_active: l.is_active ?? true,
+    is_active: true,
     created_at: l.created_at,
   }));
 

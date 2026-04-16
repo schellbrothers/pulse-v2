@@ -12,8 +12,8 @@ export default async function OpportunitiesPage() {
   const [{ data: leads }, { data: rawCommunities }, { data: divisions }] = await Promise.all([
     supabase
       .from("leads")
-      .select("*, contacts(first_name, last_name, email, phone)")
-      .eq("crm_stage", "opportunity")
+      .select("*, communities(name, division_id)")
+      .eq("stage", "opportunity")
       .order("last_activity_at", { ascending: false }),
     supabase
       .from("communities")
@@ -22,21 +22,22 @@ export default async function OpportunitiesPage() {
     supabase.from("divisions").select("id, slug, name").order("name"),
   ]);
 
+  // Leads table has first_name/last_name directly; opportunities are leads with stage='opportunity'
   const flatOpps = (leads ?? []).map((l: any) => ({
     id: l.id,
-    contact_id: l.contact_id,
-    first_name: l.contacts?.first_name ?? "—",
-    last_name: l.contacts?.last_name ?? "",
-    email: l.contacts?.email ?? null,
-    phone: l.contacts?.phone ?? null,
+    contact_id: null,
+    first_name: l.first_name ?? "—",
+    last_name: l.last_name ?? "",
+    email: l.email ?? null,
+    phone: l.phone ?? null,
     source: l.source ?? null,
-    opportunity_source: l.opportunity_source ?? null,
+    opportunity_source: l.substage ?? null,
     community_id: l.community_id ?? null,
-    division_id: l.division_id ?? null,
-    osc_id: l.osc_id ?? null,
-    osc_route_decision: l.osc_route_decision ?? null,
+    division_id: l.communities?.division_id ?? null,
+    osc_id: null,
+    osc_route_decision: null,
     notes: l.notes ?? null,
-    is_active: l.is_active ?? true,
+    is_active: true,
     last_activity_at: l.last_activity_at ?? l.created_at,
     created_at: l.created_at,
   }));

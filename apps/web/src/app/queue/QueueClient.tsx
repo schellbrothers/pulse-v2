@@ -1,20 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import PageShell from "@/components/PageShell";
 import TableSubHeader, { exportToCSV, type StatConfig } from "@/components/TableSubHeader";
-import SlideOver, { Section, Row } from "@/components/SlideOver";
-import Badge from "@/components/Badge";
+import OpportunityPanel from "@/components/OpportunityPanel";
+import type { OpportunityPanelData } from "@/components/OpportunityPanel";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import DataTable, { type Column } from "@/components/DataTable";
-
-// ─── Supabase client (for client-side fetches) ───────────────────────────────
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,14 +34,7 @@ interface Opportunity {
   created_at: string;
 }
 
-interface StageTransition {
-  id: string;
-  from_stage: string | null;
-  to_stage: string | null;
-  triggered_by: string | null;
-  reason: string | null;
-  created_at: string;
-}
+
 
 type OppRow = Opportunity & Record<string, unknown> & {
   _name: string;
@@ -103,25 +88,11 @@ function QueueInner({ opportunities, communities, divisions }: Props) {
   const [selected, setSelected] = useState<Opportunity | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [history, setHistory] = useState<StageTransition[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+
 
   useEffect(() => { setPage(0); }, [search, filter.divisionId, filter.communityId]);
 
-  // Fetch stage transition history when a row is selected
-  useEffect(() => {
-    if (!selected) { setHistory([]); return; }
-    setHistoryLoading(true);
-    supabase
-      .from("stage_transitions")
-      .select("id, from_stage, to_stage, triggered_by, reason, created_at")
-      .eq("opportunity_id", selected.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setHistory(data ?? []);
-        setHistoryLoading(false);
-      });
-  }, [selected]);
+
 
   const filtered = opportunities.filter(o => {
     if (filter.communityId && o.community_id !== filter.communityId) return false;
@@ -164,7 +135,24 @@ function QueueInner({ opportunities, communities, divisions }: Props) {
     { key: "created_at", label: "Created", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{new Date(row.created_at).toLocaleDateString()}</span> },
   ];
 
-  const community = selected ? communities.find(c => c.id === selected.community_id) : null;
+  const panelData: OpportunityPanelData | null = selected ? {
+    id: selected.id,
+    contact_id: selected.contact_id,
+    first_name: selected.first_name,
+    last_name: selected.last_name,
+    email: selected.email,
+    phone: selected.phone,
+    stage: "queue",
+    source: selected.source ?? selected.opportunity_source,
+    community_name: selected.community_name ?? communities.find(c => c.id === selected.community_id)?.name ?? null,
+    division_name: selected.division_name ?? divisions.find(d => d.id === selected.division_id)?.name ?? communities.find(c => c.id === selected.community_id)?.division_name ?? null,
+    budget_min: null,
+    budget_max: null,
+    floor_plan_name: null,
+    notes: selected.notes,
+    last_activity_at: selected.last_activity_at,
+    created_at: selected.created_at,
+  } : null;
 
   return (
     <PageShell
@@ -197,55 +185,11 @@ function QueueInner({ opportunities, communities, divisions }: Props) {
         minWidth={1100}
       />
 
-      <SlideOver open={!!selected} onClose={() => setSelected(null)}
-        title={selected ? `${selected.first_name} ${selected.last_name}` : ""}
-        subtitle={community?.name ?? selected?.community_name ?? undefined}
-        badge={selected ? <Badge variant="custom" label={deriveStatus(selected)} customColor="#f5a623" customBg="#2a2a1a" customBorder="#3f3a1f" /> : undefined}
-        width={480}
-      >
-        {selected && (
-          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 0 }}>
-            <Section title="Contact">
-              <Row label="Email" value={selected.email ? <a href={`mailto:${selected.email}`} style={{ color: "#7aafdf", textDecoration: "none" }}>{selected.email}</a> : null} />
-              <Row label="Phone" value={selected.phone} />
-              <Row label="Source" value={selected.source ?? selected.opportunity_source} />
-            </Section>
-            <Section title="Routing">
-              <Row label="Community" value={community?.name ?? selected.community_name} />
-              <Row label="Division" value={selected.division_name ?? community?.division_name} />
-              <Row label="Route Decision" value={selected.osc_route_decision ?? "Pending"} />
-              <Row label="Last Activity" value={selected.last_activity_at ? new Date(selected.last_activity_at).toLocaleString() : null} />
-              <Row label="Created" value={new Date(selected.created_at).toLocaleString()} />
-            </Section>
-            {selected.notes && (
-              <Section title="Notes">
-                <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap" }}>{selected.notes}</p>
-              </Section>
-            )}
-            <Section title="History">
-              {historyLoading ? (
-                <p style={{ fontSize: 12, color: "#555", margin: 0 }}>Loading…</p>
-              ) : history.length === 0 ? (
-                <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No stage transitions recorded</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {history.map(t => (
-                    <div key={t.id} style={{ fontSize: 12, color: "#888", lineHeight: 1.5 }}>
-                      <span style={{ color: "#aaa" }}>{t.from_stage ?? "—"}</span>
-                      <span style={{ color: "#555", margin: "0 6px" }}>→</span>
-                      <span style={{ color: "#ededed" }}>{t.to_stage ?? "—"}</span>
-                      {t.triggered_by && <span style={{ color: "#555", marginLeft: 8 }}>by {t.triggered_by}</span>}
-                      {t.reason && <span style={{ color: "#555", marginLeft: 8 }}>— {t.reason}</span>}
-                      <br />
-                      <span style={{ color: "#444", fontSize: 11 }}>{new Date(t.created_at).toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-          </div>
-        )}
-      </SlideOver>
+      <OpportunityPanel
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        opportunity={panelData}
+      />
     </PageShell>
   );
 }

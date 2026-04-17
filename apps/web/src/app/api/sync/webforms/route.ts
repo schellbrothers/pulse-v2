@@ -38,9 +38,9 @@ const HB_DIVISION_MAP: Record<number, string> = {
 function stageForFormType(formTypeCode: string): string {
   switch (formTypeCode) {
     case "subscribe_region":
-      return "marketing"; // division-level interest, no community
+      return "lead_div"; // division-level interest, no community
     case "prelaunch_community":
-      return "lead"; // interested in specific community
+      return "lead_com"; // interested in specific community
     case "schedule_visit":
     case "contact_us":
     case "branchout":
@@ -281,7 +281,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
       opportunityId = existingOpp[0].id;
       const stage = existingOpp[0].crm_stage as string;
 
-      if (stage === "marketing" || stage === "lead") {
+      if (stage === "lead_div" || stage === "lead_com") {
         // Re-engaged → promote to queue
         await supabase
           .from("opportunities")
@@ -306,7 +306,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
         .insert({
           org_id: ORG_ID,
           contact_id: contact.id,
-          crm_stage: initialStage === "marketing" ? "lead" : initialStage,
+          crm_stage: initialStage === "lead_div" ? "lead_div" : initialStage,
           division_id: divisionId,
           community_id: communityId,
           source: "webform",
@@ -322,7 +322,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
       opportunityId = newOpp?.id ?? null;
     }
   } else if (divisionId) {
-    // Division-level lead (no community) — stage = marketing
+    // Division-level lead (no community) — stage = lead_div
     const { data: existingOpp } = await supabase
       .from("opportunities")
       .select("id, crm_stage")
@@ -335,7 +335,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
     if (existingOpp && existingOpp.length > 0) {
       opportunityId = existingOpp[0].id;
       // If in marketing, promote to queue on re-engagement
-      if (existingOpp[0].crm_stage === "marketing") {
+      if (existingOpp[0].crm_stage === "lead_div") {
         await supabase
           .from("opportunities")
           .update({
@@ -352,14 +352,14 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
           .eq("id", opportunityId);
       }
     } else {
-      const stage = initialStage === "lead" ? "marketing" : initialStage;
-      // For marketing stage, community_id is null which is valid per constraint
+      const stage = initialStage === "lead_com" ? "lead_div" : initialStage;
+      // For lead_div stage, community_id is null which is valid per constraint
       // For queue stage with no community, we need to set community_id to satisfy constraint
-      // Actually constraint says: crm_stage = 'marketing' OR community_id IS NOT NULL
+      // Actually constraint says: crm_stage = 'lead_div' OR community_id IS NOT NULL
       // So only marketing can have null community. If stage is queue but no community,
       // use marketing instead (division-level interest with no specific community).
       const finalStage =
-        stage !== "marketing" && !communityId ? "marketing" : stage;
+        stage !== "lead_div" && !communityId ? "lead_div" : stage;
       const { data: newOpp } = await supabase
         .from("opportunities")
         .insert({

@@ -17,6 +17,7 @@ interface CommunityViewProps {
   modelHome: any | null;
   specHomes: any[];
   divisions: { id: string; name: string; slug: string }[];
+  readOnly?: boolean;
 }
 
 interface MonthGoal {
@@ -482,11 +483,12 @@ function ActionBtn({ label }: { label: string }) {
 // ─── Prospect Queue Card ──────────────────────────────────────────────────────
 
 function ProspectCard({
-  item, onPromote, onDemote,
+  item, onPromote, onDemote, readOnly,
 }: {
   item: ProspectItem;
   onPromote: () => void;
   onDemote: () => void;
+  readOnly?: boolean;
 }) {
   const name = `${item.contacts?.first_name ?? "—"} ${item.contacts?.last_name ?? ""}`;
   const stageInfo = STAGE_COLORS[item.crm_stage];
@@ -519,14 +521,18 @@ function ProspectCard({
           </div>
         </div>
         <span style={{ fontSize: 11, color: "#71717a", flexShrink: 0 }}>{item.contacts?.phone ?? "—"}</span>
-        <button onClick={e => { e.stopPropagation(); onPromote(); }} style={{
-          padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
-          backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-        }}>↑ Promote</button>
-        <button onClick={e => { e.stopPropagation(); onDemote(); }} style={{
-          padding: "4px 10px", borderRadius: 4, border: "1px solid #991b1b",
-          backgroundColor: "#1c1917", color: "#f87171", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-        }}>↓ Demote</button>
+        {!readOnly && (
+          <button onClick={e => { e.stopPropagation(); onPromote(); }} style={{
+            padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
+            backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+          }}>↑ Promote</button>
+        )}
+        {!readOnly && (
+          <button onClick={e => { e.stopPropagation(); onDemote(); }} style={{
+            padding: "4px 10px", borderRadius: 4, border: "1px solid #991b1b",
+            backgroundColor: "#1c1917", color: "#f87171", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+          }}>↓ Demote</button>
+        )}
       </div>
 
       {expanded && (
@@ -565,11 +571,12 @@ function ProspectCard({
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 function TaskCard({
-  task, onComplete, onSnooze,
+  task, onComplete, onSnooze, readOnly,
 }: {
   task: TaskItem;
   onComplete: () => void;
   onSnooze: (until: string) => void;
+  readOnly?: boolean;
 }) {
   const [showSnooze, setShowSnooze] = useState(false);
   const pb = priorityBadge(task.priority);
@@ -621,22 +628,26 @@ function TaskCard({
             <ActionBtn label="💬 Text" />
           </>
         )}
-        <button onClick={onComplete} style={{
-          padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
-          backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-        }}>✓ Complete</button>
-        <div style={{ position: "relative" }}>
-          <button onClick={() => setShowSnooze(!showSnooze)} style={{
-            padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
-            backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
-          }}>⏰ Snooze</button>
-          {showSnooze && (
-            <SnoozePicker
-              onSnooze={(until) => { setShowSnooze(false); onSnooze(until); }}
-              onClose={() => setShowSnooze(false)}
-            />
-          )}
-        </div>
+        {!readOnly && (
+          <button onClick={onComplete} style={{
+            padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
+            backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+          }}>✓ Complete</button>
+        )}
+        {!readOnly && (
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setShowSnooze(!showSnooze)} style={{
+              padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
+              backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+            }}>⏰ Snooze</button>
+            {showSnooze && (
+              <SnoozePicker
+                onSnooze={(until) => { setShowSnooze(false); onSnooze(until); }}
+                onClose={() => setShowSnooze(false)}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -794,7 +805,7 @@ function ReferenceModule({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-function CommunityView({ community, plans, lots, modelHome, specHomes, divisions }: CommunityViewProps) {
+function CommunityView({ community, plans, lots, modelHome, specHomes, divisions, readOnly }: CommunityViewProps) {
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
@@ -1165,6 +1176,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                 <ProspectCard
                   key={item.id}
                   item={item}
+                  readOnly={readOnly}
                   onPromote={() => { setActionItem(item); setActionType("promote"); }}
                   onDemote={() => { setActionItem(item); setActionType("demote"); }}
                 />
@@ -1197,6 +1209,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                 <TaskCard
                   key={task.id}
                   task={task}
+                  readOnly={readOnly}
                   onComplete={() => handleCompleteTask(task.id)}
                   onSnooze={(until) => handleSnoozeTask(task.id, until)}
                 />
@@ -1210,7 +1223,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       <ReferenceModule community={community} plans={plans} lots={lots} modelHome={modelHome} />
 
       {/* ── Action Modal ── */}
-      {actionItem && actionType && (
+      {!readOnly && actionItem && actionType && (
         <ActionModal
           item={actionItem}
           action={actionType}

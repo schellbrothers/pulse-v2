@@ -298,14 +298,16 @@ function SalesGoalStrip() {
         </div>
         {MONTH_GOALS.map((m) => {
           const met = m.sales >= m.goal && m.goal > 0;
+          const variance = m.sales - m.goal;
           return (
             <div key={m.month} style={{
               flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              padding: "10px 4px", borderRight: "1px solid #18181b",
-              borderBottom: `2px solid ${met ? "#22c55e" : "#27272a"}`, minWidth: 0,
+              padding: "8px 4px", borderRight: "1px solid #18181b",
+              borderBottom: `2px solid ${met ? "#22c55e" : m.goal > 0 ? "#dc2626" : "#27272a"}`, minWidth: 0,
             }}>
-              <span style={{ fontSize: 10, color: "#52525b", fontWeight: 500, letterSpacing: "0.05em" }}>{m.month}</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: m.sales > 0 ? "#fafafa" : "#3f3f46", marginTop: 2 }}>{m.sales}</span>
+              <span style={{ fontSize: 9, color: "#52525b", fontWeight: 500, letterSpacing: "0.05em" }}>{m.month}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: m.sales > 0 ? "#fafafa" : "#3f3f46", marginTop: 1 }}>{m.sales}</span>
+              <span style={{ fontSize: 9, color: m.goal > 0 ? "#52525b" : "#27272a" }}>/ {m.goal}</span>
             </div>
           );
         })}
@@ -966,47 +968,20 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {/* ── Header ── */}
-      <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #27272a" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-          {division && <span style={{ fontSize: 12, color: "#52525b" }}>{division.name} /</span>}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: "#fafafa", margin: 0 }}>{community.name}</h1>
-          <select
-            value={teamFilter}
-            onChange={e => setTeamFilter(e.target.value)}
-            style={{
-              backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
-              color: "#a1a1aa", fontSize: 12, padding: "6px 12px", outline: "none",
-            }}
-          >
-            <option value="all">All Team Members</option>
-            {csmUsers.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-          </select>
-          <span style={{ fontSize: 12, color: "#52525b" }}>
-            {[community.city, community.state].filter(Boolean).join(", ")}
-          </span>
-          {community.status && (
-            <span style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 4, fontWeight: 500,
-              backgroundColor: community.status === "active" ? "#052e16" : "#422006",
-              color: community.status === "active" ? "#4ade80" : "#fbbf24",
-              border: `1px solid ${community.status === "active" ? "#166534" : "#854d0e"}`,
-            }}>
-              {community.status.charAt(0).toUpperCase() + community.status.slice(1)}
-            </span>
-          )}
-        </div>
-        {community.price_from && (
-          <span style={{ fontSize: 12, color: "#71717a", marginTop: 4, display: "block" }}>
-            From {formatPrice(community.price_from)}
-            {community.hoa_fee ? ` · HOA ${formatPrice(community.hoa_fee)}/${community.hoa_period ?? "mo"}` : ""}
-          </span>
-        )}
+      {/* ── Sales Goal Strip (top, right below global filters) ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 24px 0" }}>
+        <select
+          value={teamFilter}
+          onChange={e => setTeamFilter(e.target.value)}
+          style={{
+            backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
+            color: "#a1a1aa", fontSize: 11, padding: "4px 10px", outline: "none",
+          }}
+        >
+          <option value="all">All Team Members</option>
+          {csmUsers.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+        </select>
       </div>
-
-      {/* ── Sales Goal Strip ── */}
       <SalesGoalStrip />
 
       {/* ── Metrics Grid ── */}

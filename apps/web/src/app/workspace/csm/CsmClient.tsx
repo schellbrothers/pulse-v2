@@ -126,19 +126,7 @@ export default function CsmClient() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", backgroundColor: "#0a0a0a", color: "#ededed" }}>
-      {/* Top bar */}
-      <div style={{
-        padding: "10px 24px", borderBottom: "1px solid #1a1a1a",
-        display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#ededed" }}>CSM Command Center</span>
-        <span style={{
-          fontSize: 10, padding: "2px 8px", borderRadius: 4,
-          backgroundColor: "#1a2a1a", border: "1px solid #1f3f1f", color: "#00c853",
-        }}>Community Sales Manager</span>
-      </div>
-
-      {/* Content */}
+      {/* Content — no header, global filters drive context */}
       <div style={{ flex: 1, overflow: "auto" }}>
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#555", fontSize: 13 }}>

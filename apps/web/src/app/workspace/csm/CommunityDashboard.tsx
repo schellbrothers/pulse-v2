@@ -31,6 +31,7 @@ interface ProspectItem {
   crm_stage: string;
   community_id: string | null;
   division_id: string | null;
+  csm_id: string | null;
   source: string | null;
   opportunity_source: string | null;
   queue_source: string | null;
@@ -61,9 +62,15 @@ interface TaskItem {
   ai_suggestion: string | null;
   contact_id: string | null;
   opportunity_id: string | null;
+  assigned_to_id: string | null;
   community_id: string | null;
   created_at: string;
   contacts: { first_name: string; last_name: string } | null;
+}
+
+interface TeamUser {
+  id: string;
+  full_name: string;
 }
 
 type CsmBucket = "new_from_osc" | "stale" | "ai_hot" | "followup_due";
@@ -796,6 +803,8 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
   const [activeBucket, setActiveBucket] = useState<CsmBucket>("new_from_osc");
   const [actionItem, setActionItem] = useState<ProspectItem | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [csmUsers, setCsmUsers] = useState<TeamUser[]>([]);
 
   const availableLots = lots.filter((l: any) => l.is_available);
   const underConstruction = lots.filter((l: any) => l.construction_status === "under-construction" || l.lot_status === "under-construction");
@@ -808,10 +817,18 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     const cid = community.id;
     const now = new Date().toISOString();
 
+    // CSM team members
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, full_name")
+      .eq("role", "csm")
+      .eq("is_active", true);
+    setCsmUsers((users as TeamUser[]) ?? []);
+
     const [oppRes, leadRes, custRes, taskRes] = await Promise.all([
       supabase
         .from("opportunities")
-        .select("id, contact_id, crm_stage, community_id, division_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone)")
+        .select("id, contact_id, crm_stage, community_id, division_id, csm_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone)")
         .eq("community_id", cid)
         .in("crm_stage", ["prospect_c", "prospect_b", "prospect_a"])
         .order("last_activity_at", { ascending: false }),
@@ -819,7 +836,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       supabase.from("home_owners").select("*, contacts(first_name, last_name, email, phone)").eq("community_id", cid),
       supabase
         .from("tasks")
-        .select("id, title, description, priority, channel, status, due_at, snoozed_until, completed_at, ai_suggestion, contact_id, opportunity_id, community_id, created_at, contacts(first_name, last_name)")
+        .select("id, title, description, priority, channel, status, due_at, snoozed_until, completed_at, ai_suggestion, contact_id, opportunity_id, assigned_to_id, community_id, created_at, contacts(first_name, last_name)")
         .eq("community_id", cid)
         .eq("status", "pending")
         .or(`snoozed_until.is.null,snoozed_until.lte.${now}`)
@@ -858,10 +875,18 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       .map(t => t.opportunity_id!)
   );
 
+  // Apply team filter
+  const filteredProspects = teamFilter === "all"
+    ? prospects
+    : prospects.filter(p => p.csm_id === teamFilter);
+  const filteredTasks = teamFilter === "all"
+    ? tasks
+    : tasks.filter(t => t.assigned_to_id === teamFilter);
+
   // Bucket prospects
   const bucketCounts: Record<CsmBucket, number> = { new_from_osc: 0, stale: 0, ai_hot: 0, followup_due: 0 };
   const bucketedItems: Record<CsmBucket, ProspectItem[]> = { new_from_osc: [], stale: [], ai_hot: [], followup_due: [] };
-  for (const item of prospects) {
+  for (const item of filteredProspects) {
     const bucket = classifyBucket(item, todayTaskOppIds);
     bucketCounts[bucket]++;
     bucketedItems[bucket].push(item);
@@ -936,8 +961,19 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
           {division && <span style={{ fontSize: 12, color: "#52525b" }}>{division.name} /</span>}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <h1 style={{ fontSize: 20, fontWeight: 600, color: "#fafafa", margin: 0 }}>{community.name}</h1>
+          <select
+            value={teamFilter}
+            onChange={e => setTeamFilter(e.target.value)}
+            style={{
+              backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
+              color: "#a1a1aa", fontSize: 12, padding: "6px 12px", outline: "none",
+            }}
+          >
+            <option value="all">All Team Members</option>
+            {csmUsers.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+          </select>
           <span style={{ fontSize: 12, color: "#52525b" }}>
             {[community.city, community.state].filter(Boolean).join(", ")}
           </span>
@@ -1085,9 +1121,9 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>CSM Queue</span>
             <span style={{
               fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
-              backgroundColor: prospects.length > 0 ? "#172554" : "#052e16",
-              color: prospects.length > 0 ? "#60a5fa" : "#4ade80",
-            }}>{prospects.length} prospects</span>
+              backgroundColor: filteredProspects.length > 0 ? "#172554" : "#052e16",
+              color: filteredProspects.length > 0 ? "#60a5fa" : "#4ade80",
+            }}>{filteredProspects.length} prospects</span>
           </div>
 
           {/* Bucket tabs */}
@@ -1143,12 +1179,12 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Action Items</span>
             <span style={{
               fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
-              backgroundColor: tasks.length > 0 ? "#422006" : "#052e16",
-              color: tasks.length > 0 ? "#fbbf24" : "#4ade80",
-            }}>{tasks.length} pending</span>
+              backgroundColor: filteredTasks.length > 0 ? "#422006" : "#052e16",
+              color: filteredTasks.length > 0 ? "#fbbf24" : "#4ade80",
+            }}>{filteredTasks.length} pending</span>
           </div>
 
-          {tasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div style={{
               padding: 32, textAlign: "center", backgroundColor: "#052e16", border: "1px solid #166534",
               borderRadius: 8, color: "#4ade80", fontSize: 12, fontWeight: 500,
@@ -1157,7 +1193,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {tasks.map(task => (
+              {filteredTasks.map(task => (
                 <TaskCard
                   key={task.id}
                   task={task}

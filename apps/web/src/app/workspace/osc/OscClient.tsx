@@ -17,6 +17,7 @@ interface QueueItem {
   crm_stage: string;
   community_id: string | null;
   division_id: string | null;
+  osc_id: string | null;
   source: string | null;
   opportunity_source: string | null;
   queue_source: string | null;
@@ -43,9 +44,15 @@ interface TaskItem {
   ai_suggestion: string | null;
   contact_id: string | null;
   opportunity_id: string | null;
+  assigned_to_id: string | null;
   division_id: string | null;
   created_at: string;
   contacts: { first_name: string; last_name: string } | null;
+}
+
+interface TeamUser {
+  id: string;
+  full_name: string;
 }
 
 interface CommunityRef { id: string; name: string; }
@@ -782,6 +789,8 @@ export default function OscClient() {
   const [actionItem, setActionItem] = useState<QueueItem | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
   const [activeBucket, setActiveBucket] = useState<QueueBucket>("new_inbound");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [oscUsers, setOscUsers] = useState<TeamUser[]>([]);
 
   // ── Fetch queue + tasks ──
   const fetchData = useCallback(async () => {
@@ -793,10 +802,18 @@ export default function OscClient() {
       .from("communities").select("id, name").eq("division_id", filter.divisionId).order("name");
     setCommunities(comms ?? []);
 
+    // OSC team members
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, full_name")
+      .eq("role", "osc")
+      .eq("is_active", true);
+    setOscUsers((users as TeamUser[]) ?? []);
+
     // Queue items
     const { data: items } = await supabase
       .from("opportunities")
-      .select("id, contact_id, crm_stage, community_id, division_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name)")
+      .select("id, contact_id, crm_stage, community_id, division_id, osc_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name)")
       .eq("crm_stage", "queue")
       .eq("division_id", filter.divisionId)
       .order("last_activity_at", { ascending: false });
@@ -812,7 +829,7 @@ export default function OscClient() {
     const now = new Date().toISOString();
     const { data: taskData } = await supabase
       .from("tasks")
-      .select("id, title, description, priority, channel, status, due_at, snoozed_until, completed_at, ai_suggestion, contact_id, opportunity_id, division_id, created_at, contacts(first_name, last_name)")
+      .select("id, title, description, priority, channel, status, due_at, snoozed_until, completed_at, ai_suggestion, contact_id, opportunity_id, assigned_to_id, division_id, created_at, contacts(first_name, last_name)")
       .eq("division_id", filter.divisionId)
       .eq("status", "pending")
       .or(`snoozed_until.is.null,snoozed_until.lte.${now}`)
@@ -838,6 +855,14 @@ export default function OscClient() {
     fetchData();
   }, [filter.divisionId, fetchData]);
 
+  // ── Apply team filter ──
+  const filteredQueueItems = teamFilter === "all"
+    ? queueItems
+    : queueItems.filter(q => q.osc_id === teamFilter);
+  const filteredTasks = teamFilter === "all"
+    ? tasks
+    : tasks.filter(t => t.assigned_to_id === teamFilter);
+
   // ── Bucketed queue ──
   const bucketCounts: Record<QueueBucket, number> = {
     new_inbound: 0, re_engaged: 0, demoted: 0, ai_surfaced: 0, customer: 0,
@@ -845,7 +870,7 @@ export default function OscClient() {
   const bucketedItems: Record<QueueBucket, QueueItem[]> = {
     new_inbound: [], re_engaged: [], demoted: [], ai_surfaced: [], customer: [],
   };
-  for (const item of queueItems) {
+  for (const item of filteredQueueItems) {
     const bucket = classifyBucket(item);
     bucketCounts[bucket]++;
     bucketedItems[bucket].push(item);
@@ -941,15 +966,26 @@ export default function OscClient() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <select
+            value={teamFilter}
+            onChange={e => setTeamFilter(e.target.value)}
+            style={{
+              backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
+              color: "#a1a1aa", fontSize: 12, padding: "6px 12px", outline: "none",
+            }}
+          >
+            <option value="all">All Team Members</option>
+            {oscUsers.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+          </select>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 11, color: "#52525b" }}>Queue:</span>
             <span style={{
               fontSize: 16, fontWeight: 700,
-              color: queueItems.length === 0 ? "#4ade80" : queueItems.length > 10 ? "#f87171" : "#fbbf24",
-            }}>{queueItems.length}</span>
+              color: filteredQueueItems.length === 0 ? "#4ade80" : filteredQueueItems.length > 10 ? "#f87171" : "#fbbf24",
+            }}>{filteredQueueItems.length}</span>
           </div>
           <span style={{ fontSize: 11, color: "#52525b" }}>
-            Goal: <strong style={{ color: queueItems.length === 0 ? "#4ade80" : "#fafafa" }}>0</strong>
+            Goal: <strong style={{ color: filteredQueueItems.length === 0 ? "#4ade80" : "#fafafa" }}>0</strong>
           </span>
         </div>
       </div>
@@ -966,10 +1002,10 @@ export default function OscClient() {
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Queue</span>
                 <span style={{
                   fontSize: 10, padding: "1px 6px", borderRadius: 4,
-                  backgroundColor: queueItems.length === 0 ? "#052e16" : "#7f1d1d",
-                  color: queueItems.length === 0 ? "#4ade80" : "#fca5a5",
+                  backgroundColor: filteredQueueItems.length === 0 ? "#052e16" : "#7f1d1d",
+                  color: filteredQueueItems.length === 0 ? "#4ade80" : "#fca5a5",
                   fontWeight: 600,
-                }}>{queueItems.length === 0 ? "✓ Clear" : `${queueItems.length} pending`}</span>
+                }}>{filteredQueueItems.length === 0 ? "✓ Clear" : `${filteredQueueItems.length} pending`}</span>
               </div>
 
               {/* Bucket tabs */}
@@ -1026,12 +1062,12 @@ export default function OscClient() {
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Action Items</span>
                 <span style={{
                   fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
-                  backgroundColor: tasks.length > 0 ? "#422006" : "#052e16",
-                  color: tasks.length > 0 ? "#fbbf24" : "#4ade80",
-                }}>{tasks.length} pending</span>
+                  backgroundColor: filteredTasks.length > 0 ? "#422006" : "#052e16",
+                  color: filteredTasks.length > 0 ? "#fbbf24" : "#4ade80",
+                }}>{filteredTasks.length} pending</span>
               </div>
 
-              {tasks.length === 0 ? (
+              {filteredTasks.length === 0 ? (
                 <div style={{
                   padding: 32, textAlign: "center", backgroundColor: "#052e16", border: "1px solid #166534",
                   borderRadius: 8, color: "#4ade80", fontSize: 12, fontWeight: 500,
@@ -1040,7 +1076,7 @@ export default function OscClient() {
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {tasks.map(task => (
+                  {filteredTasks.map(task => (
                     <TaskCard
                       key={task.id}
                       task={task}

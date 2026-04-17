@@ -80,6 +80,23 @@ type DrillPanel = null | "plans" | "lots" | "prospects" | "customers" | "qd";
 
 type ActionType = "promote" | "demote" | null;
 
+interface CommActivity {
+  id: string;
+  contact_id: string | null;
+  channel: string | null;
+  direction: string;
+  subject: string | null;
+  occurred_at: string;
+  is_read: boolean | null;
+  read_at: string | null;
+  needs_response: boolean | null;
+  responded_at: string | null;
+  is_urgent: boolean | null;
+  contacts: { first_name: string; last_name: string } | null;
+}
+
+type CommHubTab = "urgent" | "needs_response" | "email" | "phone" | "sms" | "all";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MONTH_GOALS: MonthGoal[] = [
@@ -168,6 +185,23 @@ function channelIcon(ch: string | null): string {
   const map: Record<string, string> = { call: "📞", phone: "📞", email: "📧", text: "💬", sms: "💬", chat: "💬" };
   return map[ch ?? ""] ?? "📋";
 }
+
+function activityChannelIcon(ch: string | null): string {
+  const map: Record<string, string> = {
+    email: "📧", phone: "📞", call: "📞", sms: "💬", text: "💬",
+    voicemail: "🎙", webform: "🌐", chat: "💭", virtual_tour: "🖥", walk_in: "🚶",
+  };
+  return map[ch ?? ""] ?? "📬";
+}
+
+const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string }[] = [
+  { id: "urgent", icon: "⚡", label: "Urgent" },
+  { id: "needs_response", icon: "📬", label: "Needs Response" },
+  { id: "email", icon: "📧", label: "Email" },
+  { id: "phone", icon: "📞", label: "Phone" },
+  { id: "sms", icon: "💬", label: "SMS" },
+  { id: "all", icon: "", label: "All" },
+];
 
 function priorityBadge(p: string | null): { color: string; bg: string; label: string } {
   if (p === "high") return { color: "#fca5a5", bg: "#7f1d1d", label: "🔴 High" };
@@ -812,6 +846,8 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [leftPane, setLeftPane] = useState<"queue" | "comms">("queue");
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
+  const [commActivities, setCommActivities] = useState<CommActivity[]>([]);
+  const [activeCommTab, setActiveCommTab] = useState<CommHubTab>("needs_response");
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -872,6 +908,21 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     setProspects(flatProspects);
     setCustomers(custRes.data ?? []);
     setTasks(flatTasks);
+
+    // Fetch activities for Comm Hub
+    const { data: actData } = await supabase
+      .from("activities")
+      .select("id, contact_id, channel, direction, subject, occurred_at, is_read, read_at, needs_response, responded_at, is_urgent, contacts(first_name, last_name)")
+      .eq("direction", "inbound")
+      .eq("community_id", cid)
+      .order("occurred_at", { ascending: false })
+      .limit(100);
+
+    const flatActivities = (actData ?? []).map((a: Record<string, unknown>) => ({
+      ...a,
+      contacts: Array.isArray(a.contacts) ? (a.contacts as Record<string, unknown>[])[0] ?? null : a.contacts,
+    })) as CommActivity[];
+    setCommActivities(flatActivities);
   }, [community?.id]);
 
   useEffect(() => {
@@ -963,6 +1014,30 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     }
     fetchData();
   }
+
+  async function handleMarkRead(activityId: string) {
+    await supabase.from("activities").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", activityId);
+    setCommActivities(prev => prev.map(a => a.id === activityId ? { ...a, is_read: true, read_at: new Date().toISOString() } : a));
+  }
+
+  // Comm Hub computed values
+  const unreadCommCount = commActivities.filter(a => !a.is_read).length;
+  const commCounts: Record<CommHubTab, number> = {
+    urgent: commActivities.filter(a => a.is_urgent).length,
+    needs_response: commActivities.filter(a => a.needs_response && !a.responded_at).length,
+    email: commActivities.filter(a => a.channel === "email").length,
+    phone: commActivities.filter(a => a.channel === "phone" || a.channel === "call").length,
+    sms: commActivities.filter(a => a.channel === "sms" || a.channel === "text").length,
+    all: commActivities.length,
+  };
+  const filteredCommActivities = commActivities.filter(a => {
+    if (activeCommTab === "urgent") return a.is_urgent;
+    if (activeCommTab === "needs_response") return a.needs_response && !a.responded_at;
+    if (activeCommTab === "email") return a.channel === "email";
+    if (activeCommTab === "phone") return a.channel === "phone" || a.channel === "call";
+    if (activeCommTab === "sms") return a.channel === "sms" || a.channel === "text";
+    return true;
+  });
 
   function toggleDrill(panel: DrillPanel) {
     setDrill(prev => prev === panel ? null : panel);
@@ -1087,23 +1162,25 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       <div style={{ padding: "0 24px 24px", display: "flex", gap: 20, alignItems: "flex-start" }}>
         {/* LEFT: CSM Prospect Queue (~60%) */}
         <div style={{ flex: "0 0 60%", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <div style={{ display: "flex", gap: 0 }}>
-              {(["queue", "comms"] as const).map(t => (
-                <button key={t} onClick={() => setLeftPane(t)} style={{
-                  padding: "4px 12px", fontSize: 12, fontWeight: leftPane === t ? 600 : 400,
-                  color: leftPane === t ? "#fafafa" : "#52525b",
-                  borderBottom: leftPane === t ? "2px solid #fafafa" : "2px solid transparent",
-                  background: "none", border: "none", borderTop: "none", borderLeft: "none", borderRight: "none",
-                  cursor: "pointer",
-                }}>{t === "queue" ? "CSM Queue" : "Comm Hub"}</button>
-              ))}
-            </div>
-            <span style={{
-              fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
-              backgroundColor: filteredProspects.length > 0 ? "#172554" : "#052e16",
-              color: filteredProspects.length > 0 ? "#60a5fa" : "#4ade80",
-            }}>{filteredProspects.length} prospects</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 12, borderBottom: "1px solid #27272a" }}>
+            <button onClick={() => setLeftPane("queue")} style={{
+              padding: "6px 14px", fontSize: 13, fontWeight: leftPane === "queue" ? 600 : 400,
+              color: leftPane === "queue" ? "#fafafa" : "#52525b",
+              borderBottom: leftPane === "queue" ? "2px solid #fafafa" : "2px solid transparent",
+              background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            }}>
+              CSM Queue
+              <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa" }}>{filteredProspects.length}</span>
+            </button>
+            <button onClick={() => setLeftPane("comms")} style={{
+              padding: "6px 14px", fontSize: 13, fontWeight: leftPane === "comms" ? 600 : 400,
+              color: leftPane === "comms" ? "#fafafa" : "#52525b",
+              borderBottom: leftPane === "comms" ? "2px solid #fafafa" : "2px solid transparent",
+              background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            }}>
+              Comm Hub
+              <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600, backgroundColor: unreadCommCount > 0 ? "#7f1d1d" : "#27272a", color: unreadCommCount > 0 ? "#fca5a5" : "#71717a" }}>{unreadCommCount}</span>
+            </button>
           </div>
 
           {/* Bucket tabs */}
@@ -1158,25 +1235,81 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
           </>
         ) : (
           /* Comm Hub */
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[{tab: "Urgent", count: 3}, {tab: "Needs Response", count: 5}, {tab: "Calls", count: 2}, {tab: "Texts", count: 4}, {tab: "Emails", count: 8}].map(t => (
-              <div key={t.tab} style={{ padding: "10px 14px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
-              >
-                <span style={{ fontSize: 12, color: "#a1a1aa" }}>{t.tab}</span>
-                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 3, backgroundColor: t.tab === "Urgent" ? "#7f1d1d" : "#27272a", color: t.tab === "Urgent" ? "#fca5a5" : "#71717a", fontWeight: 600 }}>{t.count}</span>
-              </div>
-            ))}
-            <div style={{ marginTop: 8 }}>
-              {["Robert Clark called about pricing — 12m ago", "Sarah Martinez: Are there any lots near the pond? — 25m ago", "David Thompson RE: Tour reschedule — 1h ago", "Jennifer Wilson missed call — 2m ago", "Michael Brown: Hadley vs Stonefield? — 45m ago"].map((msg, i) => (
-                <div key={i} style={{ padding: "8px 14px", borderBottom: "1px solid #18181b", fontSize: 12, color: "#a1a1aa", cursor: "pointer" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#18181b")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >{msg}</div>
-              ))}
-            </div>
+          <>
+          <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12, flexWrap: "wrap" }}>
+            {COMM_HUB_TABS.map(t => {
+              const isActive = activeCommTab === t.id;
+              const count = commCounts[t.id];
+              return (
+                <button key={t.id} onClick={() => setActiveCommTab(t.id)} style={{
+                  padding: "6px 10px", fontSize: 11, fontWeight: isActive ? 600 : 400,
+                  color: isActive ? "#fafafa" : "#52525b",
+                  borderBottom: isActive ? "2px solid #fafafa" : "2px solid transparent",
+                  background: "none", border: "none", borderBottomStyle: "solid",
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
+                }}>
+                  {t.icon && <span>{t.icon}</span>}
+                  <span>{t.label}</span>
+                  <span style={{
+                    fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
+                    backgroundColor: t.id === "urgent" && count > 0 ? "#7f1d1d" : count > 0 ? "#172554" : "#27272a",
+                    color: t.id === "urgent" && count > 0 ? "#fca5a5" : count > 0 ? "#60a5fa" : "#71717a",
+                  }}>{count}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {filteredCommActivities.length === 0 ? (
+            <div style={{
+              padding: 32, textAlign: "center", backgroundColor: "#18181b", border: "1px solid #27272a",
+              borderRadius: 6, color: "#52525b", fontSize: 12,
+            }}>No activities in this view</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {filteredCommActivities.map(a => {
+                const contactName = a.contacts ? `${a.contacts.first_name} ${a.contacts.last_name}` : "Unknown";
+                const isRead = !!a.is_read;
+                return (
+                  <div key={a.id} style={{
+                    padding: "8px 12px", display: "flex", alignItems: "center", gap: 10,
+                    borderRadius: 6, cursor: "pointer", opacity: isRead ? 0.5 : 1,
+                    transition: "background-color 0.1s",
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#18181b")}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>{activityChannelIcon(a.channel)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#fafafa" }}>{contactName}</span>
+                        {a.is_urgent && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#7f1d1d", color: "#fca5a5" }}>URGENT</span>}
+                        {a.needs_response && !a.responded_at && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#422006", color: "#fbbf24" }}>NEEDS RESPONSE</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {a.subject ?? "No subject"}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0, whiteSpace: "nowrap" }}>{relativeTime(a.occurred_at)}</span>
+                    {!isRead && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleMarkRead(a.id); }}
+                        title="Mark as read"
+                        style={{
+                          padding: "2px 6px", borderRadius: 3, border: "1px solid #27272a",
+                          backgroundColor: "#09090b", color: "#52525b", fontSize: 11, cursor: "pointer",
+                          opacity: 0.6, transition: "opacity 0.15s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
+                      >✓</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          </>
         )}
         </div>
 

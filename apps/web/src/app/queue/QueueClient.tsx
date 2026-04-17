@@ -133,7 +133,7 @@ function QueueInner({ opportunities, communities, divisions }: Props) {
     { key: "source", label: "Source", sortable: true, filterable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.source ?? "—"}</span> },
     { key: "osc_route_decision", label: "Route Decision", sortable: true, filterable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row.osc_route_decision ?? "Pending"}</span> },
     { key: "_last_activity", label: "Last Activity", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{row._last_activity}</span> },
-    { key: "created_at", label: "Created", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{new Date(row.created_at).toLocaleDateString()}</span> },
+    { key: "created_at", label: "Created", sortable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 13 }}>{new Date(row.created_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }) + " " + new Date(row.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span> },
   ];
 
   const panelData: OpportunityPanelData | null = selected ? {

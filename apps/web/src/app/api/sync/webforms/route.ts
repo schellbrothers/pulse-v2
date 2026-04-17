@@ -441,20 +441,16 @@ export async function GET(request: Request) {
     // ── Step 1: Get last sync timestamp
     const { data: lastSync } = await supabase
       .from("sync_log")
-      .select("synced_at")
+      .select("synced_at, metadata")
       .eq("source", "webforms")
       .order("synced_at", { ascending: false })
       .limit(1)
       .single();
 
-    const sinceUtc = lastSync?.synced_at || DEFAULT_SINCE;
-
-    // HBv1 API expects EDT timestamps, not UTC
-    // Convert UTC sync time to EDT (UTC-4) for the API query
-    const sinceDate = new Date(sinceUtc);
-    const edtOffset = -4 * 60; // EDT = UTC-4
-    const edtDate = new Date(sinceDate.getTime() + edtOffset * 60 * 1000);
-    const sinceEdt = edtDate.toISOString().replace("Z", "");
+    // Use the last HBv1 form timestamp from metadata if available,
+    // otherwise use DEFAULT_SINCE (which is already in EDT)
+    const lastHbTimestamp = (lastSync?.metadata as Record<string, unknown> | null)?.lastFormTimestamp as string | undefined;
+    const sinceEdt = lastHbTimestamp || DEFAULT_SINCE;
 
     // ── Step 2: Fetch from Heartbeat API
     const url = new URL(HB_BASE);
@@ -537,6 +533,10 @@ export async function GET(request: Request) {
         errors,
         error_details: errorDetails.length > 0 ? errorDetails : undefined,
         sinceEdt,
+        // Store the last HBv1 form timestamp so next run uses it as since
+        lastFormTimestamp: forms.length > 0
+          ? forms.reduce((max: string, f: HBForm) => (String(f.submitted_date ?? "") > max ? String(f.submitted_date) : max), String(forms[0].submitted_date ?? sinceEdt))
+          : sinceEdt,
         duration_ms: Date.now() - startTime,
       },
     });

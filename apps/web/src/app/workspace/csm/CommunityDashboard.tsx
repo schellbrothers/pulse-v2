@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import PipelineDetailView, { type PipelineItem } from "@/components/PipelineDetailView";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -856,6 +857,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
   const [actionType, setActionType] = useState<ActionType>(null);
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [csmUsers, setCsmUsers] = useState<TeamUser[]>([]);
+  const [drillBucket, setDrillBucket] = useState<CsmBucket | null>(null);
 
   const availableLots = lots.filter((l: any) => l.is_available);
   const underConstruction = lots.filter((l: any) => l.construction_status === "under-construction" || l.lot_status === "under-construction");
@@ -957,6 +959,27 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     bucketedItems[bucket].push(item);
   }
   const currentBucketItems = bucketedItems[activeBucket];
+
+  // Drill-down items for PipelineDetailView
+  const drillBucketMeta = drillBucket ? BUCKET_META.find(b => b.id === drillBucket) : null;
+  const drillItems: PipelineItem[] = drillBucket
+    ? (bucketedItems[drillBucket] ?? []).map(p => ({
+        id: p.id,
+        contact_id: p.contact_id,
+        first_name: p.contacts?.first_name ?? "—",
+        last_name: p.contacts?.last_name ?? "",
+        email: p.contacts?.email ?? null,
+        phone: p.contacts?.phone ?? null,
+        crm_stage: p.crm_stage,
+        source: p.source ?? null,
+        budget_min: p.budget_min ?? null,
+        budget_max: p.budget_max ?? null,
+        last_activity_at: p.last_activity_at ?? null,
+        engagement_score: p.engagement_score ?? null,
+        notes: p.notes ?? null,
+        created_at: p.created_at,
+      }))
+    : [];
 
   // Execute promote/demote
   async function handleAction(oppId: string, newStage: string, reason: string) {
@@ -1185,6 +1208,14 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
           {/* Bucket tabs */}
           {leftPane === "queue" ? (
+          drillBucket ? (
+            <PipelineDetailView
+              items={drillItems}
+              communityId={community.id}
+              onBack={() => setDrillBucket(null)}
+              bucketLabel={drillBucketMeta?.label ?? "Queue"}
+            />
+          ) : (
           <>
 <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12 }}>
             {BUCKET_META.map(b => {
@@ -1200,11 +1231,16 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                 }}>
                   <span>{b.icon}</span>
                   <span>{b.label}</span>
-                  <span style={{
-                    fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
-                    backgroundColor: count > 0 ? "#172554" : "#27272a",
-                    color: count > 0 ? "#60a5fa" : "#71717a",
-                  }}>{count}</span>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); if (count > 0) { setActiveBucket(b.id); setDrillBucket(b.id); } }}
+                    title={count > 0 ? `View all ${b.label}` : undefined}
+                    style={{
+                      fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
+                      backgroundColor: count > 0 ? "#172554" : "#27272a",
+                      color: count > 0 ? "#60a5fa" : "#71717a",
+                      cursor: count > 0 ? "pointer" : "default",
+                    }}
+                  >{count}</span>
                 </button>
               );
             })}
@@ -1233,6 +1269,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
           )}
 
           </>
+          )
         ) : (
           /* Comm Hub */
           <>

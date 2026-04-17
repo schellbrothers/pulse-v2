@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
+import PipelineDetailView, { type PipelineItem } from "@/components/PipelineDetailView";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -827,6 +828,7 @@ export default function OscClient() {
   const [oscUsers, setOscUsers] = useState<TeamUser[]>([]);
   const [leftPane, setLeftPane] = useState<"queue" | "comms">("queue");
   const [commActivities, setCommActivities] = useState<CommActivity[]>([]);
+  const [drillBucket, setDrillBucket] = useState<QueueBucket | null>(null);
   const [activeCommTab, setActiveCommTab] = useState<CommHubTab>("needs_response");
 
   // ── Fetch queue + tasks ──
@@ -928,6 +930,27 @@ export default function OscClient() {
     bucketedItems[bucket].push(item);
   }
   const currentBucketItems = bucketedItems[activeBucket];
+
+  // Drill-down items for PipelineDetailView
+  const drillBucketMeta = drillBucket ? BUCKET_META.find(b => b.id === drillBucket) : null;
+  const drillItems: PipelineItem[] = drillBucket
+    ? (bucketedItems[drillBucket] ?? []).map(q => ({
+        id: q.id,
+        contact_id: q.contact_id,
+        first_name: q.contacts?.first_name ?? "\u2014",
+        last_name: q.contacts?.last_name ?? "",
+        email: q.contacts?.email ?? null,
+        phone: q.contacts?.phone ?? null,
+        crm_stage: q.crm_stage,
+        source: q.source ?? null,
+        budget_min: q.budget_min ?? null,
+        budget_max: q.budget_max ?? null,
+        last_activity_at: q.last_activity_at ?? null,
+        engagement_score: q.engagement_score ?? null,
+        notes: q.notes ?? null,
+        created_at: q.created_at,
+      }))
+    : [];
 
   // ── Mark activity as read ──
   async function handleMarkRead(activityId: string) {
@@ -1098,6 +1121,14 @@ export default function OscClient() {
               </div>
 
               {leftPane === "queue" ? (
+              drillBucket ? (
+                <PipelineDetailView
+                  items={drillItems}
+                  divisionId={filter.divisionId}
+                  onBack={() => setDrillBucket(null)}
+                  bucketLabel={drillBucketMeta?.label ?? "Queue"}
+                />
+              ) : (
               <>
               {/* Bucket tabs */}
               <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12 }}>
@@ -1115,11 +1146,16 @@ export default function OscClient() {
                     }}>
                       <span>{b.icon}</span>
                       <span>{b.label}</span>
-                      <span style={{
-                        fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
-                        backgroundColor: count > 0 ? "#7f1d1d" : "#27272a",
-                        color: count > 0 ? "#fca5a5" : "#71717a",
-                      }}>{count}</span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); if (count > 0) { setActiveBucket(b.id); setDrillBucket(b.id); } }}
+                        title={count > 0 ? `View all ${b.label}` : undefined}
+                        style={{
+                          fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
+                          backgroundColor: count > 0 ? "#7f1d1d" : "#27272a",
+                          color: count > 0 ? "#fca5a5" : "#71717a",
+                          cursor: count > 0 ? "pointer" : "default",
+                        }}
+                      >{count}</span>
                     </button>
                   );
                 })}
@@ -1146,6 +1182,7 @@ export default function OscClient() {
                 </div>
               )}
               </>
+              )
             ) : (
               /* Comm Hub */
               <>

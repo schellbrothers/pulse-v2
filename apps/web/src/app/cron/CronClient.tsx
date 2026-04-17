@@ -39,7 +39,7 @@ const FEEDS: FeedDef[] = [
     schedule: "3× Daily (6 AM, Noon, 6 PM)",
     script: "hbx-sync-division-plans.py",
     filterCol: "feed",
-    filterVal: "division-plans",
+    filterVal: "division_plans",
     times: ["6:00 AM", "12:00 PM", "6:00 PM"],
   },
   {
@@ -49,7 +49,7 @@ const FEEDS: FeedDef[] = [
     schedule: "3× Daily",
     script: "hbx-sync-model.py",
     filterCol: "feed",
-    filterVal: "model-homes",
+    filterVal: "model_homes",
     times: ["6:00 AM", "12:00 PM", "6:00 PM"],
   },
   {
@@ -59,7 +59,7 @@ const FEEDS: FeedDef[] = [
     schedule: "3× Daily",
     script: "hbx-sync-quick-delivery.py",
     filterCol: "feed",
-    filterVal: "quick-delivery",
+    filterVal: "spec_homes",
     times: ["6:00 AM", "12:00 PM", "6:00 PM"],
   },
   {
@@ -79,7 +79,7 @@ const FEEDS: FeedDef[] = [
     schedule: "3× Daily",
     script: "hbx-sync-community-plans.py",
     filterCol: "feed",
-    filterVal: "community-plans",
+    filterVal: "community_plans",
     times: ["6:05 AM", "12:05 PM", "6:05 PM"],
   },
 ];

@@ -1413,6 +1413,32 @@ export default function OscClient() {
       </div>
 
       {/* ── Assign Modal ── */}
+      {/* Opportunity Detail Panel */}
+      {panelItem && (
+        <OpportunityPanel
+          open={!!panelItem}
+          onClose={() => setPanelItem(null)}
+          opportunity={{
+            id: panelItem.id,
+            contact_id: panelItem.contact_id,
+            first_name: panelItem.contacts?.first_name ?? "—",
+            last_name: panelItem.contacts?.last_name ?? "",
+            email: panelItem.contacts?.email ?? null,
+            phone: panelItem.contacts?.phone ?? null,
+            stage: "queue",
+            source: panelItem.source ?? panelItem.opportunity_source,
+            community_name: panelItem.communities?.name ?? null,
+            division_name: labels.division ?? null,
+            budget_min: panelItem.budget_min,
+            budget_max: panelItem.budget_max,
+            floor_plan_name: null,
+            notes: panelItem.notes,
+            last_activity_at: panelItem.last_activity_at,
+            created_at: panelItem.created_at,
+          }}
+        />
+      )}
+
       {assignItem && (
         <AssignModal
           item={assignItem}

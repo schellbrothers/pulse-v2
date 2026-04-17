@@ -121,7 +121,7 @@ function nextBatchRun(): string {
       month: "short",
       day: "numeric",
     });
-    return `${datePart}, ${label} EDT`;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; const tzAbbr = d.toLocaleTimeString("en-US", { timeZoneName: "short" }).split(" ").pop(); return `${datePart}, ${label} ${tzAbbr}`;
   };
 
   for (const t of times) {

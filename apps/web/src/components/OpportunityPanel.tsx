@@ -52,11 +52,21 @@ interface Activity {
   direction: string | null;
   subject: string | null;
   occurred_at: string;
+  duration_sec: number | null;
+  sentiment: string | null;
+  is_read: boolean | null;
+  needs_response: boolean | null;
 }
 
 interface ContactSecondary {
   email_secondary: string | null;
   phone_secondary: string | null;
+}
+
+interface ContactMember {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 // ─── Stage Badge ──────────────────────────────────────────────────────────────
@@ -71,7 +81,6 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bg: string }>
   homeowner:      { label: "HOMEOWNER",        color: "#065f46", bg: "#a7f3d0" },
   archived:       { label: "ARCHIVED",         color: "#e4e4e7", bg: "#3f3f46" },
   deleted:        { label: "DELETED",          color: "#fecaca", bg: "#7f1d1d" },
-  // post-sale stages
   sold_not_started:   { label: "SOLD",             color: "#92400e", bg: "#fde68a" },
   under_construction: { label: "UNDER CONSTRUCTION", color: "#1e40af", bg: "#bfdbfe" },
   settled:            { label: "SETTLED",           color: "#065f46", bg: "#a7f3d0" },
@@ -104,7 +113,7 @@ export function StageBadge({ stage }: { stage: string }) {
   );
 }
 
-// ─── Section / Row (local mirrors to keep panel self-contained) ───────────────
+// ─── Section / Row ────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -164,9 +173,52 @@ function formatDateTime(iso: string): string {
     " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+function formatNoteTimestamp(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+    ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+/** Build a timestamped note line and prepend to existing notes */
+function buildNoteEntry(text: string, existingNotes: string | null): string {
+  const now = new Date();
+  const ts = now.toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" })
+    .replace(/(\d+)\/(\d+)\/(\d+)/, "$3-$1-$2") + " " +
+    now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const entry = `[${ts}] ${text.trim()}`;
+  if (existingNotes && existingNotes.trim()) {
+    return entry + "\n" + existingNotes;
+  }
+  return entry;
+}
+
+/** Parse notes string into individual timestamped entries */
+function parseNoteEntries(notes: string | null): Array<{ timestamp: string; text: string }> {
+  if (!notes || !notes.trim()) return [];
+  const lines = notes.split("\n").filter(l => l.trim());
+  const entries: Array<{ timestamp: string; text: string }> = [];
+  for (const line of lines) {
+    const match = line.match(/^\[([^\]]+)\]\s*(.*)$/);
+    if (match) {
+      entries.push({ timestamp: match[1], text: match[2] });
+    } else {
+      // Legacy note without timestamp
+      entries.push({ timestamp: "", text: line });
+    }
+  }
+  return entries;
+}
+
 const CHANNEL_ICONS: Record<string, string> = {
   email: "📧", phone: "📞", sms: "💬", video: "🎥", voice: "🎙",
   web: "🌐", chat: "💭", app: "🖥", walk_in: "🚶", mail: "📬",
+  webform: "📋", form: "📋",
+};
+
+const CHANNEL_LABELS: Record<string, string> = {
+  email: "Email", phone: "Phone", sms: "SMS", video: "Video", voice: "Voice",
+  web: "Web", chat: "Chat", app: "App", walk_in: "Walk-in", mail: "Mail",
+  webform: "Web Form", form: "Web Form",
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -178,19 +230,27 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activityLoading, setActivityLoading] = useState(false);
 
-  // Contact editing state
+  // Contact editing state — primary
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+
+  // Contact editing state — secondary
+  const [editFirstName2, setEditFirstName2] = useState("");
+  const [editLastName2, setEditLastName2] = useState("");
   const [editEmail2, setEditEmail2] = useState("");
   const [editPhone2, setEditPhone2] = useState("");
   const [secondary, setSecondary] = useState<ContactSecondary>({ email_secondary: null, phone_secondary: null });
+  const [secondaryMember, setSecondaryMember] = useState<ContactMember | null>(null);
 
-  // Notes editing
+  // Notes state
   const [editingNotes, setEditingNotes] = useState(false);
-  const [editNotes, setEditNotes] = useState("");
+  const [newNoteText, setNewNoteText] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [localNotes, setLocalNotes] = useState<string | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -204,14 +264,21 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
   useEffect(() => {
     setEditing(false);
     setEditingNotes(false);
+    setNewNoteText("");
     setActiveTab("history");
     setHistory([]);
     setActivities([]);
-  }, [opportunity?.id]);
+    setLocalNotes(opportunity?.notes ?? null);
+  }, [opportunity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch secondary contact fields
+  // Fetch secondary contact fields + secondary member
   useEffect(() => {
-    if (!opportunity?.contact_id) { setSecondary({ email_secondary: null, phone_secondary: null }); return; }
+    if (!opportunity?.contact_id) {
+      setSecondary({ email_secondary: null, phone_secondary: null });
+      setSecondaryMember(null);
+      return;
+    }
+    // Fetch secondary email/phone from contacts
     supabase
       .from("contacts")
       .select("email_secondary, phone_secondary")
@@ -219,6 +286,20 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
       .single()
       .then(({ data }) => {
         if (data) setSecondary(data as ContactSecondary);
+      });
+    // Fetch secondary member name from contact_members
+    supabase
+      .from("contact_members")
+      .select("id, first_name, last_name")
+      .eq("contact_id", opportunity.contact_id)
+      .eq("is_primary", false)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSecondaryMember(data[0] as ContactMember);
+        } else {
+          setSecondaryMember(null);
+        }
       });
   }, [opportunity?.contact_id]);
 
@@ -239,55 +320,114 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
   // Fetch activities (lazy — only when tab is active)
   useEffect(() => {
-    if (activeTab !== "activity" || !opportunity?.contact_id) return;
+    if (activeTab !== "activity" || !opportunity) return;
     if (activities.length > 0) return; // already fetched
     setActivityLoading(true);
-    supabase
-      .from("activities")
-      .select("id, channel, direction, subject, occurred_at")
-      .eq("contact_id", opportunity.contact_id)
-      .order("occurred_at", { ascending: false })
-      .limit(50)
-      .then(({ data }) => {
-        setActivities(data ?? []);
-        setActivityLoading(false);
-      });
-  }, [activeTab, opportunity?.contact_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const fetchActivities = async () => {
+      // Try by contact_id first
+      if (opportunity.contact_id) {
+        const { data } = await supabase
+          .from("activities")
+          .select("id, channel, direction, subject, occurred_at, duration_sec, sentiment, is_read, needs_response")
+          .eq("contact_id", opportunity.contact_id)
+          .order("occurred_at", { ascending: false })
+          .limit(50);
+        if (data && data.length > 0) {
+          setActivities(data as Activity[]);
+          setActivityLoading(false);
+          return;
+        }
+      }
+      // Fallback: try by opportunity_id
+      const { data: fallbackData } = await supabase
+        .from("activities")
+        .select("id, channel, direction, subject, occurred_at, duration_sec, sentiment, is_read, needs_response")
+        .eq("opportunity_id", opportunity.id)
+        .order("occurred_at", { ascending: false })
+        .limit(50);
+      setActivities((fallbackData as Activity[] | null) ?? []);
+      setActivityLoading(false);
+    };
+
+    fetchActivities();
+  }, [activeTab, opportunity?.contact_id, opportunity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Start editing contacts
   const startEditing = useCallback(() => {
     if (!opportunity) return;
+    setEditFirstName(opportunity.first_name ?? "");
+    setEditLastName(opportunity.last_name ?? "");
     setEditEmail(opportunity.email ?? "");
     setEditPhone(opportunity.phone ?? "");
+    setEditFirstName2(secondaryMember?.first_name ?? "");
+    setEditLastName2(secondaryMember?.last_name ?? "");
     setEditEmail2(secondary.email_secondary ?? "");
     setEditPhone2(secondary.phone_secondary ?? "");
     setEditing(true);
-  }, [opportunity, secondary]);
+  }, [opportunity, secondary, secondaryMember]);
 
   // Save contact edits
   const saveContact = useCallback(async () => {
     if (!opportunity?.contact_id) return;
     setSaving(true);
+
+    // Update primary contact: name, email, phone + secondary email/phone
     await supabase.from("contacts").update({
+      first_name: editFirstName || null,
+      last_name: editLastName || null,
       email: editEmail || null,
       phone: editPhone || null,
       email_secondary: editEmail2 || null,
       phone_secondary: editPhone2 || null,
     }).eq("id", opportunity.contact_id);
+
+    // Upsert secondary member name
+    if (editFirstName2 || editLastName2) {
+      if (secondaryMember?.id) {
+        // Update existing
+        await supabase.from("contact_members").update({
+          first_name: editFirstName2 || null,
+          last_name: editLastName2 || null,
+        }).eq("id", secondaryMember.id);
+      } else {
+        // Insert new secondary member
+        await supabase.from("contact_members").insert({
+          contact_id: opportunity.contact_id,
+          first_name: editFirstName2 || null,
+          last_name: editLastName2 || null,
+          is_primary: false,
+        });
+      }
+      // Refresh secondary member
+      const { data: newMember } = await supabase
+        .from("contact_members")
+        .select("id, first_name, last_name")
+        .eq("contact_id", opportunity.contact_id)
+        .eq("is_primary", false)
+        .limit(1);
+      if (newMember && newMember.length > 0) {
+        setSecondaryMember(newMember[0] as ContactMember);
+      }
+    }
+
     // Update local secondary state
     setSecondary({ email_secondary: editEmail2 || null, phone_secondary: editPhone2 || null });
     setSaving(false);
     setEditing(false);
-  }, [opportunity?.contact_id, editEmail, editPhone, editEmail2, editPhone2]);
+  }, [opportunity?.contact_id, editFirstName, editLastName, editEmail, editPhone, editFirstName2, editLastName2, editEmail2, editPhone2, secondaryMember]);
 
-  // Save notes
+  // Save notes — APPEND new note with timestamp
   const saveNotes = useCallback(async () => {
-    if (!opportunity) return;
+    if (!opportunity || !newNoteText.trim()) return;
     setSavingNotes(true);
-    await supabase.from("opportunities").update({ notes: editNotes || null }).eq("id", opportunity.id);
+    const updatedNotes = buildNoteEntry(newNoteText, localNotes);
+    await supabase.from("opportunities").update({ notes: updatedNotes }).eq("id", opportunity.id);
+    setLocalNotes(updatedNotes);
+    setNewNoteText("");
     setSavingNotes(false);
     setEditingNotes(false);
-  }, [opportunity, editNotes]);
+  }, [opportunity, newNoteText, localNotes]);
 
   if (!open || !opportunity) return null;
 
@@ -312,6 +452,11 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     background: "#18181b",
     color: "#a1a1aa",
   };
+
+  const noteEntries = parseNoteEntries(localNotes);
+
+  // Secondary display name
+  const secondaryName = [secondaryMember?.first_name, secondaryMember?.last_name].filter(Boolean).join(" ");
 
   return (
     <>
@@ -381,6 +526,16 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
               {editing ? (
                 <>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>First Name</label>
+                        <input style={inputStyle} value={editFirstName} onChange={e => setEditFirstName(e.target.value)} placeholder="First name" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Last Name</label>
+                        <input style={inputStyle} value={editLastName} onChange={e => setEditLastName(e.target.value)} placeholder="Last name" />
+                      </div>
+                    </div>
                     <div>
                       <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Email</label>
                       <input style={inputStyle} value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email" />
@@ -394,6 +549,16 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                     <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>First Name</label>
+                        <input style={inputStyle} value={editFirstName2} onChange={e => setEditFirstName2(e.target.value)} placeholder="First name" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Last Name</label>
+                        <input style={inputStyle} value={editLastName2} onChange={e => setEditLastName2(e.target.value)} placeholder="Last name" />
+                      </div>
+                    </div>
                     <div>
                       <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Email Secondary</label>
                       <input style={inputStyle} value={editEmail2} onChange={e => setEditEmail2(e.target.value)} placeholder="Add secondary email" />
@@ -416,6 +581,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                 </>
               ) : (
                 <>
+                  <Row label="Name" value={`${opportunity.first_name} ${opportunity.last_name}`} />
                   <Row
                     label="Email"
                     value={
@@ -444,6 +610,16 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                   <div style={{ marginTop: 8, marginBottom: 2 }}>
                     <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
                   </div>
+                  <Row
+                    label="Name"
+                    value={
+                      secondaryName ? (
+                        <span>{secondaryName}</span>
+                      ) : (
+                        <span style={{ color: "#333", fontStyle: "italic" }}>Add secondary name</span>
+                      )
+                    }
+                  />
                   <Row
                     label="Email"
                     value={
@@ -482,41 +658,65 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
               {opportunity.floor_plan_name && <Row label="Floor Plan" value={opportunity.floor_plan_name} />}
             </Section>
 
-            {/* ── Notes (editable) ─────────────────────────────────────── */}
+            {/* ── Notes (append-only with timestamps) ──────────────────── */}
             <Section title="Notes">
+              {/* Existing note entries — scrollable list */}
+              <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: noteEntries.length > 0 ? 8 : 0 }}>
+                {noteEntries.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {noteEntries.map((entry, i) => (
+                      <div key={i}>
+                        {entry.timestamp && (
+                          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
+                            [{entry.timestamp}]
+                          </div>
+                        )}
+                        <div style={{ fontSize: 13, color: "#888", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                          {entry.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !editingNotes ? (
+                  <p
+                    onClick={() => setEditingNotes(true)}
+                    style={{ fontSize: 12, color: "#333", fontStyle: "italic", margin: 0, cursor: "pointer" }}
+                  >
+                    Click to add notes…
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Add new note */}
               {editingNotes ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <textarea
-                    value={editNotes}
-                    onChange={e => setEditNotes(e.target.value)}
-                    rows={4}
+                    value={newNoteText}
+                    onChange={e => setNewNoteText(e.target.value)}
+                    rows={3}
                     style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
-                    placeholder="Add notes…"
+                    placeholder="Type a new note…"
+                    autoFocus
                   />
                   <div style={{ display: "flex", gap: 6 }}>
                     <button
                       onClick={saveNotes}
-                      disabled={savingNotes}
-                      style={{ ...smallBtnStyle, background: "#22c55e", color: "#000", border: "none", fontWeight: 600, opacity: savingNotes ? 0.5 : 1 }}
+                      disabled={savingNotes || !newNoteText.trim()}
+                      style={{ ...smallBtnStyle, background: "#22c55e", color: "#000", border: "none", fontWeight: 600, opacity: savingNotes || !newNoteText.trim() ? 0.5 : 1 }}
                     >
                       {savingNotes ? "Saving…" : "Save"}
                     </button>
-                    <button onClick={() => setEditingNotes(false)} style={smallBtnStyle}>Cancel</button>
+                    <button onClick={() => { setEditingNotes(false); setNewNoteText(""); }} style={smallBtnStyle}>Cancel</button>
                   </div>
                 </div>
-              ) : (
-                <div
-                  onClick={() => { setEditNotes(opportunity.notes ?? ""); setEditingNotes(true); }}
-                  style={{ cursor: "pointer", minHeight: 24 }}
-                  title="Click to edit notes"
+              ) : noteEntries.length > 0 ? (
+                <button
+                  onClick={() => setEditingNotes(true)}
+                  style={{ ...smallBtnStyle, fontSize: 10, padding: "3px 10px", alignSelf: "flex-start" }}
                 >
-                  {opportunity.notes ? (
-                    <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap" }}>{opportunity.notes}</p>
-                  ) : (
-                    <p style={{ fontSize: 12, color: "#333", fontStyle: "italic", margin: 0 }}>Click to add notes…</p>
-                  )}
-                </div>
-              )}
+                  + Add Note
+                </button>
+              ) : null}
             </Section>
 
             {/* ── Sub-tabs ─────────────────────────────────────────────── */}
@@ -549,10 +749,11 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {historyLoading ? (
                   <p style={{ fontSize: 12, color: "#555", margin: 0 }}>Loading…</p>
-                ) : history.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No stage transitions recorded</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {history.length === 0 && (
+                      <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No stage transitions recorded</p>
+                    )}
                     {history.map(t => (
                       <div key={t.id} style={{ lineHeight: 1.6 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -567,6 +768,34 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                         </div>
                       </div>
                     ))}
+
+                    {/* Synthetic "Created" entry — always show at bottom */}
+                    <div style={{ lineHeight: 1.6, opacity: 0.75 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 8px",
+                            borderRadius: 9999,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            whiteSpace: "nowrap",
+                            background: "#27272a",
+                            color: "#a1a1aa",
+                            lineHeight: "16px",
+                          }}
+                        >
+                          WEB
+                        </span>
+                        <span style={{ color: "#555", fontSize: 12 }}>→</span>
+                        <StageBadge stage={opportunity.stage} />
+                      </div>
+                      <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+                        {formatDateTime(opportunity.created_at)} · Created via web form
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -575,34 +804,55 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             {/* ── Activity Tab ─────────────────────────────────────────── */}
             {activeTab === "activity" && (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
-                {!opportunity.contact_id ? (
-                  <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No contact linked</p>
-                ) : activityLoading ? (
+                {activityLoading ? (
                   <p style={{ fontSize: 12, color: "#555", margin: 0 }}>Loading…</p>
                 ) : activities.length === 0 ? (
                   <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No activities recorded</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {activities.map(a => (
-                      <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                        <span style={{ fontSize: 14, flexShrink: 0, lineHeight: "18px" }}>
-                          {CHANNEL_ICONS[a.channel ?? ""] ?? "📋"}
-                        </span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: "#ededed", display: "flex", alignItems: "center", gap: 4 }}>
-                            <span style={{ color: a.direction === "inbound" ? "#4ade80" : "#60a5fa", fontSize: 10 }}>
-                              {a.direction === "inbound" ? "↓" : "↑"}
-                            </span>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {a.subject || "(no subject)"}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 11, color: "#555" }}>
-                            {formatDateTime(a.occurred_at)}
+                    {activities.map(a => {
+                      const channelKey = a.channel ?? "";
+                      const icon = CHANNEL_ICONS[channelKey] ?? "📋";
+                      const channelLabel = CHANNEL_LABELS[channelKey] ?? channelKey.replace(/_/g, " ");
+                      const isWebform = channelKey === "webform" || channelKey === "form" || channelKey === "web";
+                      const subjectDisplay = isWebform && a.subject
+                        ? `Web Form: ${a.subject}`
+                        : a.subject || "(no subject)";
+
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0", borderBottom: "1px solid #1a1a1a" }}>
+                          <span style={{ fontSize: 16, flexShrink: 0, lineHeight: "20px" }}>
+                            {icon}
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: "#666", textTransform: "uppercase" }}>
+                                {channelLabel}
+                              </span>
+                              <span style={{
+                                color: a.direction === "inbound" ? "#4ade80" : "#60a5fa",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}>
+                                {a.direction === "inbound" ? "↓ Inbound" : "↑ Outbound"}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 12, color: "#ededed", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {subjectDisplay}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>
+                              {formatDateTime(a.occurred_at)}
+                              {a.duration_sec != null && a.duration_sec > 0 && (
+                                <span> · {Math.round(a.duration_sec / 60)}min</span>
+                              )}
+                              {a.sentiment && (
+                                <span> · {a.sentiment}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

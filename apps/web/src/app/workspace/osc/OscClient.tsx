@@ -942,6 +942,32 @@ export default function OscClient() {
       return;
     }
     fetchData();
+
+    // Supabase Realtime — live updates
+    const channel = supabase
+      .channel("osc-queue-realtime")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "opportunities",
+        filter: `division_id=eq.${filter.divisionId}`,
+      }, () => { fetchData(); })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "tasks",
+        filter: `division_id=eq.${filter.divisionId}`,
+      }, () => { fetchData(); })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "activities",
+      }, () => { fetchData(); })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filter.divisionId, fetchData]);
 
   // ── Apply team filter ──

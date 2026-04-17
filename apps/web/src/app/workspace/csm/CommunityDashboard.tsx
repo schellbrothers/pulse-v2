@@ -929,7 +929,34 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+
+    // Supabase Realtime — live updates
+    if (!community?.id) return;
+    const channel = supabase
+      .channel("csm-community-realtime")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "opportunities",
+        filter: `community_id=eq.${community.id}`,
+      }, () => { fetchData(); })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "tasks",
+        filter: `community_id=eq.${community.id}`,
+      }, () => { fetchData(); })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "activities",
+      }, () => { fetchData(); })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData, community?.id]);
 
   // Build task opp IDs for today's due tasks
   const todayStart = new Date();

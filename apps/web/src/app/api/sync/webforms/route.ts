@@ -475,7 +475,7 @@ export async function GET(request: Request) {
     const payload = await hbRes.json();
     const forms: HBForm[] = Array.isArray(payload)
       ? payload
-      : payload?.data ?? payload?.results ?? [];
+      : payload?.leads ?? payload?.data ?? payload?.results ?? [];
 
     // ── Step 3: Process each form
     let newContacts = 0;
@@ -515,9 +515,13 @@ export async function GET(request: Request) {
     // ── Step 4: Update sync_log
     const processed = newContacts + existingMatched;
     await supabase.from("sync_log").insert({
+      feed: "webforms",
       source: "webforms",
+      status: errors > 0 ? "error" : "success",
       synced_at: new Date().toISOString(),
       rows_synced: processed,
+      rows_upserted: processed,
+      duration_ms: Date.now() - startTime,
       metadata: {
         fetched: forms.length,
         new_contacts: newContacts,

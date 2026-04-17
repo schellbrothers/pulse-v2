@@ -248,7 +248,15 @@ function AssignModal({
   onClose: () => void;
   onExecute: (oppId: string, newStage: string, communityId: string | null, reason: string) => void;
 }) {
-  const [targetStage, setTargetStage] = useState("lead_com");
+  // Default lane based on form type — match the AI suggestion
+  const defaultStage = (() => {
+    const src = item.opportunity_source ?? item.source;
+    if (src === "subscribe_region") return "lead_div";
+    if (src === "schedule_appt" || src === "schedule_visit") return "prospect_c";
+    if (item.community_id) return "lead_com";
+    return "lead_div";
+  })();
+  const [targetStage, setTargetStage] = useState(defaultStage);
   const [targetCommunity, setTargetCommunity] = useState(item.community_id ?? "");
   const [reason, setReason] = useState("");
 

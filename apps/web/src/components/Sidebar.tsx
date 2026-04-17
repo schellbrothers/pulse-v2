@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
   { icon: "◧", label: "Prospects",       href: "/prospects",       group: "data" },
   { icon: "⊞", label: "Customers",       href: "/customers",       group: "data" },
   { icon: "◎", label: "Marketing",        href: "/marketing",       group: "data" },
+  { icon: "◉", label: "Contacts",         href: "/contacts",        group: "data" },
   { icon: "⊞", label: "Divisions",       href: "/divisions",       group: "data" },
   { icon: "⌂", label: "Communities",     href: "/communities",     group: "data" },
   { icon: "◱", label: "Division Plans",  href: "/division-plans",  group: "data" },

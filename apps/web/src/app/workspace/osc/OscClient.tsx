@@ -458,7 +458,10 @@ function QueueCard({
         </div>
         <div style={{ fontSize: 11, color: "#71717a" }}>{item.contacts?.phone ?? "—"}</div>
         <div style={{ fontSize: 11, color: "#71717a" }}>{formatBudget(item.budget_min, item.budget_max)}</div>
-        <div style={{ fontSize: 11, color: "#52525b" }}>{relativeTime(item.last_activity_at)}</div>
+        <div style={{ fontSize: 11, color: "#52525b", textAlign: "right" }}>
+          <div>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}</div>
+          <div style={{ fontSize: 10, color: "#3f3f46" }}>{relativeTime(item.last_activity_at)}</div>
+        </div>
         <button onClick={e => { e.stopPropagation(); onAssign(); }} style={{
           padding: "4px 10px", borderRadius: 4, border: "1px solid #3f3f46",
           backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 11, fontWeight: 600, cursor: "pointer",

@@ -428,10 +428,11 @@ function SnoozePicker({ onSnooze, onClose }: { onSnooze: (until: string) => void
 // ─── Queue Card ───────────────────────────────────────────────────────────────
 
 function QueueCard({
-  item, onAssign,
+  item, onAssign, divisionName,
 }: {
   item: QueueItem;
   onAssign: () => void;
+  divisionName: string;
 }) {
   const name = `${item.contacts?.first_name ?? "—"} ${item.contacts?.last_name ?? ""}`;
   const [expanded, setExpanded] = useState(false);
@@ -447,17 +448,35 @@ function QueueCard({
       {/* Main row */}
       <div onClick={() => setExpanded(!expanded)} style={{
         padding: "12px 16px", cursor: "pointer",
-        display: "grid", gridTemplateColumns: "1fr auto auto auto auto",
-        alignItems: "center", gap: 16,
+        display: "grid", gridTemplateColumns: "1fr auto auto auto auto auto",
+        alignItems: "center", gap: 12,
       }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: "#fafafa" }}>{name}</div>
-          <div style={{ fontSize: 11, color: "#52525b", marginTop: 2 }}>
-            {item.communities?.name ?? "No community"} · {sourceLabel(item.opportunity_source ?? item.source)}
+          <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
+            {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"}
           </div>
         </div>
-        <div style={{ fontSize: 11, color: "#71717a" }}>{item.contacts?.phone ?? "—"}</div>
-        <div style={{ fontSize: 11, color: "#71717a" }}>{formatBudget(item.budget_min, item.budget_max)}</div>
+        {/* Email */}
+        <div style={{ fontSize: 11 }}>
+          {item.contacts?.email ? (
+            <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ color: "#71717a", textDecoration: "none" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#a1a1aa")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#71717a")}
+            >{item.contacts.email}</a>
+          ) : <span style={{ color: "#3f3f46" }}>—</span>}
+        </div>
+        {/* Phone + action icons */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {item.contacts?.phone ? (
+            <>
+              <span style={{ fontSize: 11, color: "#71717a" }}>{item.contacts.phone}</span>
+              <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="Call" style={{ fontSize: 14, textDecoration: "none", cursor: "pointer" }}>📞</a>
+              <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="SMS" style={{ fontSize: 12, textDecoration: "none", cursor: "pointer" }}>💬</a>
+            </>
+          ) : <span style={{ color: "#3f3f46", fontSize: 11 }}>—</span>}
+        </div>
+        {/* Timestamp */}
         <div style={{ fontSize: 11, color: "#52525b", textAlign: "right" }}>
           <div>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}</div>
           <div style={{ fontSize: 10, color: "#3f3f46" }}>{relativeTime(item.last_activity_at)}</div>
@@ -1246,6 +1265,7 @@ export default function OscClient() {
                     <QueueCard
                       key={item.id}
                       item={item}
+                      divisionName={labels.division ?? ""}
                       onAssign={() => { setAssignItem(item); }}
                     />
                   ))}

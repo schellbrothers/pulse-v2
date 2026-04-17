@@ -14,7 +14,7 @@ export const NAV_ITEMS = [
   // ── DATA: CRM pipeline + reference tables ──
   { icon: "✓", label: "Tasks",           href: "/tasks",           group: "data" },
   { icon: "⊕", label: "Leads",           href: "/leads",           group: "data" },
-  { icon: "⊙", label: "Opportunities",   href: "/opportunities",   group: "data" },
+  { icon: "⊙", label: "Queue",            href: "/queue",            group: "data" },
   { icon: "◧", label: "Prospects",       href: "/prospects",       group: "data" },
   { icon: "⊞", label: "Customers",       href: "/customers",       group: "data" },
   { icon: "◎", label: "Marketing",        href: "/marketing",       group: "data" },

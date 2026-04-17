@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_contact_members_contact ON contact_members(contac
 -- 2. CRM Funnel Stage Enum
 DO $$ BEGIN
   CREATE TYPE crm_funnel_stage AS ENUM (
-    'marketing', 'lead', 'opportunity',
+    'marketing', 'lead', 'queue',
     'prospect_c', 'prospect_b', 'prospect_a', 'homeowner'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;

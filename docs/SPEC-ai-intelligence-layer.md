@@ -108,7 +108,7 @@ Each contact receives a composite score (0-100) computed from weighted signals:
 |---|---|---|
 | 80-100 | Prospect A | CSM: Close this week. AI drafts contract prep email. |
 | 60-79 | Prospect B | CSM: Schedule follow-up. AI drafts personalized check-in. |
-| 40-59 | Prospect C / Opportunity | OSC: Route to CSM or nurture. AI suggests next touch. |
+| 40-59 | Prospect C / Queue | OSC: Route to CSM or nurture. AI suggests next touch. |
 | 20-39 | Lead | Marketing: Active nurture campaign. AI personalizes content. |
 | 0-19 | Marketing | Passive: Mailchimp drip + occasional AI nudge. |
 
@@ -205,7 +205,7 @@ When a web form comes in:
 2. AI reads the form fields + any free-text questions
 3. AI deciphers intent: What are they asking? What do they want?
 4. AI generates a response recommendation
-5. Creates an Opportunity record (stage = opportunity)
+5. Creates an Queue record (stage = queue)
 6. Routes to duty OSC
 7. AI drafts a personalized response email addressing their specific questions
 8. OSC reviews and sends (or auto-sends if configured)

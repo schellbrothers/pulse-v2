@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
-import OpportunitiesClient from "./OpportunitiesClient";
+import QueueClient from "./QueueClient";
 
 export const revalidate = 30;
 
-export default async function OpportunitiesPage() {
+export default async function QueuePage() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
@@ -51,7 +51,7 @@ export default async function OpportunitiesPage() {
   }));
 
   return (
-    <OpportunitiesClient
+    <QueueClient
       opportunities={flatOpps}
       communities={communities}
       divisions={divisions ?? []}

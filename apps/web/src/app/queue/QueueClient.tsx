@@ -78,7 +78,7 @@ const STATS: StatConfig<OppRow>[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-function OpportunitiesInner({ opportunities, communities, divisions }: Props) {
+function QueueInner({ opportunities, communities, divisions }: Props) {
   const { filter } = useGlobalFilter();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Opportunity | null>(null);
@@ -134,7 +134,7 @@ function OpportunitiesInner({ opportunities, communities, divisions }: Props) {
     <PageShell
       topBar={
         <TableSubHeader
-          title="Opportunities"
+          title="Queue"
           rows={tableRows}
           totalRows={tableRows.length}
           stats={STATS}
@@ -144,9 +144,9 @@ function OpportunitiesInner({ opportunities, communities, divisions }: Props) {
           onPageSizeChange={s => { setPageSize(s); setPage(0); }}
           search={search}
           onSearch={q => { setSearch(q); setPage(0); }}
-          searchPlaceholder="Search opportunities…"
+          searchPlaceholder="Search queue…"
           onExport={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "opportunities")}
-          onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "opportunities-all")}
+          onExportAll={() => exportToCSV(allRows as unknown as Record<string, unknown>[], "queue-all")}
         />
       }
     >
@@ -157,7 +157,7 @@ function OpportunitiesInner({ opportunities, communities, divisions }: Props) {
         controlledPageSize={pageSize}
         defaultPageSize={pageSize}
         onRowClick={row => setSelected(row)}
-        emptyMessage="No opportunities match the current filter"
+        emptyMessage="No queue items match the current filter"
         minWidth={1100}
       />
 
@@ -193,6 +193,6 @@ function OpportunitiesInner({ opportunities, communities, divisions }: Props) {
   );
 }
 
-export default function OpportunitiesClient(props: Props) {
-  return <OpportunitiesInner {...props} />;
+export default function QueueClient(props: Props) {
+  return <QueueInner {...props} />;
 }

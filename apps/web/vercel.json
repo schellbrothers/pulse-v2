@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync/webforms",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

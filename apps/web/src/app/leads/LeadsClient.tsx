@@ -159,7 +159,7 @@ function LeadsInner({ leads, communities, divisions }: Props) {
   const tableColumns: Column<LeadRow>[] = [
     {
       key: "_name", label: "Name", sortable: true,
-      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500 }}>{row._name}</span>,
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500, textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px", cursor: "pointer" }}>{row._name}</span>,
     },
     {
       key: "stage", label: "Stage", sortable: true, filterable: true,

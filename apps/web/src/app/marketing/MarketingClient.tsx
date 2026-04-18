@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import TableSubHeader, { exportToCSV, type StatConfig } from "@/components/TableSubHeader";
-import SlideOver, { Section, Row } from "@/components/SlideOver";
-import Badge from "@/components/Badge";
+import OpportunityPanel from "@/components/OpportunityPanel";
+import type { OpportunityPanelData } from "@/components/OpportunityPanel";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import DataTable, { type Column } from "@/components/DataTable";
 
@@ -137,7 +137,7 @@ function MarketingInner({ contacts, communities, divisions }: Props) {
   const tableColumns: Column<MarketingRow>[] = [
     {
       key: "_name", label: "Name", sortable: true,
-      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500 }}>{row._name}</span>,
+      render: (_v, row) => <span style={{ color: "#ededed", fontWeight: 500, textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px", cursor: "pointer" }}>{row._name}</span>,
     },
     {
       key: "email", label: "Email", sortable: true,
@@ -166,18 +166,31 @@ function MarketingInner({ contacts, communities, divisions }: Props) {
     {
       key: "is_active", label: "Status", sortable: true, filterable: true,
       render: (_v, row) => (
-        <Badge
-          variant="custom"
-          label={row.is_active ? "Active" : "Inactive"}
-          customColor={row.is_active ? "#4ade80" : "#888"}
-          customBg={row.is_active ? "#1a2a1a" : "#2a2b2e"}
-          customBorder={row.is_active ? "#1f3f1f" : "#444"}
-        />
+        <span style={{ fontSize: 12, color: row.is_active ? "#4ade80" : "#888" }}>
+          {row.is_active ? "Active" : "Inactive"}
+        </span>
       ),
     },
   ];
 
-  const community = selected ? communities.find(c => c.id === selected.community_id) : null;
+  const panelData: OpportunityPanelData | null = selected ? {
+    id: selected.id,
+    contact_id: selected.id,
+    first_name: selected.first_name,
+    last_name: selected.last_name,
+    email: selected.email,
+    phone: selected.phone,
+    stage: "marketing",
+    source: selected.source,
+    community_name: communities.find(c => c.id === selected.community_id)?.name ?? null,
+    division_name: divisions.find(d => d.id === selected.division_id)?.name ?? communities.find(c => c.id === selected.community_id)?.division_name ?? null,
+    budget_min: null,
+    budget_max: null,
+    floor_plan_name: null,
+    notes: null,
+    last_activity_at: null,
+    created_at: selected.created_at,
+  } : null;
 
   return (
     <PageShell
@@ -210,35 +223,11 @@ function MarketingInner({ contacts, communities, divisions }: Props) {
         minWidth={1100}
       />
 
-      <SlideOver
+      <OpportunityPanel
         open={!!selected}
         onClose={() => setSelected(null)}
-        title={selected ? `${selected.first_name} ${selected.last_name}` : ""}
-        subtitle={community?.name ?? undefined}
-        badge={selected ? (
-          <Badge variant="custom" label={selected.is_active ? "Active" : "Inactive"}
-            customColor={selected.is_active ? "#4ade80" : "#888"}
-            customBg={selected.is_active ? "#1a2a1a" : "#2a2b2e"}
-            customBorder={selected.is_active ? "#1f3f1f" : "#444"} />
-        ) : undefined}
-        width={480}
-      >
-        {selected && (
-          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 0 }}>
-            <Section title="Contact">
-              <Row label="Email" value={selected.email ? <a href={`mailto:${selected.email}`} style={{ color: "#7aafdf", textDecoration: "none" }}>{selected.email}</a> : null} />
-              <Row label="Phone" value={selected.phone} />
-              <Row label="Source" value={capitalize(selected.source)} />
-            </Section>
-            <Section title="Details">
-              <Row label="Community" value={community?.name} />
-              <Row label="Status" value={selected.is_active ? "Active" : "Inactive"} />
-              <Row label="Subscribed" value={selected.subscribed_at ? new Date(selected.subscribed_at).toLocaleString() : null} />
-              <Row label="Created" value={new Date(selected.created_at).toLocaleString()} />
-            </Section>
-          </div>
-        )}
-      </SlideOver>
+        opportunity={panelData}
+      />
     </PageShell>
   );
 }

@@ -104,3 +104,27 @@ body {
 .badge-qd        { background: #3a2e18; color: #e07000; border: 1px solid #5a4a20; }
 .badge-active    { background: #1a2e10; color: #80B602; border: 1px solid #2a4a18; }
 .badge-sold-out  { background: #2a2b2e; color: #999;    border: 1px solid #444;    }
+
+/* ─── Mobile Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* Add bottom padding for MobileNav */
+  .mobile-main {
+    padding-bottom: 56px;
+  }
+
+  /* Ensure touch targets are large enough */
+  button, a[href] {
+    min-height: 44px;
+  }
+
+  /* Wider scrollbar thumb for touch */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}

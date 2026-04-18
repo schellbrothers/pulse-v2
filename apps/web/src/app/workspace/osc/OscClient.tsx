@@ -6,6 +6,7 @@ import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import OpportunityPanel, { type OpportunityPanelData } from "@/components/OpportunityPanel";
 import PipelineDetailView, { type PipelineItem } from "@/components/PipelineDetailView";
 import CommHub from "@/components/CommHub";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -406,13 +407,14 @@ function SnoozePicker({ onSnooze, onClose }: { onSnooze: (until: string) => void
 // ─── Queue Card ───────────────────────────────────────────────────────────────
 
 function QueueCard({
-  item, onAssign, onNameClick, onQuickAssign, divisionName,
+  item, onAssign, onNameClick, onQuickAssign, divisionName, isMobile,
 }: {
   item: QueueItem;
   onAssign: () => void;
   onNameClick: () => void;
   onQuickAssign: () => void;
   divisionName: string;
+  isMobile?: boolean;
 }) {
   const name = `${item.contacts?.first_name ?? "—"} ${item.contacts?.last_name ?? ""}`;
   const src = item.opportunity_source ?? item.source ?? "";
@@ -431,51 +433,99 @@ function QueueCard({
       onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
       onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
     >
-      {/* Main row */}
-      <div onClick={() => setExpanded(!expanded)} style={{
-        padding: "12px 16px", cursor: "pointer",
-        display: "grid", gridTemplateColumns: "1fr auto auto auto auto auto",
-        alignItems: "center", gap: 12,
-      }}>
-        <div>
-          <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px" }}>{name}</div>
-          <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
+      {/* Main row — desktop */}
+      {!isMobile && (
+        <div onClick={() => setExpanded(!expanded)} style={{
+          padding: "12px 16px", cursor: "pointer",
+          display: "grid", gridTemplateColumns: "1fr auto auto auto auto auto",
+          alignItems: "center", gap: 12,
+        }}>
+          <div>
+            <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px" }}>{name}</div>
+            <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
+              {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"}
+            </div>
+          </div>
+          <div style={{ fontSize: 11 }}>
+            {item.contacts?.email ? (
+              <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ color: "#71717a", textDecoration: "none" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#a1a1aa")}
+                onMouseLeave={e => (e.currentTarget.style.color = "#71717a")}
+              >{item.contacts.email}</a>
+            ) : <span style={{ color: "#3f3f46" }}>—</span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {item.contacts?.phone ? (
+              <>
+                <span style={{ fontSize: 11, color: "#71717a" }}>{item.contacts.phone}</span>
+                <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="Call" style={{ fontSize: 14, textDecoration: "none", cursor: "pointer" }}>📞</a>
+                <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="SMS" style={{ fontSize: 12, textDecoration: "none", cursor: "pointer" }}>💬</a>
+              </>
+            ) : <span style={{ color: "#3f3f46", fontSize: 11 }}>—</span>}
+          </div>
+          <div style={{ fontSize: 11, color: "#52525b", textAlign: "right" }}>
+            <div>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}</div>
+            <div style={{ fontSize: 10, color: "#3f3f46" }}>{relativeTime(item.last_activity_at)}</div>
+          </div>
+          <button onClick={e => { e.stopPropagation(); onQuickAssign(); }} title={`Assign → ${suggestedLane}`} style={{
+            padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
+            backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+          }}>→ Assign</button>
+          <button onClick={e => { e.stopPropagation(); onAssign(); }} title="Custom assign" style={{
+            padding: "4px 6px", borderRadius: 4, border: "1px solid #3f3f46",
+            backgroundColor: "#18181b", color: "#71717a", fontSize: 11, cursor: "pointer",
+          }}>⋯</button>
+        </div>
+      )}
+
+      {/* Main row — mobile */}
+      {isMobile && (
+        <div style={{ padding: "16px" }}>
+          {/* Name + meta */}
+          <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 15, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px", marginBottom: 4 }}>{name}</div>
+          <div style={{ fontSize: 12, color: "#71717a", marginBottom: 8 }}>
             {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"}
           </div>
+          <div style={{ fontSize: 12, color: "#52525b", marginBottom: 12 }}>
+            {relativeTime(item.last_activity_at)}
+          </div>
+
+          {/* Action icons row */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+            {item.contacts?.phone && (
+              <a href={`tel:${item.contacts.phone}`} style={{ fontSize: 20, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 8, backgroundColor: "#18181b", border: "1px solid #27272a" }}>📞</a>
+            )}
+            {item.contacts?.phone && (
+              <a href={`sms:${item.contacts.phone}`} style={{ fontSize: 20, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 8, backgroundColor: "#18181b", border: "1px solid #27272a" }}>💬</a>
+            )}
+            {item.contacts?.email && (
+              <a href={`mailto:${item.contacts.email}`} style={{ fontSize: 20, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 8, backgroundColor: "#18181b", border: "1px solid #27272a" }}>📧</a>
+            )}
+          </div>
+
+          {/* AI suggestion — always visible on mobile */}
+          <div style={{
+            padding: "10px 14px", backgroundColor: "#052e16", border: "1px solid #166534",
+            borderRadius: 6, marginBottom: 12, fontSize: 12, color: "#86efac", lineHeight: 1.5,
+          }}>
+            🤖 {suggestedLane}
+          </div>
+
+          {/* Assign buttons */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onQuickAssign} style={{
+              flex: 1, padding: "12px 10px", borderRadius: 6, border: "1px solid #166534",
+              backgroundColor: "#052e16", color: "#4ade80", fontSize: 14, fontWeight: 600, cursor: "pointer",
+              minHeight: 44,
+            }}>→ Assign</button>
+            <button onClick={onAssign} style={{
+              padding: "12px 16px", borderRadius: 6, border: "1px solid #3f3f46",
+              backgroundColor: "#18181b", color: "#71717a", fontSize: 14, cursor: "pointer",
+              minHeight: 44,
+            }}>⋯</button>
+          </div>
         </div>
-        {/* Email */}
-        <div style={{ fontSize: 11 }}>
-          {item.contacts?.email ? (
-            <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ color: "#71717a", textDecoration: "none" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#a1a1aa")}
-              onMouseLeave={e => (e.currentTarget.style.color = "#71717a")}
-            >{item.contacts.email}</a>
-          ) : <span style={{ color: "#3f3f46" }}>—</span>}
-        </div>
-        {/* Phone + action icons */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {item.contacts?.phone ? (
-            <>
-              <span style={{ fontSize: 11, color: "#71717a" }}>{item.contacts.phone}</span>
-              <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="Call" style={{ fontSize: 14, textDecoration: "none", cursor: "pointer" }}>📞</a>
-              <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="SMS" style={{ fontSize: 12, textDecoration: "none", cursor: "pointer" }}>💬</a>
-            </>
-          ) : <span style={{ color: "#3f3f46", fontSize: 11 }}>—</span>}
-        </div>
-        {/* Timestamp */}
-        <div style={{ fontSize: 11, color: "#52525b", textAlign: "right" }}>
-          <div>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}</div>
-          <div style={{ fontSize: 10, color: "#3f3f46" }}>{relativeTime(item.last_activity_at)}</div>
-        </div>
-        <button onClick={e => { e.stopPropagation(); onQuickAssign(); }} title={`Assign → ${suggestedLane}`} style={{
-          padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
-          backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-        }}>→ Assign</button>
-        <button onClick={e => { e.stopPropagation(); onAssign(); }} title="Custom assign" style={{
-          padding: "4px 6px", borderRadius: 4, border: "1px solid #3f3f46",
-          backgroundColor: "#18181b", color: "#71717a", fontSize: 11, cursor: "pointer",
-        }}>⋯</button>
-      </div>
+      )}
 
       {/* Expanded details */}
       {expanded && (
@@ -873,6 +923,7 @@ function RefLink({ label, href }: { label: string; href: string }) {
 
 export default function OscClient() {
   const { filter, labels } = useGlobalFilter();
+  const isMobile = useIsMobile();
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [communities, setCommunities] = useState<CommunityRef[]>([]);
@@ -883,6 +934,7 @@ export default function OscClient() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [oscUsers, setOscUsers] = useState<TeamUser[]>([]);
   const [drillBucket, setDrillBucket] = useState<QueueBucket | null>(null);
+  const [mobileTab, setMobileTab] = useState<"queue" | "comm">("queue");
 
   // ── Fetch queue + tasks ──
   const fetchData = useCallback(async () => {
@@ -1124,13 +1176,34 @@ export default function OscClient() {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
+      <div style={{ flex: 1, overflow: "auto", padding: isMobile ? 12 : 24, paddingBottom: isMobile ? 72 : 24 }}>
         {loading ? (
           <div style={{ textAlign: "center", color: "#52525b", padding: 48 }}>Loading...</div>
         ) : (
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+          <>
+          {/* Mobile tab toggle */}
+          {isMobile && (
+            <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: "1px solid #27272a" }}>
+              <button onClick={() => setMobileTab("queue")} style={{
+                flex: 1, padding: "10px 0", fontSize: 13, fontWeight: mobileTab === "queue" ? 600 : 400,
+                color: mobileTab === "queue" ? "#fafafa" : "#52525b",
+                borderBottom: mobileTab === "queue" ? "2px solid #fafafa" : "2px solid transparent",
+                background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
+                minHeight: 44,
+              }}>Queue <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: filteredQueueItems.length > 0 ? "#7f1d1d" : "#052e16", color: filteredQueueItems.length > 0 ? "#fca5a5" : "#4ade80", marginLeft: 4 }}>{filteredQueueItems.length}</span></button>
+              <button onClick={() => setMobileTab("comm")} style={{
+                flex: 1, padding: "10px 0", fontSize: 13, fontWeight: mobileTab === "comm" ? 600 : 400,
+                color: mobileTab === "comm" ? "#fafafa" : "#52525b",
+                borderBottom: mobileTab === "comm" ? "2px solid #fafafa" : "2px solid transparent",
+                background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
+                minHeight: 44,
+              }}>Comm Hub</button>
+            </div>
+          )}
+
+          <div style={isMobile ? {} : { display: "flex", gap: 20, alignItems: "flex-start" }}>
             {/* ── LEFT: Queue (50%) ── */}
-            <div style={{ flex: "0 0 50%", minWidth: 0 }}>
+            <div style={isMobile ? { display: mobileTab === "queue" ? "block" : "none" } : { flex: "0 0 50%", minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Queue</span>
                 <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: filteredQueueItems.length > 0 ? "#7f1d1d" : "#052e16", color: filteredQueueItems.length > 0 ? "#fca5a5" : "#4ade80" }}>{filteredQueueItems.length}</span>
@@ -1192,6 +1265,7 @@ export default function OscClient() {
                       key={item.id}
                       item={item}
                       divisionName={labels.division ?? ""}
+                      isMobile={isMobile}
                       onAssign={() => { setAssignItem(item); }}
                       onNameClick={() => { setPanelItem(item); }}
                       onQuickAssign={() => {
@@ -1217,11 +1291,12 @@ export default function OscClient() {
             </div>
 
             {/* ── RIGHT: Comm Hub (50%) ── */}
-            <div style={{ flex: "0 0 48%", minWidth: 0 }}>
+            <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none" } : { flex: "0 0 48%", minWidth: 0 }}>
               <CommHub divisionId={filter.divisionId} teamFilter={teamFilter} />
             </div>
           </div>
-        )}
+          </>)
+        }
 
         {/* ── Reference Module ── */}
         {!loading && (

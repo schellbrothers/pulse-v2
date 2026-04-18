@@ -52,6 +52,7 @@ export default function Sidebar() {
 
   return (
     <aside
+      className="sidebar-desktop"
       style={{
         width: 220,
         flexShrink: 0,
@@ -253,6 +254,15 @@ export default function Sidebar() {
           v2.0.0-hbv1
         </div>
       </div>
+
+      {/* Hide sidebar on mobile */}
+      <style>{`
+        @media (max-width: 767px) {
+          .sidebar-desktop {
+            display: none !important;
+          }
+        }
+      `}</style>
     </aside>
   );
 }

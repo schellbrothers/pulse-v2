@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import PipelineDetailView, { type PipelineItem } from "@/components/PipelineDetailView";
 import CommHub from "@/components/CommHub";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -285,15 +286,16 @@ function MiniTable({ headers, rows }: { headers: string[]; rows: React.ReactNode
 
 // ─── Sales Goal Strip ─────────────────────────────────────────────────────────
 
-function SalesGoalStrip() {
+function SalesGoalStrip({ isMobile }: { isMobile?: boolean }) {
   const ytdSales = MONTH_GOALS.reduce((s, m) => s + m.sales, 0);
   const ytdGoal = MONTH_GOALS.reduce((s, m) => s + m.goal, 0);
 
   return (
-    <div style={{ padding: "16px 24px" }}>
+    <div style={{ padding: isMobile ? "12px 12px" : "16px 24px" }}>
       <div style={{
         display: "flex", alignItems: "stretch", gap: 0,
-        border: "1px solid #27272a", borderRadius: 6, overflow: "hidden", backgroundColor: "#09090b",
+        border: "1px solid #27272a", borderRadius: 6, overflow: isMobile ? "auto" : "hidden", backgroundColor: "#09090b",
+        ...(isMobile ? { WebkitOverflowScrolling: "touch" as const } : {}),
       }}>
         <div style={{
           padding: "12px 20px", borderRight: "1px solid #27272a",
@@ -492,12 +494,13 @@ function ActionBtn({ label }: { label: string }) {
 // ─── Prospect Queue Card ──────────────────────────────────────────────────────
 
 function ProspectCard({
-  item, onPromote, onDemote, readOnly,
+  item, onPromote, onDemote, readOnly, isMobile,
 }: {
   item: ProspectItem;
   onPromote: () => void;
   onDemote: () => void;
   readOnly?: boolean;
+  isMobile?: boolean;
 }) {
   const name = `${item.contacts?.first_name ?? "—"} ${item.contacts?.last_name ?? ""}`;
   const stageInfo = STAGE_COLORS[item.crm_stage];
@@ -508,16 +511,50 @@ function ProspectCard({
       backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
       overflow: "hidden", transition: "border-color 0.15s",
     }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
+      onMouseEnter={e => !isMobile && (e.currentTarget.style.borderColor = "#3f3f46")}
+      onMouseLeave={e => !isMobile && (e.currentTarget.style.borderColor = "#27272a")}
     >
-      <div onClick={() => setExpanded(!expanded)} style={{
-        padding: "12px 16px", cursor: "pointer",
-        display: "flex", alignItems: "center", gap: 12,
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#fafafa" }}>{name}</span>
+      {/* Desktop layout */}
+      {!isMobile && (
+        <div onClick={() => setExpanded(!expanded)} style={{
+          padding: "12px 16px", cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#fafafa" }}>{name}</span>
+              {stageInfo && (
+                <span style={{
+                  fontSize: 10, padding: "2px 8px", borderRadius: 4,
+                  backgroundColor: stageInfo.bg, color: stageInfo.color, fontWeight: 600,
+                }}>{stageInfo.label}</span>
+              )}
+            </div>
+            <div style={{ fontSize: 11, color: "#52525b", marginTop: 2 }}>
+              {formatBudget(item.budget_min, item.budget_max)} · {relativeTime(item.last_activity_at)}
+            </div>
+          </div>
+          <span style={{ fontSize: 11, color: "#71717a", flexShrink: 0 }}>{item.contacts?.phone ?? "—"}</span>
+          {!readOnly && (
+            <button onClick={e => { e.stopPropagation(); onPromote(); }} style={{
+              padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
+              backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+            }}>↑ Promote</button>
+          )}
+          {!readOnly && (
+            <button onClick={e => { e.stopPropagation(); onDemote(); }} style={{
+              padding: "4px 10px", borderRadius: 4, border: "1px solid #991b1b",
+              backgroundColor: "#1c1917", color: "#f87171", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+            }}>↓ Demote</button>
+          )}
+        </div>
+      )}
+
+      {/* Mobile layout */}
+      {isMobile && (
+        <div style={{ padding: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>{name}</span>
             {stageInfo && (
               <span style={{
                 fontSize: 10, padding: "2px 8px", borderRadius: 4,
@@ -525,26 +562,39 @@ function ProspectCard({
               }}>{stageInfo.label}</span>
             )}
           </div>
-          <div style={{ fontSize: 11, color: "#52525b", marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: "#71717a", marginBottom: 4 }}>
             {formatBudget(item.budget_min, item.budget_max)} · {relativeTime(item.last_activity_at)}
           </div>
-        </div>
-        <span style={{ fontSize: 11, color: "#71717a", flexShrink: 0 }}>{item.contacts?.phone ?? "—"}</span>
-        {!readOnly && (
-          <button onClick={e => { e.stopPropagation(); onPromote(); }} style={{
-            padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
-            backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-          }}>↑ Promote</button>
-        )}
-        {!readOnly && (
-          <button onClick={e => { e.stopPropagation(); onDemote(); }} style={{
-            padding: "4px 10px", borderRadius: 4, border: "1px solid #991b1b",
-            backgroundColor: "#1c1917", color: "#f87171", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-          }}>↓ Demote</button>
-        )}
-      </div>
 
-      {expanded && (
+          {/* Action icons */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+            {item.contacts?.phone && (
+              <a href={`tel:${item.contacts.phone}`} style={{ fontSize: 20, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 8, backgroundColor: "#09090b", border: "1px solid #27272a" }}>📞</a>
+            )}
+            {item.contacts?.email && (
+              <a href={`mailto:${item.contacts.email}`} style={{ fontSize: 20, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 8, backgroundColor: "#09090b", border: "1px solid #27272a" }}>📧</a>
+            )}
+          </div>
+
+          {/* Promote/Demote full-width */}
+          {!readOnly && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={onPromote} style={{
+                flex: 1, padding: "12px 10px", borderRadius: 6, border: "1px solid #166534",
+                backgroundColor: "#052e16", color: "#4ade80", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                minHeight: 44,
+              }}>↑ Promote</button>
+              <button onClick={onDemote} style={{
+                flex: 1, padding: "12px 10px", borderRadius: 6, border: "1px solid #991b1b",
+                backgroundColor: "#1c1917", color: "#f87171", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                minHeight: 44,
+              }}>↓ Demote</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {expanded && !isMobile && (
         <div style={{ padding: "0 16px 12px", borderTop: "1px solid #27272a", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
@@ -566,7 +616,6 @@ function ProspectCard({
               <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.5 }}>{item.notes}</div>
             </div>
           )}
-          {/* Quick Actions */}
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <ActionBtn label="📞 Call" />
             <ActionBtn label="📧 Email" />
@@ -815,8 +864,10 @@ function ReferenceModule({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 function CommunityView({ community, plans, lots, modelHome, specHomes, divisions, readOnly }: CommunityViewProps) {
+  const isMobile = useIsMobile();
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
+  const [mobileTab, setMobileTab] = useState<"queue" | "comm">("queue");
 
 
   const [customers, setCustomers] = useState<any[]>([]);
@@ -1034,11 +1085,11 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
           {csmUsers.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
         </select>
       </div>
-      <SalesGoalStrip />
+      <SalesGoalStrip isMobile={isMobile} />
 
       {/* ── Metrics Strip (single compact row) ── */}
-      <div style={{ padding: "8px 24px" }}>
-        <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ padding: isMobile ? "8px 12px" : "8px 24px" }}>
+        <div style={{ display: "flex", gap: 8, ...(isMobile ? { overflowX: "auto" as const, WebkitOverflowScrolling: "touch" as const, paddingBottom: 4 } : {}) }}>
           <MetricCard compact label="Plans" value={plans.length} onClick={() => toggleDrill("plans")} active={drill === "plans"} />
           <MetricCard compact label="Avail Lots" value={availableLots.length} subtitle={`${lots.length} total`} onClick={() => toggleDrill("lots")} active={drill === "lots"} />
           <MetricCard compact label="Under Const" value={underConstruction.length} />
@@ -1133,10 +1184,30 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         </div>
       )}
 
-      {/* ── CSM Queue + Comm Hub (50/50) ── */}
-      <div style={{ padding: "0 24px 24px", display: "flex", gap: 20, alignItems: "flex-start" }}>
+      {/* ── CSM Queue + Comm Hub (50/50 desktop, tabbed mobile) ── */}
+      <div style={{ padding: isMobile ? "0 12px 72px" : "0 24px 24px" }}>
+        {/* Mobile tab toggle */}
+        {isMobile && (
+          <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: "1px solid #27272a" }}>
+            <button onClick={() => setMobileTab("queue")} style={{
+              flex: 1, padding: "10px 0", fontSize: 13, fontWeight: mobileTab === "queue" ? 600 : 400,
+              color: mobileTab === "queue" ? "#fafafa" : "#52525b",
+              borderBottom: mobileTab === "queue" ? "2px solid #fafafa" : "2px solid transparent",
+              background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
+              minHeight: 44,
+            }}>CSM Queue <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa", marginLeft: 4 }}>{filteredProspects.length}</span></button>
+            <button onClick={() => setMobileTab("comm")} style={{
+              flex: 1, padding: "10px 0", fontSize: 13, fontWeight: mobileTab === "comm" ? 600 : 400,
+              color: mobileTab === "comm" ? "#fafafa" : "#52525b",
+              borderBottom: mobileTab === "comm" ? "2px solid #fafafa" : "2px solid transparent",
+              background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
+              minHeight: 44,
+            }}>Comm Hub</button>
+          </div>
+        )}
+      <div style={isMobile ? {} : { display: "flex", gap: 20, alignItems: "flex-start" }}>
         {/* LEFT: CSM Prospect Queue (50%) */}
-        <div style={{ flex: "0 0 50%", minWidth: 0 }}>
+        <div style={isMobile ? { display: mobileTab === "queue" ? "block" : "none" } : { flex: "0 0 50%", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>CSM Queue</span>
             <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa" }}>{filteredProspects.length}</span>
@@ -1196,6 +1267,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                   key={item.id}
                   item={item}
                   readOnly={readOnly}
+                  isMobile={isMobile}
                   onPromote={() => { setActionItem(item); setActionType("promote"); }}
                   onDemote={() => { setActionItem(item); setActionType("demote"); }}
                 />
@@ -1208,9 +1280,10 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         </div>
 
         {/* RIGHT: Comm Hub (48%) */}
-        <div style={{ flex: "0 0 48%", minWidth: 0 }}>
+        <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none" } : { flex: "0 0 48%", minWidth: 0 }}>
           <CommHub communityId={community.id} teamFilter={teamFilter} />
         </div>
+      </div>
       </div>
 
       {/* ── Reference Module (collapsible) ── */}

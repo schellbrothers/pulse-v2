@@ -1234,13 +1234,13 @@ export default function OscClient() {
               ) : (
               <>
               {/* Bucket tabs */}
-              <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12 }}>
+              <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12, overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" as any }}>
                 {BUCKET_META.map(b => {
                   const isActive = activeBucket === b.id;
                   const count = bucketCounts[b.id];
                   return (
                     <button key={b.id} onClick={() => setActiveBucket(b.id)} style={{
-                      padding: "8px 12px", fontSize: 11, fontWeight: isActive ? 600 : 400,
+                      padding: isMobile ? "6px 6px" : "8px 12px", fontSize: isMobile ? 10 : 11, fontWeight: isActive ? 600 : 400,
                       color: isActive ? "#fafafa" : "#52525b",
                       borderBottom: isActive ? "2px solid #fafafa" : "2px solid transparent",
                       background: "none", border: "none", borderBottomStyle: "solid",
@@ -1248,7 +1248,7 @@ export default function OscClient() {
                       whiteSpace: "nowrap",
                     }}>
                       <span>{b.icon}</span>
-                      <span>{b.label}</span>
+                      {!isMobile && <span>{b.label}</span>}
                       <span
                         onClick={(e) => { e.stopPropagation(); if (count > 0) { setActiveBucket(b.id); setDrillBucket(b.id); } }}
                         title={count > 0 ? `View all ${b.label}` : undefined}

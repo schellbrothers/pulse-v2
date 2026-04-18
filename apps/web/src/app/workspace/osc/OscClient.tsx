@@ -467,11 +467,12 @@ function QueueCard({
             <div>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}</div>
             <div style={{ fontSize: 10, color: "#3f3f46" }}>{relativeTime(item.last_activity_at)}</div>
           </div>
-          <button onClick={e => { e.stopPropagation(); onQuickAssign(); }} title={`Assign → ${suggestedLane}`} style={{
-            padding: "4px 10px", borderRadius: 4, border: "1px solid #166534",
+          <button onClick={e => { e.stopPropagation(); onQuickAssign(); }} style={{
+            padding: "4px 12px", borderRadius: 4, border: "1px solid #166534",
             backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-          }}>→ Assign</button>
-          <button onClick={e => { e.stopPropagation(); onAssign(); }} title="Custom assign" style={{
+            display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+          }}>✨ Assign → {suggestedLane}</button>
+          <button onClick={e => { e.stopPropagation(); onAssign(); }} title="Change assignment" style={{
             padding: "4px 6px", borderRadius: 4, border: "1px solid #3f3f46",
             backgroundColor: "#18181b", color: "#71717a", fontSize: 11, cursor: "pointer",
           }}>⋯</button>
@@ -495,21 +496,17 @@ function QueueCard({
           <div style={{ fontSize: 10, color: "#71717a", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {item.communities?.name ?? divisionName} · {item.opportunity_source ?? item.source ?? "webform"}
           </div>
-          {/* Row 3: AI suggestion inline with assign */}
+          {/* Row 3: Single AI assign button + override */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{
-              fontSize: 10, padding: "3px 8px", backgroundColor: "#052e16", border: "1px solid #166534",
-              borderRadius: 4, color: "#86efac", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0,
-            }}>🤖 {suggestedLane}</span>
             <button onClick={onQuickAssign} style={{
-              padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
-              backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-              minHeight: 32, flexShrink: 0,
-            }}>→ Assign</button>
+              flex: 1, padding: "8px 12px", borderRadius: 6, border: "1px solid #166534",
+              backgroundColor: "#052e16", color: "#4ade80", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>✨ Assign → {suggestedLane}</button>
             <button onClick={onAssign} style={{
-              padding: "6px 8px", borderRadius: 4, border: "1px solid #3f3f46",
-              backgroundColor: "#18181b", color: "#71717a", fontSize: 11, cursor: "pointer",
-              minHeight: 32, flexShrink: 0,
+              padding: "8px 10px", borderRadius: 6, border: "1px solid #3f3f46",
+              backgroundColor: "#18181b", color: "#71717a", fontSize: 12, cursor: "pointer",
+              minHeight: 44, flexShrink: 0,
             }}>⋯</button>
           </div>
         </div>

@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
-import BottomSheet from "@/components/BottomSheet";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 
@@ -458,13 +456,38 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
   // Secondary display name
   const secondaryName = [secondaryMember?.first_name, secondaryMember?.last_name].filter(Boolean).join(" ");
-  const isMobile = useIsMobile();
 
-  // Panel inner content — shared between desktop side panel and mobile bottom sheet
-  const panelContent = (
+  return (
     <>
-      {/* ── Header (desktop only — BottomSheet has its own title) ── */}
-      {!isMobile && (
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          zIndex: 40,
+          backdropFilter: "blur(2px)",
+        }}
+      />
+
+      {/* Panel */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 580,
+          background: "#111",
+          borderLeft: "1px solid #1f1f1f",
+          zIndex: 50,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid #1f1f1f", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -484,10 +507,9 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             </button>
           </div>
         </div>
-      )}
 
-      {/* ── Scrollable content (shared) ── */}
-      <div style={{ flex: 1, overflow: "auto", padding: isMobile ? "12px 16px" : "16px 20px" }}>
+        {/* ── Scrollable content ──────────────────────────────────────────── */}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {/* ── Contact Section ───────────────────────────────────────── */}
             <Section title="Contact">
@@ -805,52 +827,6 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             )}
           </div>
         </div>
-    </>
-  );
-
-  // Mobile: render in BottomSheet
-  if (isMobile) {
-    return (
-      <BottomSheet
-        open={open}
-        onClose={onClose}
-        title={`${opportunity.first_name} ${opportunity.last_name}`}
-        height="full"
-      >
-        {panelContent}
-      </BottomSheet>
-    );
-  }
-
-  // Desktop: side panel
-  return (
-    <>
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.55)",
-          zIndex: 40,
-          backdropFilter: "blur(2px)",
-        }}
-      />
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: 580,
-          background: "#111",
-          borderLeft: "1px solid #1f1f1f",
-          zIndex: 50,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {panelContent}
       </div>
     </>
   );

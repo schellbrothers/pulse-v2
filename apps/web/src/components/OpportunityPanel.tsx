@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 
@@ -224,6 +225,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function OpportunityPanel({ open, onClose, opportunity }: OpportunityPanelProps) {
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"history" | "activity" | "notes">("history");
   const [history, setHistory] = useState<StageTransition[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -478,9 +480,10 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
           top: 0,
           right: 0,
           bottom: 0,
-          width: 580,
+          left: isMobile ? 0 : undefined,
+          width: isMobile ? "100%" : 580,
           background: "#111",
-          borderLeft: "1px solid #1f1f1f",
+          borderLeft: isMobile ? "none" : "1px solid #1f1f1f",
           zIndex: 50,
           display: "flex",
           flexDirection: "column",

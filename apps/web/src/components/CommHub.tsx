@@ -176,28 +176,28 @@ function ActivityCard({
         onMouseLeave={e => (e.currentTarget.style.backgroundColor = isRead && !needsResponse ? "transparent" : "#18181b")}
       >
         {/* Top row: channel badge + priority badges + name + timestamp */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
           {/* Channel pill — ALWAYS visible */}
           <span style={{
-            fontSize: 10, padding: "2px 8px", borderRadius: 10,
+            fontSize: 9, padding: "2px 6px", borderRadius: 10,
             backgroundColor: meta.bg, color: meta.color, fontWeight: 600,
-            display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", flexShrink: 0,
+            display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap", flexShrink: 0,
           }}>
-            {meta.icon}{" "}{meta.label} {dirArrow}
+            {meta.icon} {dirArrow}
           </span>
 
           {/* Priority badges — ALWAYS visible when applicable */}
           {activity.is_urgent && (
             <span style={{
-              fontSize: 9, padding: "2px 7px", borderRadius: 3, fontWeight: 600,
+              fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600,
               backgroundColor: "#7f1d1d", color: "#fca5a5", flexShrink: 0,
-            }}>⚠{" "}{"Urgent"}</span>
+            }}>⚠</span>
           )}
           {needsResponse && (
             <span style={{
-              fontSize: 9, padding: "2px 7px", borderRadius: 3, fontWeight: 600,
+              fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600,
               backgroundColor: "#422006", color: "#fbbf24", flexShrink: 0,
-            }}>Needs Response</span>
+            }}>NR</span>
           )}
 
           {/* Contact name */}
@@ -557,7 +557,7 @@ export default function CommHub({ communityId, divisionId, teamFilter }: CommHub
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Comm Hub</span>

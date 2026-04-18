@@ -1305,7 +1305,7 @@ export default function OscClient() {
             </div>
 
             {/* ── RIGHT: Comm Hub (50%) ── */}
-            <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none" } : { flex: "0 0 48%", minWidth: 0 }}>
+            <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none", width: "100%", maxWidth: "100vw", overflow: "hidden" } : { flex: "0 0 48%", minWidth: 0 }}>
               <CommHub divisionId={filter.divisionId} teamFilter={teamFilter} />
             </div>
           </div>

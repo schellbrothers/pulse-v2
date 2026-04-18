@@ -151,7 +151,7 @@ function ActivityCard({
 
   return (
     <div style={{
-      borderLeft: `3px solid ${borderColor}`,
+      border: "1px solid #27272a",
       borderRadius: 6,
       overflow: "hidden",
       transition: "all 0.15s",

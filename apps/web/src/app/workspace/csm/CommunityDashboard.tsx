@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import PipelineDetailView, { type PipelineItem } from "@/components/PipelineDetailView";
+import CommHub from "@/components/CommHub";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -81,22 +82,7 @@ type DrillPanel = null | "plans" | "lots" | "prospects" | "customers" | "qd";
 
 type ActionType = "promote" | "demote" | null;
 
-interface CommActivity {
-  id: string;
-  contact_id: string | null;
-  channel: string | null;
-  direction: string;
-  subject: string | null;
-  occurred_at: string;
-  is_read: boolean | null;
-  read_at: string | null;
-  needs_response: boolean | null;
-  responded_at: string | null;
-  is_urgent: boolean | null;
-  contacts: { first_name: string; last_name: string } | null;
-}
 
-type CommHubTab = "urgent" | "needs_response" | "email" | "phone" | "sms" | "all";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -187,22 +173,7 @@ function channelIcon(ch: string | null): string {
   return map[ch ?? ""] ?? "📋";
 }
 
-function activityChannelIcon(ch: string | null): string {
-  const map: Record<string, string> = {
-    email: "📧", phone: "📞", call: "📞", sms: "💬", text: "💬",
-    voicemail: "🎙", webform: "🌐", chat: "💭", virtual_tour: "🖥", walk_in: "🚶",
-  };
-  return map[ch ?? ""] ?? "📬";
-}
 
-const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string }[] = [
-  { id: "urgent", icon: "⚡", label: "Urgent" },
-  { id: "needs_response", icon: "📬", label: "Needs Response" },
-  { id: "email", icon: "📧", label: "Email" },
-  { id: "phone", icon: "📞", label: "Phone" },
-  { id: "sms", icon: "💬", label: "SMS" },
-  { id: "all", icon: "", label: "All" },
-];
 
 function priorityBadge(p: string | null): { color: string; bg: string; label: string } {
   if (p === "high") return { color: "#fca5a5", bg: "#7f1d1d", label: "🔴 High" };
@@ -846,8 +817,7 @@ function ReferenceModule({
 function CommunityView({ community, plans, lots, modelHome, specHomes, divisions, readOnly }: CommunityViewProps) {
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
-  const [commActivities, setCommActivities] = useState<CommActivity[]>([]);
-  const [activeCommTab, setActiveCommTab] = useState<CommHubTab>("needs_response");
+
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -910,20 +880,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     setCustomers(custRes.data ?? []);
     setTasks(flatTasks);
 
-    // Fetch activities for Comm Hub
-    const { data: actData } = await supabase
-      .from("activities")
-      .select("id, contact_id, channel, direction, subject, occurred_at, is_read, read_at, needs_response, responded_at, is_urgent, contacts(first_name, last_name)")
-      .eq("direction", "inbound")
-      .eq("community_id", cid)
-      .order("occurred_at", { ascending: false })
-      .limit(100);
 
-    const flatActivities = (actData ?? []).map((a: Record<string, unknown>) => ({
-      ...a,
-      contacts: Array.isArray(a.contacts) ? (a.contacts as Record<string, unknown>[])[0] ?? null : a.contacts,
-    })) as CommActivity[];
-    setCommActivities(flatActivities);
   }, [community?.id]);
 
   useEffect(() => {
@@ -944,11 +901,6 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         schema: "public",
         table: "tasks",
         filter: `community_id=eq.${community.id}`,
-      }, () => { fetchData(); })
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "activities",
       }, () => { fetchData(); })
       .subscribe();
 
@@ -1060,29 +1012,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
     fetchData();
   }
 
-  async function handleMarkRead(activityId: string) {
-    await supabase.from("activities").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", activityId);
-    setCommActivities(prev => prev.map(a => a.id === activityId ? { ...a, is_read: true, read_at: new Date().toISOString() } : a));
-  }
 
-  // Comm Hub computed values
-  const unreadCommCount = commActivities.filter(a => !a.is_read).length;
-  const commCounts: Record<CommHubTab, number> = {
-    urgent: commActivities.filter(a => a.is_urgent).length,
-    needs_response: commActivities.filter(a => a.needs_response && !a.responded_at).length,
-    email: commActivities.filter(a => a.channel === "email").length,
-    phone: commActivities.filter(a => a.channel === "phone" || a.channel === "call").length,
-    sms: commActivities.filter(a => a.channel === "sms" || a.channel === "text").length,
-    all: commActivities.length,
-  };
-  const filteredCommActivities = commActivities.filter(a => {
-    if (activeCommTab === "urgent") return a.is_urgent;
-    if (activeCommTab === "needs_response") return a.needs_response && !a.responded_at;
-    if (activeCommTab === "email") return a.channel === "email";
-    if (activeCommTab === "phone") return a.channel === "phone" || a.channel === "call";
-    if (activeCommTab === "sms") return a.channel === "sms" || a.channel === "text";
-    return true;
-  });
 
   function toggleDrill(panel: DrillPanel) {
     setDrill(prev => prev === panel ? null : panel);
@@ -1279,91 +1209,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
         {/* RIGHT: Comm Hub (48%) */}
         <div style={{ flex: "0 0 48%", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Comm Hub</span>
-            <span style={{
-              fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
-              backgroundColor: unreadCommCount > 0 ? "#7f1d1d" : "#27272a",
-              color: unreadCommCount > 0 ? "#fca5a5" : "#71717a",
-            }}>{unreadCommCount} unread</span>
-          </div>
-
-          {/* Comm Hub sub-tabs */}
-          <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", marginBottom: 12, flexWrap: "wrap" }}>
-            {COMM_HUB_TABS.map(t => {
-              const isActive = activeCommTab === t.id;
-              const count = commCounts[t.id];
-              return (
-                <button key={t.id} onClick={() => setActiveCommTab(t.id)} style={{
-                  padding: "6px 10px", fontSize: 11, fontWeight: isActive ? 600 : 400,
-                  color: isActive ? "#fafafa" : "#52525b",
-                  borderBottom: isActive ? "2px solid #fafafa" : "2px solid transparent",
-                  background: "none", border: "none", borderBottomStyle: "solid",
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
-                }}>
-                  {t.icon && <span>{t.icon}</span>}
-                  <span>{t.label}</span>
-                  <span style={{
-                    fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
-                    backgroundColor: t.id === "urgent" && count > 0 ? "#7f1d1d" : count > 0 ? "#172554" : "#27272a",
-                    color: t.id === "urgent" && count > 0 ? "#fca5a5" : count > 0 ? "#60a5fa" : "#71717a",
-                  }}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Activity list */}
-          {filteredCommActivities.length === 0 ? (
-            <div style={{
-              padding: 32, textAlign: "center", backgroundColor: "#18181b", border: "1px solid #27272a",
-              borderRadius: 6, color: "#52525b", fontSize: 12,
-            }}>No activities in this view</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {filteredCommActivities.map(a => {
-                const contactName = a.contacts ? `${a.contacts.first_name} ${a.contacts.last_name}` : "Unknown";
-                const isRead = !!a.is_read;
-                return (
-                  <div key={a.id} style={{
-                    padding: "8px 12px", display: "flex", alignItems: "center", gap: 10,
-                    borderBottom: "1px solid #27272a", cursor: "pointer",
-                    backgroundColor: !isRead ? "#18181b" : "transparent",
-                    opacity: isRead ? 0.5 : 1, transition: "background-color 0.1s",
-                  }}
-                    onMouseEnter={e => { if (isRead) e.currentTarget.style.backgroundColor = "#18181b"; }}
-                    onMouseLeave={e => { if (isRead) e.currentTarget.style.backgroundColor = "transparent"; }}
-                  >
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>{activityChannelIcon(a.channel)}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 12, fontWeight: 500, color: "#fafafa" }}>{contactName}</span>
-                        {a.is_urgent && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#7f1d1d", color: "#fca5a5" }}>URGENT</span>}
-                        {a.needs_response && !a.responded_at && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#422006", color: "#fbbf24" }}>NEEDS RESPONSE</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {a.subject ?? "No subject"}
-                      </div>
-                    </div>
-                    <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0, whiteSpace: "nowrap" }}>{relativeTime(a.occurred_at)}</span>
-                    {!isRead && (
-                      <button
-                        onClick={e => { e.stopPropagation(); handleMarkRead(a.id); }}
-                        title="Mark as read"
-                        style={{
-                          padding: "2px 6px", borderRadius: 3, border: "1px solid #27272a",
-                          backgroundColor: "#09090b", color: "#52525b", fontSize: 11, cursor: "pointer",
-                          opacity: 0.6, transition: "opacity 0.15s",
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
-                      >✓</button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <CommHub communityId={community.id} teamFilter={teamFilter} />
         </div>
       </div>
 

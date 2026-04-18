@@ -128,3 +128,9 @@ body {
     height: 6px;
   }
 }
+
+/* Lock horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}

@@ -250,9 +250,10 @@ function AssignModal({
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", zIndex: 50, backdropFilter: "blur(2px)" }} />
       <div style={{
-        position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-        width: 520, backgroundColor: "#18181b", border: "1px solid #3f3f46", borderRadius: 12,
-        zIndex: 51, overflow: "hidden",
+        position: "fixed", inset: 0,
+        backgroundColor: "#18181b",
+        zIndex: 51, overflow: "auto",
+        display: "flex", flexDirection: "column" as const,
       }}>
         {/* Header */}
         <div style={{ padding: "20px 24px", borderBottom: "1px solid #27272a" }}>

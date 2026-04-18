@@ -482,20 +482,19 @@ function QueueCard({
 
       {/* Main row — mobile */}
       {isMobile && (
-        <div style={{ padding: "10px 12px" }}>
-          {/* Row 1: Name + timestamp + action icons */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-            <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0 }}>{item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", {month:"short",day:"numeric"}) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", {hour:"numeric",minute:"2-digit"}) : "—"}</span>
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              {item.contacts?.phone && <a href={`tel:${item.contacts.phone}`} style={{ fontSize: 16, textDecoration: "none", opacity: 0.7 }}>📞</a>}
-              {item.contacts?.phone && <a href={`sms:${item.contacts.phone}`} style={{ fontSize: 16, textDecoration: "none", opacity: 0.7 }}>💬</a>}
-              {item.contacts?.email && <a href={`mailto:${item.contacts.email}`} style={{ fontSize: 16, textDecoration: "none", opacity: 0.7 }}>📧</a>}
+        <div style={{ padding: "12px 14px" }}>
+          {/* Row 1: Name (left) + Action icons (right, big) */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 15, fontWeight: 600, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "3px" }}>{name}</div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              {item.contacts?.phone && <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>📞</a>}
+              {item.contacts?.phone && <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>💬</a>}
+              {item.contacts?.email && <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>📧</a>}
             </div>
           </div>
-          {/* Row 2: Community + source + timestamp */}
-          <div style={{ fontSize: 10, color: "#71717a", marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.communities?.name ?? divisionName} · {item.opportunity_source ?? item.source ?? "webform"}
+          {/* Row 2: Div · Community · form type · date/time */}
+          <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>
+            {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"} · {item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", {month:"short",day:"numeric"}) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", {hour:"numeric",minute:"2-digit"}) : ""}
           </div>
           {/* Row 3: Single AI assign button + override */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

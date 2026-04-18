@@ -293,24 +293,27 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
       }
     } else {
       // No opportunity at this community → create new
-      const { data: newOpp } = await supabase
-        .from("opportunities")
-        .insert({
+      const oppInsert = {
           org_id: ORG_ID,
           contact_id: contact.id,
-          crm_stage: initialStage === "lead_div" ? "lead_div" : initialStage,
+          crm_stage: "queue" as const,
           division_id: divisionId,
-          community_id: communityId,
+          community_id: communityId || null,
           source: "webform",
-          opportunity_source: form.form_type_code,
-          queue_source: initialStage === "queue" ? "webform_new" : undefined,
-          queued_at:
-            initialStage === "queue" ? new Date().toISOString() : undefined,
+          opportunity_source: form.form_type_code || null,
+          queue_source: "webform_new",
+          queued_at: new Date().toISOString(),
           last_activity_at: new Date().toISOString(),
           is_active: true,
-        })
+        };
+      const { data: newOpp, error: oppError } = await supabase
+        .from("opportunities")
+        .insert(oppInsert)
         .select("id")
         .single();
+      if (oppError) {
+        console.error(`[webform-sync] Opportunity insert failed for ${form.name}:`, oppError.message, JSON.stringify(oppInsert));
+      }
       opportunityId = newOpp?.id ?? null;
     }
   } else if (divisionId) {
@@ -347,21 +350,27 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
       // ALL web forms go to queue — OSC assigns the lane
       // Queue can have null community_id (division-only forms like subscribe_region)
       const finalStage = "queue";
-      const { data: newOpp } = await supabase
-        .from("opportunities")
-        .insert({
+      const divOppInsert = {
           org_id: ORG_ID,
           contact_id: contact.id,
-          crm_stage: finalStage,
+          crm_stage: "queue" as const,
           division_id: divisionId,
           community_id: null,
           source: "webform",
-          opportunity_source: form.form_type_code,
+          opportunity_source: form.form_type_code || null,
+          queue_source: "webform_new",
+          queued_at: new Date().toISOString(),
           last_activity_at: new Date().toISOString(),
           is_active: true,
-        })
+        };
+      const { data: newOpp, error: divOppError } = await supabase
+        .from("opportunities")
+        .insert(divOppInsert)
         .select("id")
         .single();
+      if (divOppError) {
+        console.error(`[webform-sync] Div opportunity insert failed for ${form.name}:`, divOppError.message);
+      }
       opportunityId = newOpp?.id ?? null;
     }
   }

@@ -123,7 +123,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         style={{
           fontSize: 10,
           fontWeight: 600,
-          color: "#444",
+          color: "#777",
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           marginBottom: 8,
@@ -151,7 +151,7 @@ function Row({ label, value }: { label: string; value?: string | number | null |
         minHeight: 20,
       }}
     >
-      <span style={{ fontSize: 12, color: "#555", flexShrink: 0, paddingTop: 1 }}>{label}</span>
+      <span style={{ fontSize: 12, color: "#888", flexShrink: 0, paddingTop: 1 }}>{label}</span>
       <span style={{ fontSize: 12, color: value == null || value === "" || value === "—" ? "#333" : "#ededed", textAlign: "right", wordBreak: "break-word" }}>
         {value == null || value === "" ? "—" : value}
       </span>
@@ -487,7 +487,8 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
           zIndex: 50,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch" as any,
         }}
       >
         {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -503,7 +504,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             </div>
             <button
               onClick={onClose}
-              style={{ background: "transparent", border: "none", color: "#555", fontSize: 18, cursor: "pointer", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+              style={{ background: "transparent", border: "none", color: "#888", fontSize: 18, cursor: "pointer", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
               title="Close"
             >
               ✕
@@ -517,7 +518,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             {/* ── Contact Section ───────────────────────────────────────── */}
             <Section title="Contact">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Primary</span>
+                <span style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Primary</span>
                 {!editing && (
                   <button onClick={startEditing} style={{ ...smallBtnStyle, fontSize: 10, padding: "2px 8px" }}>
                     ✏ Edit
@@ -530,43 +531,43 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>First Name</label>
+                        <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>First Name</label>
                         <input style={inputStyle} value={editFirstName} onChange={e => setEditFirstName(e.target.value)} placeholder="First name" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Last Name</label>
+                        <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Last Name</label>
                         <input style={inputStyle} value={editLastName} onChange={e => setEditLastName(e.target.value)} placeholder="Last name" />
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Email</label>
+                      <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Email</label>
                       <input style={inputStyle} value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email" />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Phone</label>
+                      <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Phone</label>
                       <input style={inputStyle} value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Phone" />
                     </div>
                   </div>
                   <div style={{ marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
+                    <span style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>First Name</label>
+                        <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>First Name</label>
                         <input style={inputStyle} value={editFirstName2} onChange={e => setEditFirstName2(e.target.value)} placeholder="First name" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Last Name</label>
+                        <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Last Name</label>
                         <input style={inputStyle} value={editLastName2} onChange={e => setEditLastName2(e.target.value)} placeholder="Last name" />
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Email Secondary</label>
+                      <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Email Secondary</label>
                       <input style={inputStyle} value={editEmail2} onChange={e => setEditEmail2(e.target.value)} placeholder="Add secondary email" />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, color: "#555", marginBottom: 2, display: "block" }}>Phone Secondary</label>
+                      <label style={{ fontSize: 10, color: "#888", marginBottom: 2, display: "block" }}>Phone Secondary</label>
                       <input style={inputStyle} value={editPhone2} onChange={e => setEditPhone2(e.target.value)} placeholder="Add secondary phone" />
                     </div>
                   </div>
@@ -610,7 +611,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
                   {/* Secondary — always show */}
                   <div style={{ marginTop: 8, marginBottom: 2 }}>
-                    <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
+                    <span style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Secondary</span>
                   </div>
                   <Row
                     label="Name"
@@ -691,18 +692,18 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             {activeTab === "history" && (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {historyLoading ? (
-                  <p style={{ fontSize: 12, color: "#555", margin: 0 }}>Loading…</p>
+                  <p style={{ fontSize: 12, color: "#888", margin: 0 }}>Loading…</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {history.length === 0 && (
-                      <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No stage transitions recorded</p>
+                      <p style={{ fontSize: 12, color: "#888", margin: 0 }}>No stage transitions recorded</p>
                     )}
                     {history.map(t => (
                       <div key={t.id} style={{ lineHeight: 1.6 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          {t.from_stage ? <StageBadge stage={t.from_stage} /> : <span style={{ fontSize: 10, color: "#555" }}>—</span>}
-                          <span style={{ color: "#555", fontSize: 12 }}>→</span>
-                          {t.to_stage ? <StageBadge stage={t.to_stage} /> : <span style={{ fontSize: 10, color: "#555" }}>—</span>}
+                          {t.from_stage ? <StageBadge stage={t.from_stage} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
+                          <span style={{ color: "#888", fontSize: 12 }}>→</span>
+                          {t.to_stage ? <StageBadge stage={t.to_stage} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
                         </div>
                         <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 0, display: "inline" }}>
                           {formatDateTime(t.created_at)}
@@ -732,7 +733,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                         >
                           WEB
                         </span>
-                        <span style={{ color: "#555", fontSize: 12 }}>→</span>
+                        <span style={{ color: "#888", fontSize: 12 }}>→</span>
                         <StageBadge stage={opportunity.stage} />
                       </div>
                       <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 0, display: "inline" }}>
@@ -748,9 +749,9 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             {activeTab === "activity" && (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {activityLoading ? (
-                  <p style={{ fontSize: 12, color: "#555", margin: 0 }}>Loading…</p>
+                  <p style={{ fontSize: 12, color: "#888", margin: 0 }}>Loading…</p>
                 ) : activities.length === 0 ? (
-                  <p style={{ fontSize: 12, color: "#555", margin: 0 }}>No activities recorded</p>
+                  <p style={{ fontSize: 12, color: "#888", margin: 0 }}>No activities recorded</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {activities.map(a => {
@@ -766,7 +767,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                              <span style={{ fontSize: 10, fontWeight: 600, color: "#666", textTransform: "uppercase" }}>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: "#999", textTransform: "uppercase" }}>
                                 {channelLabel}
                               </span>
                               <span style={{

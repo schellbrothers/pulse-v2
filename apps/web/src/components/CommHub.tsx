@@ -1,5 +1,6 @@
-import { useIsMobile } from "@/hooks/useIsMobile";
 "use client";
+
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";

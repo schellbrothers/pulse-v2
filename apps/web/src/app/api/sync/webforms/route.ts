@@ -8,15 +8,19 @@
 //
 
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { createClient } from "@supabase/supabase-js";
 
 // ─── Supabase (service role — bypasses RLS) ─────────────────────────────────
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    "https://mrpxtbuezqrlxybnhyne.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
+// Client created lazily at request time (not at build time)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -77,7 +81,7 @@ async function resolveDivision(
   if (!hbDivId) return null;
   const code = HB_DIVISION_MAP[hbDivId];
   if (!code) return null;
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("divisions")
     .select("id")
     .eq("heartbeat_division_id", hbDivId)
@@ -93,7 +97,7 @@ async function resolveCommunity(
   if (!hbCommId || hbCommId === true) return null;
   const numId = typeof hbCommId === "number" ? hbCommId : Number(hbCommId);
   if (isNaN(numId) || numId === 0) return null;
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("communities")
     .select("id")
     .eq("heartbeat_community_id", numId)
@@ -117,7 +121,7 @@ async function findOrCreateContact(
 ): Promise<MatchedContact> {
   // 1. Match by email
   if (email) {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("contacts")
       .select("id")
       .eq("org_id", ORG_ID)
@@ -126,7 +130,7 @@ async function findOrCreateContact(
     if (data && data.length > 0) {
       // Backfill phone if missing
       if (phone) {
-        await supabase
+        await getSupabase()
           .from("contacts")
           .update({ phone: phone })
           .eq("id", data[0].id)
@@ -138,7 +142,7 @@ async function findOrCreateContact(
 
   // 2. Match by phone
   if (phone) {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("contacts")
       .select("id")
       .eq("org_id", ORG_ID)
@@ -147,7 +151,7 @@ async function findOrCreateContact(
     if (data && data.length > 0) {
       // Backfill email if missing
       if (email) {
-        await supabase
+        await getSupabase()
           .from("contacts")
           .update({ email: email })
           .eq("id", data[0].id)
@@ -159,7 +163,7 @@ async function findOrCreateContact(
 
   // 3. Match by name
   if (firstName) {
-    let q = supabase
+    let q = getSupabase()
       .from("contacts")
       .select("id")
       .eq("org_id", ORG_ID)
@@ -172,7 +176,7 @@ async function findOrCreateContact(
   }
 
   // 4. Create new contact
-  const { data: newContact, error } = await supabase
+  const { data: newContact, error } = await getSupabase()
     .from("contacts")
     .insert({
       org_id: ORG_ID,
@@ -191,7 +195,7 @@ async function findOrCreateContact(
   }
 
   // Create primary member
-  await supabase.from("contact_members").insert({
+  await getSupabase().from("contact_members").insert({
     contact_id: newContact.id,
     role: "primary",
     first_name: firstName,
@@ -231,7 +235,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
   const recordId = String(form.record_id);
 
   // ── Dedup: check if we already processed this record_id
-  const { data: existingActivity } = await supabase
+  const { data: existingActivity } = await getSupabase()
     .from("activities")
     .select("id")
     .eq("external_message_id", recordId)
@@ -259,7 +263,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
 
   if (communityId) {
     // Check for existing opportunity at this community
-    const { data: existingOpp } = await supabase
+    const { data: existingOpp } = await getSupabase()
       .from("opportunities")
       .select("id, crm_stage")
       .eq("contact_id", contact.id)
@@ -273,7 +277,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
 
       if (stage === "lead_div" || stage === "lead_com") {
         // Re-engaged → promote to queue
-        await supabase
+        await getSupabase()
           .from("opportunities")
           .update({
             crm_stage: "queue",
@@ -284,7 +288,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
           .eq("id", opportunityId);
       } else {
         // Already in queue/prospect+ → just update timestamp
-        await supabase
+        await getSupabase()
           .from("opportunities")
           .update({ last_activity_at: new Date().toISOString() })
           .eq("id", opportunityId);
@@ -304,7 +308,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
           last_activity_at: new Date().toISOString(),
           is_active: true,
         };
-      const { data: newOpp, error: oppError } = await supabase
+      const { data: newOpp, error: oppError } = await getSupabase()
         .from("opportunities")
         .insert(oppInsert)
         .select("id")
@@ -316,7 +320,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
     }
   } else if (divisionId) {
     // Division-level lead (no community) — stage = lead_div
-    const { data: existingOpp } = await supabase
+    const { data: existingOpp } = await getSupabase()
       .from("opportunities")
       .select("id, crm_stage")
       .eq("contact_id", contact.id)
@@ -329,7 +333,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
       opportunityId = existingOpp[0].id;
       // If in marketing, promote to queue on re-engagement
       if (existingOpp[0].crm_stage === "lead_div") {
-        await supabase
+        await getSupabase()
           .from("opportunities")
           .update({
             crm_stage: "queue",
@@ -339,7 +343,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
           })
           .eq("id", opportunityId);
       } else {
-        await supabase
+        await getSupabase()
           .from("opportunities")
           .update({ last_activity_at: new Date().toISOString() })
           .eq("id", opportunityId);
@@ -361,7 +365,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
           last_activity_at: new Date().toISOString(),
           is_active: true,
         };
-      const { data: newOpp, error: divOppError } = await supabase
+      const { data: newOpp, error: divOppError } = await getSupabase()
         .from("opportunities")
         .insert(divOppInsert)
         .select("id")
@@ -381,7 +385,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
     .filter(Boolean)
     .join(" ");
 
-  await supabase.from("activities").insert({
+  await getSupabase().from("activities").insert({
     org_id: ORG_ID,
     contact_id: contact.id,
     opportunity_id: opportunityId,
@@ -406,7 +410,7 @@ async function processForm(form: HBForm): Promise<ProcessResult> {
   });
 
   // ── Create task for OSC
-  await supabase.from("tasks").insert({
+  await getSupabase().from("tasks").insert({
     org_id: ORG_ID,
     contact_id: contact.id,
     opportunity_id: opportunityId,
@@ -446,7 +450,7 @@ export async function GET(request: Request) {
 
   try {
     // ── Step 1: Get last sync timestamp
-    const { data: lastSync } = await supabase
+    const { data: lastSync } = await getSupabase()
       .from("sync_log")
       .select("synced_at, metadata")
       .eq("source", "webforms")
@@ -524,7 +528,7 @@ export async function GET(request: Request) {
 
     // ── Step 4: Update sync_log
     const processed = newContacts + existingMatched;
-    await supabase.from("sync_log").insert({
+    await getSupabase().from("sync_log").insert({
       feed: "webforms",
       source: "webforms",
       status: errors > 0 ? "error" : "success",

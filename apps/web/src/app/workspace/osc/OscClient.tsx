@@ -33,6 +33,10 @@ interface QueueItem {
   created_at: string;
   contacts: { first_name: string; last_name: string; email: string | null; phone: string | null } | null;
   communities: { name: string } | null;
+  // Enriched: prior state of contact (other opportunities)
+  prior_stage?: string | null;
+  prior_community?: string | null;
+  is_new_contact?: boolean;
 }
 
 interface TaskItem {
@@ -102,7 +106,7 @@ interface ModelHome {
   hours: string | null;
 }
 
-type QueueBucket = "new_inbound" | "re_engaged" | "demoted" | "ai_surfaced" | "customer";
+type QueueBucket = "new_inbound" | "re_engaged" | "ai_surfaced";
 
 
 
@@ -140,21 +144,18 @@ function sourceLabel(src: string | null): string {
 }
 
 function classifyBucket(item: QueueItem): QueueBucket {
-  const qs = item.queue_source;
-  if (qs === "demoted") return "demoted";
-  if (qs === "ai_surfaced" || item.opportunity_source === "ai_auto_promote") return "ai_surfaced";
-  if (qs === "re_engaged") return "re_engaged";
-  if (qs === "customer") return "customer";
-  // Default: new inbound (web forms, calls, texts, walk-ins, etc.)
+  // AI-surfaced
+  if (item.queue_source === "ai_surfaced" || item.opportunity_source === "ai_auto_promote") return "ai_surfaced";
+  // Existing contact (has prior history in the system)
+  if (item.is_new_contact === false || item.prior_stage) return "re_engaged";
+  // New contact (never seen before)
   return "new_inbound";
 }
 
 const BUCKET_META: { id: QueueBucket; icon: string; label: string; description: string }[] = [
-  { id: "new_inbound", icon: "🆕", label: "New Inbound", description: "Brand new web forms, calls" },
-  { id: "re_engaged", icon: "📋", label: "Re-engaged", description: "Existing leads showing new activity" },
-  { id: "demoted", icon: "↓", label: "Demoted", description: "Prospects pushed back by CSM" },
-  { id: "ai_surfaced", icon: "🤖", label: "AI Surfaced", description: "Scoring spikes, behavioral signals" },
-  { id: "customer", icon: "👤", label: "Customer", description: "Existing homeowners reaching out" },
+  { id: "new_inbound", icon: "🆕", label: "New", description: "Brand new contacts, never in the system" },
+  { id: "re_engaged", icon: "📋", label: "Existing", description: "Existing leads/prospects re-engaging" },
+  { id: "ai_surfaced", icon: "🤖", label: "AI", description: "AI-surfaced based on scoring/signals" },
 ];
 
 function channelIcon(ch: string | null): string {
@@ -407,6 +408,16 @@ function SnoozePicker({ onSnooze, onClose }: { onSnooze: (until: string) => void
 
 // ─── Queue Card ───────────────────────────────────────────────────────────────
 
+
+function stageLabel(stage: string | null | undefined): string {
+  const map: Record<string, string> = {
+    lead_div: "LEAD (DIV)", lead_com: "LEAD", queue: "QUEUE",
+    prospect_c: "PROSPECT C", prospect_b: "PROSPECT B", prospect_a: "PROSPECT A",
+    homeowner: "HOMEOWNER", archived: "ARCHIVED",
+  };
+  return map[stage ?? ""] ?? stage ?? "";
+}
+
 function QueueCard({
   item, onAssign, onNameClick, onQuickAssign, divisionName, isMobile,
 }: {
@@ -442,7 +453,17 @@ function QueueCard({
           alignItems: "center", gap: 12,
         }}>
           <div>
-            <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px" }}>{name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px" }}>{name}</div>
+              {item.prior_stage && (
+                <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 3, fontWeight: 600, backgroundColor: "#1e1b4b", color: "#818cf8", whiteSpace: "nowrap" }}>
+                  {stageLabel(item.prior_stage)}{item.prior_community ? ` · ${item.prior_community}` : ""}
+                </span>
+              )}
+              {item.is_new_contact && (
+                <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 3, fontWeight: 600, backgroundColor: "#052e16", color: "#4ade80" }}>NEW</span>
+              )}
+            </div>
             <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
               {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"}
             </div>
@@ -485,7 +506,17 @@ function QueueCard({
         <div style={{ padding: "12px 14px" }}>
           {/* Row 1: Name (left) + Action icons (right, big) */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 15, fontWeight: 600, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "3px" }}>{name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+              <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 15, fontWeight: 600, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "3px" }}>{name}</div>
+              {item.prior_stage && (
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#1e1b4b", color: "#818cf8", whiteSpace: "nowrap" }}>
+                  {stageLabel(item.prior_stage)}{item.prior_community ? ` · ${item.prior_community}` : ""}
+                </span>
+              )}
+              {item.is_new_contact && (
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#052e16", color: "#4ade80" }}>NEW</span>
+              )}
+            </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               {item.contacts?.phone && <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>📞</a>}
               {item.contacts?.phone && <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>💬</a>}
@@ -952,6 +983,42 @@ export default function OscClient() {
       contacts: Array.isArray(item.contacts) ? (item.contacts as Record<string, unknown>[])[0] ?? null : item.contacts,
       communities: Array.isArray(item.communities) ? (item.communities as Record<string, unknown>[])[0] ?? null : item.communities,
     })) as QueueItem[];
+
+    // Enrich with prior state — check if contact has other (non-queue) opportunities
+    const contactIds = [...new Set(flat.map(q => q.contact_id).filter(Boolean))];
+    if (contactIds.length > 0) {
+      const { data: allOpps } = await supabase
+        .from("opportunities")
+        .select("contact_id, crm_stage, communities(name)")
+        .in("contact_id", contactIds)
+        .neq("crm_stage", "queue")
+        .eq("is_active", true);
+
+      const priorByContact: Record<string, { stage: string; community: string | null }> = {};
+      for (const opp of (allOpps ?? [])) {
+        const cid = (opp as Record<string, unknown>).contact_id as string;
+        if (!priorByContact[cid]) {
+          const comm = (opp as Record<string, unknown>).communities;
+          const commName = Array.isArray(comm) ? (comm[0] as Record<string, unknown>)?.name as string : (comm as Record<string, unknown>)?.name as string;
+          priorByContact[cid] = {
+            stage: (opp as Record<string, unknown>).crm_stage as string,
+            community: commName ?? null,
+          };
+        }
+      }
+
+      for (const q of flat) {
+        const prior = priorByContact[q.contact_id];
+        if (prior) {
+          q.prior_stage = prior.stage;
+          q.prior_community = prior.community;
+          q.is_new_contact = false;
+        } else {
+          q.is_new_contact = true;
+        }
+      }
+    }
+
     setQueueItems(flat);
 
     // Tasks
@@ -1015,10 +1082,10 @@ export default function OscClient() {
 
   // ── Bucketed queue ──
   const bucketCounts: Record<QueueBucket, number> = {
-    new_inbound: 0, re_engaged: 0, demoted: 0, ai_surfaced: 0, customer: 0,
+    new_inbound: 0, re_engaged: 0, ai_surfaced: 0,
   };
   const bucketedItems: Record<QueueBucket, QueueItem[]> = {
-    new_inbound: [], re_engaged: [], demoted: [], ai_surfaced: [], customer: [],
+    new_inbound: [], re_engaged: [], ai_surfaced: [],
   };
   for (const item of filteredQueueItems) {
     const bucket = classifyBucket(item);

@@ -558,7 +558,7 @@ export default function CommHub({ communityId, divisionId, teamFilter }: CommHub
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, maxWidth: "100%" }}>
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Comm Hub</span>
@@ -614,7 +614,7 @@ export default function CommHub({ communityId, divisionId, teamFilter }: CommHub
       </div>
 
       {/* ── Activity List ── */}
-      <div style={{ maxHeight: "calc(100vh - 320px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
         {loading ? (
           <div style={{ padding: 32, textAlign: "center", fontSize: 12, color: "#52525b" }}>Loading...</div>
         ) : filteredActivities.length === 0 ? (

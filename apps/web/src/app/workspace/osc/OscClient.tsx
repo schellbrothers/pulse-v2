@@ -411,7 +411,7 @@ function SnoozePicker({ onSnooze, onClose }: { onSnooze: (until: string) => void
 
 function stageLabel(stage: string | null | undefined): string {
   const map: Record<string, string> = {
-    lead_div: "LEAD (DIV)", lead_com: "LEAD", queue: "QUEUE",
+    lead_div: "LEAD", lead_com: "LEAD", queue: "QUEUE",
     prospect_c: "PROSPECT C", prospect_b: "PROSPECT B", prospect_a: "PROSPECT A",
     homeowner: "HOMEOWNER", archived: "ARCHIVED",
   };

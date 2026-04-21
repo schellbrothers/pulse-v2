@@ -406,7 +406,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
           return (
             <button
               key={ft.code}
-              onClick={() => setSelectedFormType(ft.code)}
+              onClick={() => { setSelectedFormType(ft.code); setScopes({ email_auto: { divisionId: null, communityId: null }, email_personal: { divisionId: null, communityId: null }, sms: { divisionId: null, communityId: null } }); setEdits({}); }}
               style={{
                 padding: "8px 16px",
                 fontSize: 13,

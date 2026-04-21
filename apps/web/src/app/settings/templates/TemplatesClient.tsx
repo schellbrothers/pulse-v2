@@ -577,6 +577,25 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
                   No override for this scope — showing default. Edit and save to create an override.
                 </div>
               )}
+              {/* Override active banner */}
+              {!showFallback && !!(scopes[ch.key as Channel]?.divisionId || scopes[ch.key as Channel]?.communityId) && (
+                <div
+                  style={{
+                    marginBottom: 12,
+                    padding: "8px 12px",
+                    background: "rgba(194,65,12,0.15)",
+                    border: "1px solid #c2410c",
+                    borderRadius: 4,
+                    fontSize: 11,
+                    color: "#fb923c",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  🟠 Override active — edits here only apply to this {scopes[ch.key as Channel]?.communityId ? "Community" : "Division"}.
+                </div>
+              )}
 
               {/* Subject (email only) */}
               {!isSms && (

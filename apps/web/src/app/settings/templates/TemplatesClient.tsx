@@ -512,7 +512,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
               key={ch.key}
               style={{
                 background: "#18181b",
-                border: dirty ? "1px solid #59a6bd" : "1px solid #27272a",
+                border: dirty ? "1px solid #59a6bd" : (!showFallback && !!(tpl.division_id || tpl.community_id)) ? "1px solid #c2410c" : showFallback ? "1px solid #59a6bd" : "1px solid #27272a",
                 borderRadius: 8,
                 padding: 20,
                 display: "flex",

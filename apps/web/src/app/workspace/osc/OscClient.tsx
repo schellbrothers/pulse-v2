@@ -839,7 +839,7 @@ function QueueCard({
                           </div>
                           <div style="height: 4px; background: #C41230;"></div>
                           <div style="padding: 24px; color: #444; font-size: 14px; line-height: 1.7;">
-                            ${emailBody || "No email content generated"}
+                            ${(emailBody || "No email content generated").replace(/\n/g, "<br>")}
                           </div>
                           <div style="height: 4px; background: #C41230;"></div>
                           <div style="background: #1B2A4A; padding: 16px 24px; text-align: center;">

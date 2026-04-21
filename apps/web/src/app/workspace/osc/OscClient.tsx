@@ -792,16 +792,37 @@ function QueueCard({
                         value={emailBody}
                         onChange={(val: string) => setEmailBody(val)}
                         modules={{
-                          toolbar: [
-                            [{ header: [1, 2, 3, false] }],
-                            [{ size: ["small", false, "large", "huge"] }],
-                            ["bold", "italic", "underline", "strike"],
-                            [{ color: [] }, { background: [] }],
-                            [{ list: "ordered" }, { list: "bullet" }],
-                            [{ align: [] }],
-                            ["link", "image"],
-                            ["clean"],
-                          ],
+                          toolbar: {
+                            container: [
+                              [{ header: [1, 2, 3, false] }],
+                              [{ size: ["small", false, "large", "huge"] }],
+                              ["bold", "italic", "underline"],
+                              [{ color: [] }, { background: [] }],
+                              [{ list: "ordered" }, { list: "bullet" }],
+                              ["link", "image"],
+                              ["clean"],
+                            ],
+                            handlers: {
+                              link: function(this: { quill: { getSelection: () => { index: number; length: number } | null; insertText: (i: number, t: string, o: string, v: string) => void; formatText: (i: number, l: number, f: string, v: string) => void } }) {
+                                const url = window.prompt("Enter URL:");
+                                if (url) {
+                                  const sel = this.quill.getSelection();
+                                  if (sel && sel.length > 0) {
+                                    this.quill.formatText(sel.index, sel.length, "link", url);
+                                  } else if (sel) {
+                                    this.quill.insertText(sel.index, url, "link", url);
+                                  }
+                                }
+                              },
+                              image: function(this: { quill: { getSelection: () => { index: number } | null; insertEmbed: (i: number, t: string, v: string) => void } }) {
+                                const url = window.prompt("Enter image URL:");
+                                if (url) {
+                                  const sel = this.quill.getSelection();
+                                  if (sel) this.quill.insertEmbed(sel.index, "image", url);
+                                }
+                              },
+                            },
+                          },
                         }}
                         placeholder="Compose email..."
                       />
@@ -816,6 +837,33 @@ function QueueCard({
                     </div>
                   )}
 
+                  {/* File Attachments */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    {emailAttachments.map((att, i) => (
+                      <span key={i} style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        padding: "4px 10px", borderRadius: 4, backgroundColor: "#18181b",
+                        border: "1px solid #27272a", fontSize: 11, color: "#a1a1aa",
+                      }}>
+                        {att.type === "pdf" ? "📄" : att.type === "doc" ? "📝" : att.type === "xls" ? "📊" : att.type === "image" ? "🖼" : "📎"} {att.label}
+                        <span onClick={() => setEmailAttachments(prev => prev.filter((_, j) => j !== i))}
+                          style={{ cursor: "pointer", color: "#52525b", marginLeft: 2, fontSize: 12 }}>✕</span>
+                      </span>
+                    ))}
+                    <button onClick={() => {
+                      const url = window.prompt("Enter file URL (PDF, Word, Excel, image):");
+                      if (!url) return;
+                      const ext = url.split(".").pop()?.toLowerCase() ?? "";
+                      const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image" };
+                      const type = typeMap[ext] ?? "file";
+                      const label = url.split("/").pop()?.substring(0, 30) ?? "File";
+                      setEmailAttachments(prev => [...prev, { type, label, url }]);
+                    }} style={{
+                      padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
+                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 4,
+                    }}>📎 Attach File</button>
+                  </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => setEmailEditing(!emailEditing)} style={{
                       padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",

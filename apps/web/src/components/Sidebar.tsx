@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
@@ -32,7 +33,7 @@ export const NAV_ITEMS = [
   { icon: "◷", label: "Calendar",        href: "/calendar",            group: "tools" },
   { icon: "⟳", label: "Cron",            href: "/cron",               group: "tools" },
   { icon: "◉", label: "Notifications",   href: "#",                   group: "tools" },
-  { icon: "⚙", label: "Settings ▾",      href: "/settings",           group: "tools" },
+  { icon: "⚙", label: "Settings",         href: "/settings",           group: "tools" },
   { icon: "", label: "Templates",       href: "/settings/templates",  group: "tools" },
   { icon: "", label: "Profile",          href: "/settings/profile",    group: "tools" },
   { icon: "", label: "AI & Automation",  href: "/settings/automation", group: "tools" },
@@ -53,6 +54,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { filter } = useGlobalFilter();
 
   return (
@@ -126,6 +128,50 @@ export default function Sidebar() {
                   {GROUP_LABELS[item.group]}
                 </div>
               )}
+              {/* Settings toggle or regular link */}
+              {item.label === "Settings" ? (
+                <div
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "6px 10px",
+                    borderRadius: 3,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    marginBottom: 1,
+                    borderLeft: isActive ? "3px solid #59a6bd" : "3px solid transparent",
+                    background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
+                    color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
+                    paddingLeft: 7,
+                  }}
+                >
+                  <span style={{ fontSize: 13, width: 16, textAlign: "center" as const, opacity: isActive ? 1 : 0.7, flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", transition: "transform 0.2s", transform: settingsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+                </div>
+              ) : item.href.startsWith("/settings/") ? (
+                settingsOpen ? (
+                  <Link
+                    href={item.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "5px 10px 5px 36px",
+                      borderRadius: 3,
+                      fontSize: 12,
+                      textDecoration: "none",
+                      marginBottom: 1,
+                      borderLeft: isActive ? "3px solid #59a6bd" : "3px solid transparent",
+                      background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
+                      color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
+                      paddingLeft: 33,
+                    }}
+                  >{item.label}</Link>
+                ) : null
+              ) : (
               <Link
                 href={item.href === "#" ? "#" : (() => {
                 const [basePath, itemQuery] = item.href.split("?");
@@ -145,14 +191,14 @@ export default function Sidebar() {
                   gap: 10,
                   padding: "6px 10px",
                   borderRadius: 3,
-                  fontSize: item.href.startsWith("/settings/") ? 12 : 13,
+                  fontSize: 13,
                   textDecoration: "none",
                   transition: "background 0.1s, color 0.1s",
                   marginBottom: 1,
                   borderLeft: isActive ? "3px solid #59a6bd" : "3px solid transparent",
                   background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
                   color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
-                  paddingLeft: item.href.startsWith("/settings/") ? 24 : 7, // indent sub-items
+                  paddingLeft: 7,
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -180,6 +226,7 @@ export default function Sidebar() {
                 </span>
                 {item.label}
               </Link>
+              )}
             </div>
           );
         })}

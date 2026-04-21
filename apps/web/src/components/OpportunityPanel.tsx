@@ -414,6 +414,13 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
     // Update local secondary state
     setSecondary({ email_secondary: editEmail2 || null, phone_secondary: editPhone2 || null });
+    // Update local display values to reflect the save
+    if (opportunity) {
+      (opportunity as unknown as Record<string, unknown>).first_name = editFirstName;
+      (opportunity as unknown as Record<string, unknown>).last_name = editLastName;
+      (opportunity as unknown as Record<string, unknown>).email = editEmail || null;
+      (opportunity as unknown as Record<string, unknown>).phone = editPhone || null;
+    }
     setSaving(false);
     setEditing(false);
   }, [opportunity?.contact_id, editFirstName, editLastName, editEmail, editPhone, editFirstName2, editLastName2, editEmail2, editPhone2, secondaryMember]);

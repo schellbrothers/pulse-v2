@@ -38,14 +38,29 @@ const CHANNELS: { key: Channel; label: string; description: string }[] = [
 ];
 
 const MERGE_VARS = [
-  "{{first_name}}",
-  "{{community_name}}",
+  // Contact
+  "{{first_name}}", "{{last_name}}", "{{email}}", "{{phone}}",
+  // Community
+  "{{community_name}}", "{{community_city}}", "{{community_state}}",
+  "{{community_description}}", "{{community_url}}", "{{community_amenities}}",
+  // Division
   "{{division_name}}",
-  "{{osc_name}}",
-  "{{osc_phone}}",
-  "{{osc_email}}",
-  "{{plans_from_price}}",
-  "{{available_lots}}",
+  // Pricing
+  "{{price_from}}", "{{price_to}}", "{{price_range}}",
+  // HOA
+  "{{hoa_fee}}", "{{hoa_display}}",
+  // Lots
+  "{{available_lots}}", "{{sold_lots}}", "{{total_lots}}",
+  // Plans
+  "{{plan_count}}", "{{plan_price_min}}", "{{plan_price_max}}",
+  // Schools
+  "{{school_district}}",
+  // Type
+  "{{is_55_plus}}",
+  // Sales
+  "{{sales_phone}}",
+  // Team
+  "{{osc_name}}", "{{osc_phone}}", "{{osc_email}}", "{{csm_name}}",
 ];
 
 const SAMPLE_DATA: Record<string, string> = {

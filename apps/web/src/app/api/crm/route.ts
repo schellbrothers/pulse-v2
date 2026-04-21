@@ -66,9 +66,40 @@ async function evaluateQueueItem(opportunity_id: string, ctx: ActionContext) {
   
   const { data: opp } = await supabase
     .from("opportunities")
-    .select("*, contacts(first_name, last_name, email, phone), communities(name, price_from)")
+    .select("*, contacts(first_name, last_name, email, phone), communities(name, price_from, price_to, hoa_fee, hoa_period, is_55_plus, city, state, school_district, amenities, sales_phone, page_url, short_description, status), divisions(name, region)")
     .eq("id", opportunity_id)
     .single();
+
+  // Get lot stats for this community
+  let lotsAvailable = 0, lotsSold = 0, lotsTotal = 0;
+  if (opp?.community_id) {
+    const { data: lotData } = await supabase
+      .from("lots")
+      .select("is_available, lot_status")
+      .eq("community_id", opp.community_id);
+    if (lotData) {
+      lotsTotal = lotData.length;
+      lotsAvailable = lotData.filter((l: Record<string, unknown>) => l.is_available).length;
+      lotsSold = lotData.filter((l: Record<string, unknown>) => l.lot_status === "sold").length;
+    }
+  }
+
+  // Get plan count + price range
+  let planCount = 0, planPriceMin = 0, planPriceMax = 0;
+  if (opp?.community_id) {
+    const { data: plans } = await supabase
+      .from("floor_plans")
+      .select("net_price, base_price")
+      .eq("community_id", opp.community_id);
+    if (plans && plans.length > 0) {
+      planCount = plans.length;
+      const prices = plans.map((p: Record<string, unknown>) => (p.net_price ?? p.base_price ?? 0) as number).filter((p: number) => p > 0);
+      if (prices.length > 0) {
+        planPriceMin = Math.min(...prices);
+        planPriceMax = Math.max(...prices);
+      }
+    }
+  }
 
   if (!opp) return { success: false, error: "Opportunity not found" };
 
@@ -260,9 +291,40 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
   const supabase = getSupabase();
   const { data: opp } = await supabase
     .from("opportunities")
-    .select("*, contacts(first_name, last_name, email, phone), communities(name, price_from)")
+    .select("*, contacts(first_name, last_name, email, phone), communities(name, price_from, price_to, hoa_fee, hoa_period, is_55_plus, city, state, school_district, amenities, sales_phone, page_url, short_description, status), divisions(name, region)")
     .eq("id", opportunity_id)
     .single();
+
+  // Get lot stats for this community
+  let lotsAvailable = 0, lotsSold = 0, lotsTotal = 0;
+  if (opp?.community_id) {
+    const { data: lotData } = await supabase
+      .from("lots")
+      .select("is_available, lot_status")
+      .eq("community_id", opp.community_id);
+    if (lotData) {
+      lotsTotal = lotData.length;
+      lotsAvailable = lotData.filter((l: Record<string, unknown>) => l.is_available).length;
+      lotsSold = lotData.filter((l: Record<string, unknown>) => l.lot_status === "sold").length;
+    }
+  }
+
+  // Get plan count + price range
+  let planCount = 0, planPriceMin = 0, planPriceMax = 0;
+  if (opp?.community_id) {
+    const { data: plans } = await supabase
+      .from("floor_plans")
+      .select("net_price, base_price")
+      .eq("community_id", opp.community_id);
+    if (plans && plans.length > 0) {
+      planCount = plans.length;
+      const prices = plans.map((p: Record<string, unknown>) => (p.net_price ?? p.base_price ?? 0) as number).filter((p: number) => p > 0);
+      if (prices.length > 0) {
+        planPriceMin = Math.min(...prices);
+        planPriceMax = Math.max(...prices);
+      }
+    }
+  }
 
   if (!opp) return { success: false, error: "Not found" };
 
@@ -281,14 +343,67 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
     .eq("is_default", true).eq("is_active", true);
   const allTmpl = [...(divTmpl ?? []), ...(defTmpl ?? [])];
 
+  const comm = (opp as Record<string, unknown>).communities as Record<string, unknown> | null;
+  const div = (opp as Record<string, unknown>).divisions as Record<string, unknown> | null;
+  const divisionName = (div?.name as string) ?? "our communities";
+  const priceTo = (comm?.price_to as number) ?? 0;
+  const hoaFee = comm?.hoa_fee as number | null;
+  const hoaPeriod = (comm?.hoa_period as string) ?? "mo";
+  const is55Plus = comm?.is_55_plus as boolean ?? false;
+  const commCity = (comm?.city as string) ?? "";
+  const commState = (comm?.state as string) ?? "";
+  const schoolDistrict = (comm?.school_district as string) ?? "";
+  const commAmenities = (comm?.amenities as string) ?? "";
+  const salesPhone = (comm?.sales_phone as string) ?? "";
+  const commUrl = (comm?.page_url as string) ?? "";
+  const commDescription = (comm?.short_description as string) ?? "";
+  const commStatus = (comm?.status as string) ?? "";
+
   function render(s: string): string {
-    return s.replace(/\{\{first_name\}\}/g, firstName)
+    return s
+      // Contact
+      .replace(/\{\{first_name\}\}/g, firstName)
+      .replace(/\{\{last_name\}\}/g, (opp as any).contacts?.last_name ?? "")
+      .replace(/\{\{email\}\}/g, (opp as any).contacts?.email ?? "")
+      .replace(/\{\{phone\}\}/g, (opp as any).contacts?.phone ?? "")
+      // Community
       .replace(/\{\{community_name\}\}/g, communityName)
-      .replace(/\{\{division_name\}\}/g, "our communities")
+      .replace(/\{\{community_city\}\}/g, commCity)
+      .replace(/\{\{community_state\}\}/g, commState)
+      .replace(/\{\{community_status\}\}/g, commStatus)
+      .replace(/\{\{community_description\}\}/g, commDescription)
+      .replace(/\{\{community_url\}\}/g, commUrl ? `https://schellbrothers.com${commUrl}` : "https://schellbrothers.com")
+      .replace(/\{\{community_amenities\}\}/g, commAmenities)
+      // Division
+      .replace(/\{\{division_name\}\}/g, divisionName)
+      // Pricing
+      .replace(/\{\{price_from\}\}/g, priceFrom ? `$${(priceFrom/1000).toFixed(0)}K` : "")
+      .replace(/\{\{price_to\}\}/g, priceTo ? `$${(priceTo/1000).toFixed(0)}K` : "")
+      .replace(/\{\{price_range\}\}/g, priceFrom && priceTo ? `$${(priceFrom/1000).toFixed(0)}K - $${(priceTo/1000).toFixed(0)}K` : priceFrom ? `from $${(priceFrom/1000).toFixed(0)}K` : "")
+      .replace(/\{\{plans_from_price\}\}/g, priceFrom ? `$${(priceFrom/1000).toFixed(0)}K` : "competitive pricing")
+      // HOA
+      .replace(/\{\{hoa_fee\}\}/g, hoaFee ? `$${hoaFee}` : "")
+      .replace(/\{\{hoa_period\}\}/g, hoaPeriod)
+      .replace(/\{\{hoa_display\}\}/g, hoaFee ? `$${hoaFee}/${hoaPeriod}` : "")
+      // Lots
+      .replace(/\{\{available_lots\}\}/g, String(lotsAvailable))
+      .replace(/\{\{sold_lots\}\}/g, String(lotsSold))
+      .replace(/\{\{total_lots\}\}/g, String(lotsTotal))
+      .replace(/\{\{lots_remaining\}\}/g, String(lotsAvailable))
+      // Plans
+      .replace(/\{\{plan_count\}\}/g, String(planCount))
+      .replace(/\{\{plan_price_min\}\}/g, planPriceMin ? `$${(planPriceMin/1000).toFixed(0)}K` : "")
+      .replace(/\{\{plan_price_max\}\}/g, planPriceMax ? `$${(planPriceMax/1000).toFixed(0)}K` : "")
+      // Schools
+      .replace(/\{\{school_district\}\}/g, schoolDistrict)
+      // 55+
+      .replace(/\{\{is_55_plus\}\}/g, is55Plus ? "55+ community" : "all-ages community")
+      // Sales
+      .replace(/\{\{sales_phone\}\}/g, salesPhone)
+      // OSC (will be replaced with actual user data when we have auth)
       .replace(/\{\{osc_name\}\}/g, "Your Online Sales Consultant")
       .replace(/\{\{osc_phone\}\}/g, "").replace(/\{\{osc_email\}\}/g, "")
-      .replace(/\{\{plans_from_price\}\}/g, priceFrom ? `$${(priceFrom/1000).toFixed(0)}K` : "competitive pricing")
-      .replace(/\{\{available_lots\}\}/g, "available");
+      .replace(/\{\{csm_name\}\}/g, "Your Community Sales Manager");
   }
 
   // Priority: div+formType > generic+formType > div+default > generic+default

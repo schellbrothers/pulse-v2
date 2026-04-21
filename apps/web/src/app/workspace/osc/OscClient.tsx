@@ -793,8 +793,12 @@ function QueueCard({
                         onChange={(val: string) => setEmailBody(val)}
                         modules={{
                           toolbar: [
-                            ["bold", "italic", "underline"],
+                            [{ header: [1, 2, 3, false] }],
+                            [{ size: ["small", false, "large", "huge"] }],
+                            ["bold", "italic", "underline", "strike"],
+                            [{ color: [] }, { background: [] }],
                             [{ list: "ordered" }, { list: "bullet" }],
+                            [{ align: [] }],
                             ["link", "image"],
                             ["clean"],
                           ],

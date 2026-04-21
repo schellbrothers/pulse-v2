@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false, loading: () => <div style={{ height: 150, backgroundColor: "#09090b", border: "1px solid #27272a", borderRadius: 4 }} /> });
-import "react-quill-new/dist/quill.bubble.css";
+import "react-quill-new/dist/quill.snow.css";
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -806,43 +806,6 @@ function QueueCard({
                     </div>
                   )}
 
-                  {/* Attachments */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                    {emailAttachments.map((att, i) => (
-                      <span key={i} style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        padding: "3px 8px", borderRadius: 4, backgroundColor: "#18181b",
-                        border: "1px solid #27272a", fontSize: 10, color: "#a1a1aa",
-                      }}>
-                        {att.type === "link" ? "🔗" : att.type === "photo" ? "🖼" : "📎"} {att.label}
-                        <span onClick={() => setEmailAttachments(prev => prev.filter((_, j) => j !== i))}
-                          style={{ cursor: "pointer", color: "#71717a", marginLeft: 2 }}>✕</span>
-                      </span>
-                    ))}
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button onClick={() => {
-                        const url = prompt("Enter link URL:");
-                        if (url) setEmailAttachments(prev => [...prev, { type: "link", label: url.replace(/https?:\/\//, "").substring(0, 30), url }]);
-                      }} style={{
-                        padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
-                        backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
-                      }}>🔗 Link</button>
-                      <button onClick={() => {
-                        const url = prompt("Enter photo URL:");
-                        if (url) setEmailAttachments(prev => [...prev, { type: "photo", label: "Photo", url }]);
-                      }} style={{
-                        padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
-                        backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
-                      }}>🖼 Photo</button>
-                      <button onClick={() => {
-                        const url = prompt("Enter document URL:");
-                        if (url) setEmailAttachments(prev => [...prev, { type: "doc", label: "Document", url }]);
-                      }} style={{
-                        padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
-                        backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
-                      }}>📎 Doc</button>
-                    </div>
-                  </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => setEmailEditing(!emailEditing)} style={{
                       padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",

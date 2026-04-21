@@ -179,6 +179,21 @@ async function sendEmail(
   contact_id: string, opportunity_id: string | null, subject: string, body: string, ctx: ActionContext
 ) {
   const supabase = getSupabase();
+  
+  // Validate email before sending
+  const { data: contact } = await supabase.from("contacts").select("email").eq("id", contact_id).single();
+  const email = (contact?.email ?? "").trim().toLowerCase();
+  if (email) {
+    const domain = email.split("@")[1] ?? "";
+    const disposable = new Set(["mailinator.com","guerrillamail.com","tempmail.com","yopmail.com","sharklasers.com"]);
+    if (disposable.has(domain)) {
+      // Auto-delete junk contact
+      await supabase.from("opportunities").update({ crm_stage: "deleted", is_active: false }).eq("contact_id", contact_id);
+      await logAction("auto_delete_junk", "contact", contact_id, { ...ctx, agent_name: "email_validator" }, { reason: `Disposable domain: ${domain}` });
+      return { success: false, error: `Junk email detected (${domain}). Contact auto-deleted.` };
+    }
+  }
+  
   const { data, error } = await supabase.from("activities").insert({
     org_id: ORG_ID, contact_id, opportunity_id,
     channel: "email", direction: "outbound", type: "email",
@@ -271,6 +286,80 @@ async function markRead(activity_id: string, ctx: ActionContext) {
 // API HANDLER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+
+async function cleanseJunk(ctx: ActionContext) {
+  const supabase = getSupabase();
+  
+  // Get all contacts with their emails
+  const { data: contacts } = await supabase
+    .from("contacts")
+    .select("id, email, first_name, last_name");
+  
+  if (!contacts) return { success: false, error: "Failed to fetch contacts" };
+
+  // Import validation
+  const disposable = new Set(["mailinator.com","guerrillamail.com","tempmail.com","yopmail.com","sharklasers.com","10minutemail.com","trashmail.com","fakeinbox.com","maildrop.cc"]);
+  const fakePatterns = [/^test@/i, /^fake@/i, /^asdf/i, /^aaa+@/i, /^xxx+@/i, /^noreply@/i];
+  
+  const junk: { id: string; email: string | null; name: string; reason: string }[] = [];
+  
+  for (const c of contacts) {
+    const email = (c.email ?? "").trim().toLowerCase();
+    const name = `${c.first_name} ${c.last_name}`.trim().toLowerCase();
+    
+    // Check email
+    if (email) {
+      const domain = email.split("@")[1] ?? "";
+      if (disposable.has(domain)) {
+        junk.push({ id: c.id, email: c.email, name: `${c.first_name} ${c.last_name}`, reason: `Disposable domain: ${domain}` });
+        continue;
+      }
+      for (const p of fakePatterns) {
+        if (p.test(email)) {
+          junk.push({ id: c.id, email: c.email, name: `${c.first_name} ${c.last_name}`, reason: "Fake email pattern" });
+          break;
+        }
+      }
+    }
+    
+    // Check name
+    if (name.length <= 1 || name === "test" || name === "asdf") {
+      junk.push({ id: c.id, email: c.email, name: `${c.first_name} ${c.last_name}`, reason: "Junk name" });
+    }
+  }
+  
+  // Dedupe
+  const seen = new Set<string>();
+  const unique = junk.filter(j => { if (seen.has(j.id)) return false; seen.add(j.id); return true; });
+  
+  // Auto-delete: move their opportunities to "deleted" stage
+  let deleted = 0;
+  for (const j of unique) {
+    const { data: opps } = await supabase
+      .from("opportunities")
+      .select("id, crm_stage")
+      .eq("contact_id", j.id)
+      .neq("crm_stage", "deleted");
+    
+    if (opps && opps.length > 0) {
+      for (const opp of opps) {
+        await supabase.from("opportunities").update({ crm_stage: "deleted", is_active: false }).eq("id", opp.id);
+        await supabase.from("stage_transitions").insert({
+          org_id: ORG_ID, opportunity_id: opp.id, contact_id: j.id,
+          from_stage: opp.crm_stage, to_stage: "deleted",
+          triggered_by: ctx.triggered_by, agent_name: ctx.agent_name ?? "cleanse_agent",
+          reason: j.reason,
+        });
+        deleted++;
+      }
+    }
+  }
+  
+  await logAction("cleanse_junk", "system", "batch", ctx, { found: unique.length, deleted, junk: unique });
+  
+  return { success: true, data: { found: unique.length, deleted, junk: unique } };
+}
+
 const TOOLS: Record<string, (params: Record<string, unknown>, ctx: ActionContext) => Promise<Record<string, unknown>>> = {
   evaluate_queue_item: (p, c) => evaluateQueueItem(p.opportunity_id as string, c),
   assign_opportunity: (p, c) => assignOpportunity(p.opportunity_id as string, p.new_stage as string, p.community_id as string | null, p.reason as string, c),
@@ -281,6 +370,7 @@ const TOOLS: Record<string, (params: Record<string, unknown>, ctx: ActionContext
   demote_opportunity: (p, c) => assignOpportunity(p.opportunity_id as string, p.new_stage as string, undefined as unknown as string, p.reason as string, c),
   update_contact: (p, c) => updateContact(p.contact_id as string, p.updates as Record<string, unknown>, c),
   mark_read: (p, c) => markRead(p.activity_id as string, c),
+  cleanse_junk: (_p, c) => cleanseJunk(c),
 };
 
 export async function POST(request: Request) {

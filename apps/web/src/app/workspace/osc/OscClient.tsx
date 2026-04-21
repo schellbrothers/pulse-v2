@@ -850,19 +850,38 @@ function QueueCard({
                           style={{ cursor: "pointer", color: "#52525b", marginLeft: 2, fontSize: 12 }}>✕</span>
                       </span>
                     ))}
+                    <label style={{
+                      padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
+                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                    }}>
+                      📁 Upload File
+                      <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt" multiple hidden onChange={e => {
+                        const files = e.target.files;
+                        if (!files) return;
+                        Array.from(files).forEach(file => {
+                          const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+                          const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", ppt: "doc", pptx: "doc", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image", csv: "xls", txt: "file" };
+                          const type = typeMap[ext] ?? "file";
+                          const url = URL.createObjectURL(file);
+                          setEmailAttachments(prev => [...prev, { type, label: file.name.substring(0, 35), url }]);
+                        });
+                        e.target.value = "";
+                      }} />
+                    </label>
                     <button onClick={() => {
-                      const url = window.prompt("Enter file URL (PDF, Word, Excel, image):");
+                      const url = window.prompt("Enter file URL:");
                       if (!url) return;
                       const ext = url.split(".").pop()?.toLowerCase() ?? "";
-                      const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image" };
+                      const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", png: "image", jpg: "image", jpeg: "image" };
                       const type = typeMap[ext] ?? "file";
                       const label = url.split("/").pop()?.substring(0, 30) ?? "File";
                       setEmailAttachments(prev => [...prev, { type, label, url }]);
                     }} style={{
                       padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
                       backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
-                      display: "flex", alignItems: "center", gap: 4,
-                    }}>📎 Attach File</button>
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                    }}>🔗 URL</button>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => setEmailEditing(!emailEditing)} style={{

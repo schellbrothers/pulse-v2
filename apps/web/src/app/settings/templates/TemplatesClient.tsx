@@ -288,10 +288,12 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
         } else if (isScopedSave) {
           // Create a new scoped template (upsert)
           const insertPayload: Record<string, unknown> = {
+            org_id: "00000000-0000-0000-0000-000000000001",
             form_type_code: tpl.form_type_code,
             channel: tpl.channel,
             body: edited.body,
             is_default: false,
+            is_active: true,
             division_id: scope.communityId
               ? (communities.find((c) => c.id === scope.communityId)?.division_id ?? scope.divisionId)
               : scope.divisionId,

@@ -34,10 +34,15 @@ interface CommActivity {
   responded_at: string | null;
   is_urgent: boolean | null;
   sentiment: string | null;
+  duration_seconds: number | null;
+  transcript_id: string | null;
+  type: string | null;
+  from_number: string | null;
+  to_number: string | null;
   contacts: { first_name: string; last_name: string; email: string | null; phone: string | null } | null;
 }
 
-type CommHubTab = "urgent" | "needs_response" | "call" | "text" | "email";
+type CommHubTab = "urgent" | "needs_response" | "call" | "text" | "email" | "meeting";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -47,6 +52,7 @@ const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string }[] = [
   { id: "call", icon: "📞", label: "Call" },
   { id: "text", icon: "💬", label: "Text" },
   { id: "email", icon: "📧", label: "Email" },
+  { id: "meeting", icon: "🎥", label: "Meeting" },
 ];
 
 const CHANNEL_META: Record<string, { icon: string; label: string; color: string; bg: string }> = {
@@ -83,6 +89,26 @@ function formatTimestamp(iso: string): string {
 
 function getChannelMeta(ch: string | null) {
   return CHANNEL_META[ch ?? ""] ?? { icon: "📬", label: ch ?? "Unknown", color: "#a1a1aa", bg: "#27272a" };
+}
+
+function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds || seconds <= 0) return "0s";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m === 0) return `${s}s`;
+  return `${m}m ${s.toString().padStart(2, "0")}s`;
+}
+
+function getCallPreview(activity: CommActivity): string {
+  const dur = formatDuration(activity.duration_seconds);
+  const dir = activity.direction === "inbound" ? "Inbound" : "Outbound";
+  return `${dir} Call — ${dur}`;
+}
+
+function getMeetingPreview(activity: CommActivity): string {
+  const dur = formatDuration(activity.duration_seconds);
+  const topic = activity.subject ?? "Meeting";
+  return `${topic} — ${dur}`;
 }
 
 function generateAiReply(activity: CommActivity): string {
@@ -131,6 +157,25 @@ function ActivityCard({
   const [replyChannel, setReplyChannel] = useState(activity.channel ?? "email");
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [transcriptText, setTranscriptText] = useState<string | null>(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+
+  async function loadTranscript() {
+    if (transcriptText || transcriptLoading || !activity.transcript_id) return;
+    setTranscriptLoading(true);
+    try {
+      const { data } = await supabase
+        .from("transcripts")
+        .select("raw_text")
+        .eq("id", activity.transcript_id)
+        .single();
+      setTranscriptText(data?.raw_text ?? "No transcript text available.");
+    } catch {
+      setTranscriptText("Failed to load transcript.");
+    }
+    setTranscriptLoading(false);
+  }
 
   // Pre-fill AI reply when expanded
   useEffect(() => {
@@ -238,16 +283,52 @@ function ActivityCard({
           )}
         </div>
 
-        {/* Message preview */}
+        {/* Message preview — channel-specific rendering */}
         <div style={{
           fontSize: 13, color: "#a1a1aa", lineHeight: 1.5,
           padding: "6px 10px", backgroundColor: "#0f0f12", borderRadius: 4,
           overflow: "hidden", textOverflow: "ellipsis",
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
         }}>
-          {activity.subject && <span style={{ fontWeight: 500, color: "#d4d4d8", overflow: "hidden", textOverflow: "ellipsis" }}>{activity.subject} — </span>}
-          {activity.body ?? "No content"}
+          {(activity.channel === "phone" || activity.channel === "call") ? (
+            <>
+              <span style={{ fontWeight: 500, color: "#60a5fa" }}>
+                {getCallPreview(activity)}
+              </span>
+              {activity.from_number && activity.to_number && (
+                <span style={{ color: "#52525b", fontSize: 11, marginLeft: 8 }}>
+                  {activity.from_number} → {activity.to_number}
+                </span>
+              )}
+            </>
+          ) : activity.channel === "sms" || activity.channel === "text" ? (
+            <>
+              <span style={{ fontWeight: 500, color: "#a78bfa" }}>💬 </span>
+              {activity.body ?? "No message content"}
+            </>
+          ) : activity.channel === "meeting" ? (
+            <>
+              <span style={{ fontWeight: 500, color: "#f472b6" }}>🎥 </span>
+              {getMeetingPreview(activity)}
+            </>
+          ) : (
+            <>
+              {activity.subject && <span style={{ fontWeight: 500, color: "#d4d4d8" }}>{activity.subject} — </span>}
+              {activity.body ?? "No content"}
+            </>
+          )}
         </div>
+
+        {/* Transcript badge */}
+        {activity.transcript_id && (
+          <div style={{
+            fontSize: 10, color: "#34d399", padding: "2px 8px",
+            backgroundColor: "#064e3b", borderRadius: 3,
+            display: "inline-flex", alignItems: "center", gap: 4, width: "fit-content",
+          }}>
+            📝 Transcript available
+          </div>
+        )}
 
         {/* AI suggestion preview (only when not expanded and needs response) */}
         {!isExpanded && needsResponse && (
@@ -311,6 +392,41 @@ function ActivityCard({
               {activity.body ?? "No content"}
             </div>
           </div>
+
+          {/* Transcript viewer */}
+          {activity.transcript_id && (
+            <div style={{
+              padding: "10px 14px", backgroundColor: "#18181b", borderRadius: 6,
+              border: "1px solid #27272a",
+            }}>
+              <button
+                onClick={() => {
+                  setShowTranscript(!showTranscript);
+                  if (!showTranscript) loadTranscript();
+                }}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "#34d399", fontSize: 12, fontWeight: 500,
+                  display: "flex", alignItems: "center", gap: 6, padding: 0,
+                }}
+              >
+                📝 {showTranscript ? "Hide Transcript" : "View Transcript"}
+                <span style={{ fontSize: 10, color: "#52525b" }}>
+                  {showTranscript ? "▲" : "▼"}
+                </span>
+              </button>
+              {showTranscript && (
+                <div style={{
+                  marginTop: 10, padding: "10px 12px",
+                  backgroundColor: "#0f0f12", borderRadius: 4,
+                  fontSize: 12, color: "#a1a1aa", lineHeight: 1.7,
+                  whiteSpace: "pre-wrap", maxHeight: 300, overflowY: "auto",
+                }}>
+                  {transcriptLoading ? "Loading transcript..." : transcriptText}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Reply area */}
           {needsResponse && (
@@ -418,7 +534,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
     let query = supabase
       .from("activities")
-      .select("id, contact_id, channel, direction, subject, body, occurred_at, is_read, read_at, needs_response, responded_at, is_urgent, sentiment, contacts(first_name, last_name, email, phone)")
+      .select("id, contact_id, channel, direction, subject, body, occurred_at, is_read, read_at, needs_response, responded_at, is_urgent, sentiment, duration_seconds, transcript_id, type, from_number, to_number, contacts(first_name, last_name, email, phone)")
       .eq("direction", "inbound")
       .order("occurred_at", { ascending: false })
       .limit(100);
@@ -482,6 +598,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     call: baseActivities.filter(a => a.channel === "phone" || a.channel === "call").length,
     text: baseActivities.filter(a => a.channel === "sms" || a.channel === "text").length,
     email: baseActivities.filter(a => a.channel === "email").length,
+    meeting: baseActivities.filter(a => a.channel === "meeting").length,
   }), [baseActivities]);
 
   const urgentCount = counts.urgent;
@@ -495,6 +612,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     else if (activeTab === "call") items = items.filter(a => a.channel === "phone" || a.channel === "call");
     else if (activeTab === "text") items = items.filter(a => a.channel === "sms" || a.channel === "text");
     else if (activeTab === "email") items = items.filter(a => a.channel === "email");
+    else if (activeTab === "meeting") items = items.filter(a => a.channel === "meeting");
 
     // Search filter
     if (searchQuery.trim()) {

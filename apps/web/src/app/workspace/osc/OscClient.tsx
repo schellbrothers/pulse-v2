@@ -126,7 +126,8 @@ interface AgentRecommendation {
 }
 
 interface GeneratedResponses {
-  email?: { subject: string; body: string; html?: string };
+  email_auto?: { subject: string; body: string; html?: string };
+  email_personal?: { subject: string; body: string; html?: string };
   sms?: { body: string };
 }
 
@@ -450,10 +451,20 @@ function QueueCard({
   const [loadingRec, setLoadingRec] = useState(false);
   const [loadingResponses, setLoadingResponses] = useState(false);
 
-  // Email state
-  const [emailSubject, setEmailSubject] = useState("");
-  const [emailBody, setEmailBody] = useState("");
-  const [emailHtml, setEmailHtml] = useState("");
+  // Auto-confirmation email state
+  const [autoSubject, setAutoSubject] = useState("");
+  const [autoBody, setAutoBody] = useState("");
+  const [autoHtml, setAutoHtml] = useState("");
+  const [autoEditing, setAutoEditing] = useState(false);
+  const [autoSent, setAutoSent] = useState(false);
+  const [autoSkipped, setAutoSkipped] = useState(false);
+  const [autoSending, setAutoSending] = useState(false);
+  const [autoCollapsed, setAutoCollapsed] = useState(false);
+
+  // Personal follow-up email state
+  const [personalSubject, setPersonalSubject] = useState("");
+  const [personalBody, setPersonalBody] = useState("");
+  const [personalHtml, setPersonalHtml] = useState("");
   // Rebuild branded HTML whenever body changes
   function rebuildEmailHtml(body: string, subject: string): string {
     return `
@@ -488,12 +499,13 @@ function QueueCard({
     </div>`;
   }
 
-  const [emailEditing, setEmailEditing] = useState(false);
-  const [emailAttachments, setEmailAttachments] = useState<{type: string; label: string; url: string}[]>([]);
+  const [personalEditing, setPersonalEditing] = useState(false);
+  const [personalAttachments, setPersonalAttachments] = useState<{type: string; label: string; url: string}[]>([]);
   const [smsAttachments, setSmsAttachments] = useState<{type: string; label: string; url: string}[]>([]);
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailSkipped, setEmailSkipped] = useState(false);
-  const [emailSending, setEmailSending] = useState(false);
+  const [personalSent, setPersonalSent] = useState(false);
+  const [personalSkipped, setPersonalSkipped] = useState(false);
+  const [personalSending, setPersonalSending] = useState(false);
+  const [personalCollapsed, setPersonalCollapsed] = useState(false);
 
   // SMS state
   const [smsBody, setSmsBody] = useState("");
@@ -501,6 +513,7 @@ function QueueCard({
   const [smsSent, setSmsSent] = useState(false);
   const [smsSkipped, setSmsSkipped] = useState(false);
   const [smsSending, setSmsSending] = useState(false);
+  const [smsCollapsed, setSmsCollapsed] = useState(false);
 
   const webForm = isWebFormSource(item);
   const bucket = classifyBucket(item);
@@ -540,19 +553,28 @@ function QueueCard({
       generateResponse(item.id, { triggered_by: "human" }).then(result => {
         if (result.success && result.data) {
           const gen: GeneratedResponses = {};
-          if (result.data.email) {
-            const e = result.data.email as { subject?: string; body?: string; html?: string };
-            gen.email = { subject: e.subject ?? "", body: e.body ?? "", html: e.html ?? "" };
+          if (result.data.email_auto) {
+            const e = result.data.email_auto as { subject?: string; body?: string; html?: string };
+            gen.email_auto = { subject: e.subject ?? "", body: e.body ?? "", html: e.html ?? "" };
+          }
+          if (result.data.email_personal) {
+            const e = result.data.email_personal as { subject?: string; body?: string; html?: string };
+            gen.email_personal = { subject: e.subject ?? "", body: e.body ?? "", html: e.html ?? "" };
           }
           if (result.data.sms) {
             const s = result.data.sms as { body?: string };
             gen.sms = { body: s.body ?? "" };
           }
           setResponses(gen);
-          if (gen.email) {
-            setEmailSubject(gen.email.subject);
-            setEmailBody(gen.email.body);
-            if (gen.email.html) setEmailHtml(gen.email.html);
+          if (gen.email_auto) {
+            setAutoSubject(gen.email_auto.subject);
+            setAutoBody(gen.email_auto.body);
+            if (gen.email_auto.html) setAutoHtml(gen.email_auto.html);
+          }
+          if (gen.email_personal) {
+            setPersonalSubject(gen.email_personal.subject);
+            setPersonalBody(gen.email_personal.body);
+            if (gen.email_personal.html) setPersonalHtml(gen.email_personal.html);
           }
           if (gen.sms) {
             setSmsBody(gen.sms.body);
@@ -563,26 +585,49 @@ function QueueCard({
     }
   }, [expanded, item.id, recommendation, loadingRec, webForm, responses, loadingResponses, item.opportunity_source, item.source, item.community_id, item.communities?.name]);
 
-  // Send email via crm-api
-  async function handleSendEmail() {
+  // Send auto-confirmation email via crm-api (SendGrid noreply@)
+  async function handleSendAutoEmail() {
     if (!item.contacts?.email) return;
-    setEmailSending(true);
+    setAutoSending(true);
     const result = await sendEmail(
       item.contact_id,
       item.id,
-      emailSubject,
-      emailBody,
+      autoSubject,
+      autoHtml || autoBody,
       {
         triggered_by: "human",
         confidence_score: recommendation?.confidence ? recommendation.confidence / 100 : undefined,
-        reasoning: "OSC sent email response to web form",
+        reasoning: "OSC sent auto-confirmation email",
       }
     );
-    setEmailSending(false);
+    setAutoSending(false);
     if (result.success) {
-      setEmailSent(true);
+      setAutoSent(true);
     } else {
-      alert(`Email send failed: ${result.error ?? "Unknown error"}`);
+      alert(`Auto-confirmation send failed: ${result.error ?? "Unknown error"}`);
+    }
+  }
+
+  // Send personal follow-up email via crm-api
+  async function handleSendPersonalEmail() {
+    if (!item.contacts?.email) return;
+    setPersonalSending(true);
+    const result = await sendEmail(
+      item.contact_id,
+      item.id,
+      personalSubject,
+      personalHtml || personalBody,
+      {
+        triggered_by: "human",
+        confidence_score: recommendation?.confidence ? recommendation.confidence / 100 : undefined,
+        reasoning: "OSC sent personal follow-up email",
+      }
+    );
+    setPersonalSending(false);
+    if (result.success) {
+      setPersonalSent(true);
+    } else {
+      alert(`Personal email send failed: ${result.error ?? "Unknown error"}`);
     }
   }
 
@@ -786,242 +831,337 @@ function QueueCard({
             </div>
           )}
 
-          {/* ── Web Form: Email Response ── */}
+
+          {/* ── Web Form: Auto-Confirmation Email ── */}
           {webForm && item.contacts?.email && (
             <div style={{
               padding: "12px 14px", backgroundColor: "#18181b", border: "1px solid #27272a",
-              borderRadius: 8, opacity: emailSent || emailSkipped ? 0.5 : 1,
+              borderRadius: 8, opacity: autoSent || autoSkipped ? 0.5 : 1,
             }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  📧 Email Response
+              <div onClick={() => !autoSent && !autoSkipped && setAutoCollapsed(!autoCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: autoCollapsed ? 0 : 8, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📧 Auto-Confirmation
+                  </div>
+                  <span style={{ fontSize: 9, color: "#52525b", fontStyle: "italic" }}>SendGrid noreply@</span>
                 </div>
-                {emailSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
-                {emailSkipped && <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600 }}>Skipped</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {autoSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
+                  {autoSkipped && <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600 }}>Skipped</span>}
+                  {!autoSent && !autoSkipped && <span style={{ fontSize: 10, color: "#52525b" }}>{autoCollapsed ? "▼" : "▲"}</span>}
+                </div>
               </div>
-              {loadingResponses ? (
-                <div style={{ fontSize: 12, color: "#52525b" }}>Generating email...</div>
-              ) : emailSent || emailSkipped ? null : (
-                <>
-                  <div style={{ marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.email}</span>
-                  </div>
-                  <div style={{ marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
-                    {emailEditing ? (
-                      <input
-                        value={emailSubject}
-                        onChange={e => setEmailSubject(e.target.value)}
-                        style={{
-                          width: "100%", padding: "6px 10px", backgroundColor: "#09090b", border: "1px solid #3f3f46",
-                          borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none", marginTop: 2,
-                        }}
-                      />
-                    ) : (
-                      <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2 }}>{emailSubject || "—"}</div>
-                    )}
-                  </div>
-                  {emailEditing ? (
-                    <div className="quill-dark" style={{ marginBottom: 8 }}>
-                      <ReactQuill
-                        theme="snow"
-                        value={emailBody}
-                        onChange={(val: string) => setEmailBody(val)}
-                        modules={{
-                          toolbar: {
-                            container: [
-                              [{ header: [1, 2, 3, false] }],
-                              [{ size: ["small", false, "large", "huge"] }],
-                              ["bold", "italic", "underline"],
-                              [{ color: [] }, { background: [] }],
-                              [{ list: "ordered" }, { list: "bullet" }],
-                              ["link", "image"],
-                              ["clean"],
-                            ],
-                            handlers: {
-                              link: function(this: { quill: { getSelection: () => { index: number; length: number } | null; insertText: (i: number, t: string, o: string, v: string) => void; formatText: (i: number, l: number, f: string, v: string) => void } }) {
-                                const url = window.prompt("Enter URL:");
-                                if (url) {
-                                  const sel = this.quill.getSelection();
-                                  if (sel && sel.length > 0) {
-                                    this.quill.formatText(sel.index, sel.length, "link", url);
-                                  } else if (sel) {
-                                    this.quill.insertText(sel.index, url, "link", url);
-                                  }
-                                }
-                              },
-                              image: function(this: { quill: { getSelection: () => { index: number } | null; insertEmbed: (i: number, t: string, v: string) => void } }) {
-                                const url = window.prompt("Enter image URL:");
-                                if (url) {
-                                  const sel = this.quill.getSelection();
-                                  if (sel) this.quill.insertEmbed(sel.index, "image", url);
-                                }
-                              },
-                            },
-                          },
-                        }}
-                        placeholder="Compose email..."
-                      />
+              {!autoCollapsed && !autoSent && !autoSkipped && (
+                loadingResponses ? (
+                  <div style={{ fontSize: 12, color: "#52525b" }}>Generating auto-confirmation...</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>Sends instantly on form submit. Branded confirmation from noreply@schellbrothers.com.</div>
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.email}</span>
                     </div>
-                  ) : (
-                    <div style={{
-                        marginBottom: 8, overflow: "auto", borderRadius: 4,
-                      }} dangerouslySetInnerHTML={{ __html: emailHtml || `<div style="padding: 16px; color: #71717a; text-align: center;">Loading preview...</div>` }} />
-                  )}
-
-                  {/* File Attachments */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                    {emailAttachments.map((att, i) => (
-                      <span key={i} style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        padding: "4px 10px", borderRadius: 4, backgroundColor: "#18181b",
-                        border: "1px solid #27272a", fontSize: 11, color: "#a1a1aa",
-                      }}>
-                        {att.type === "pdf" ? "📄" : att.type === "doc" ? "📝" : att.type === "xls" ? "📊" : att.type === "image" ? "🖼" : "📎"} {att.label}
-                        <span onClick={() => setEmailAttachments(prev => prev.filter((_, j) => j !== i))}
-                          style={{ cursor: "pointer", color: "#52525b", marginLeft: 2, fontSize: 12 }}>✕</span>
-                      </span>
-                    ))}
-                    <label style={{
-                      padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                    }}>
-                      📁 Upload File
-                      <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt" multiple hidden onChange={e => {
-                        const files = e.target.files;
-                        if (!files) return;
-                        Array.from(files).forEach(file => {
-                          const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-                          const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", ppt: "doc", pptx: "doc", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image", csv: "xls", txt: "file" };
-                          const type = typeMap[ext] ?? "file";
-                          const url = URL.createObjectURL(file);
-                          setEmailAttachments(prev => [...prev, { type, label: file.name.substring(0, 35), url }]);
-                        });
-                        e.target.value = "";
-                      }} />
-                    </label>
-                    <button onClick={() => {
-                      const url = window.prompt("Enter file URL:");
-                      if (!url) return;
-                      const ext = url.split(".").pop()?.toLowerCase() ?? "";
-                      const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", png: "image", jpg: "image", jpeg: "image" };
-                      const type = typeMap[ext] ?? "file";
-                      const label = url.split("/").pop()?.substring(0, 30) ?? "File";
-                      setEmailAttachments(prev => [...prev, { type, label, url }]);
-                    }} style={{
-                      padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                    }}>🔗 URL</button>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => { if (emailEditing) { setEmailHtml(rebuildEmailHtml(emailBody, emailSubject)); } setEmailEditing(!emailEditing); }} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
-                    }}>{emailEditing ? "Done Editing" : "✏ Edit"}</button>
-                    <button onClick={handleSendEmail} disabled={emailSending || !emailBody} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
-                      backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      opacity: emailSending || !emailBody ? 0.5 : 1,
-                    }}>{emailSending ? "Sending..." : "📧 Send Email"}</button>
-                    <button onClick={() => setEmailSkipped(true)} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
-                    }}>Skip</button>
-                  </div>
-                </>
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
+                      {autoEditing ? (
+                        <input
+                          value={autoSubject}
+                          onChange={e => setAutoSubject(e.target.value)}
+                          style={{
+                            width: "100%", padding: "6px 10px", backgroundColor: "#09090b", border: "1px solid #3f3f46",
+                            borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none", marginTop: 2,
+                          }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2 }}>{autoSubject || "—"}</div>
+                      )}
+                    </div>
+                    {autoEditing ? (
+                      <div className="quill-dark" style={{ marginBottom: 8 }}>
+                        <ReactQuill
+                          theme="snow"
+                          value={autoBody}
+                          onChange={(val: string) => setAutoBody(val)}
+                          modules={{ toolbar: [["bold", "italic", "underline"], ["link"], ["clean"]] }}
+                          placeholder="Compose auto-confirmation..."
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: 8, overflow: "auto", borderRadius: 4 }}
+                        dangerouslySetInnerHTML={{ __html: autoHtml || `<div style="padding: 16px; color: #71717a; text-align: center;">Loading preview...</div>` }} />
+                    )}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => { if (autoEditing) { setAutoHtml(rebuildEmailHtml(autoBody, autoSubject)); } setAutoEditing(!autoEditing); }} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+                      }}>{autoEditing ? "Done Editing" : "✏ Edit"}</button>
+                      <button onClick={handleSendAutoEmail} disabled={autoSending || !autoBody} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
+                        backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                        opacity: autoSending || !autoBody ? 0.5 : 1,
+                      }}>{autoSending ? "Sending..." : "📧 Send Email"}</button>
+                      <button onClick={() => setAutoSkipped(true)} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                      }}>Skip</button>
+                    </div>
+                  </>
+                )
               )}
             </div>
           )}
 
-          {/* ── Web Form: SMS Response ── */}
+          {/* ── Web Form: Personal Follow-Up Email ── */}
+          {webForm && item.contacts?.email && (
+            <div style={{
+              padding: "12px 14px", backgroundColor: "#18181b", border: "1px solid #27272a",
+              borderRadius: 8, opacity: personalSent || personalSkipped ? 0.5 : 1,
+            }}>
+              <div onClick={() => !personalSent && !personalSkipped && setPersonalCollapsed(!personalCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: personalCollapsed ? 0 : 8, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📧 Personal Follow-Up
+                  </div>
+                  <span style={{ fontSize: 9, color: "#52525b", fontStyle: "italic" }}>OSC via Outlook</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {personalSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
+                  {personalSkipped && <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600 }}>Skipped</span>}
+                  {!personalSent && !personalSkipped && <span style={{ fontSize: 10, color: "#52525b" }}>{personalCollapsed ? "▼" : "▲"}</span>}
+                </div>
+              </div>
+              {!personalCollapsed && !personalSent && !personalSkipped && (
+                loadingResponses ? (
+                  <div style={{ fontSize: 12, color: "#52525b" }}>Generating personal email...</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>OSC sends 30–60 min after form. Personal touch from the assigned consultant.</div>
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.email}</span>
+                    </div>
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
+                      {personalEditing ? (
+                        <input
+                          value={personalSubject}
+                          onChange={e => setPersonalSubject(e.target.value)}
+                          style={{
+                            width: "100%", padding: "6px 10px", backgroundColor: "#09090b", border: "1px solid #3f3f46",
+                            borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none", marginTop: 2,
+                          }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2 }}>{personalSubject || "—"}</div>
+                      )}
+                    </div>
+                    {personalEditing ? (
+                      <div className="quill-dark" style={{ marginBottom: 8 }}>
+                        <ReactQuill
+                          theme="snow"
+                          value={personalBody}
+                          onChange={(val: string) => setPersonalBody(val)}
+                          modules={{
+                            toolbar: {
+                              container: [
+                                [{ header: [1, 2, 3, false] }],
+                                [{ size: ["small", false, "large", "huge"] }],
+                                ["bold", "italic", "underline"],
+                                [{ color: [] }, { background: [] }],
+                                [{ list: "ordered" }, { list: "bullet" }],
+                                ["link", "image"],
+                                ["clean"],
+                              ],
+                              handlers: {
+                                link: function(this: { quill: { getSelection: () => { index: number; length: number } | null; insertText: (i: number, t: string, o: string, v: string) => void; formatText: (i: number, l: number, f: string, v: string) => void } }) {
+                                  const url = window.prompt("Enter URL:");
+                                  if (url) {
+                                    const sel = this.quill.getSelection();
+                                    if (sel && sel.length > 0) {
+                                      this.quill.formatText(sel.index, sel.length, "link", url);
+                                    } else if (sel) {
+                                      this.quill.insertText(sel.index, url, "link", url);
+                                    }
+                                  }
+                                },
+                                image: function(this: { quill: { getSelection: () => { index: number } | null; insertEmbed: (i: number, t: string, v: string) => void } }) {
+                                  const url = window.prompt("Enter image URL:");
+                                  if (url) {
+                                    const sel = this.quill.getSelection();
+                                    if (sel) this.quill.insertEmbed(sel.index, "image", url);
+                                  }
+                                },
+                              },
+                            },
+                          }}
+                          placeholder="Compose personal follow-up..."
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: 8, overflow: "auto", borderRadius: 4 }}
+                        dangerouslySetInnerHTML={{ __html: personalHtml || `<div style="padding: 16px; color: #71717a; text-align: center;">Loading preview...</div>` }} />
+                    )}
+
+                    {/* File Attachments */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                      {personalAttachments.map((att, i) => (
+                        <span key={i} style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          padding: "4px 10px", borderRadius: 4, backgroundColor: "#18181b",
+                          border: "1px solid #27272a", fontSize: 11, color: "#a1a1aa",
+                        }}>
+                          {att.type === "pdf" ? "📄" : att.type === "doc" ? "📝" : att.type === "xls" ? "📊" : att.type === "image" ? "🖼" : "📎"} {att.label}
+                          <span onClick={() => setPersonalAttachments(prev => prev.filter((_, j) => j !== i))}
+                            style={{ cursor: "pointer", color: "#52525b", marginLeft: 2, fontSize: 12 }}>✕</span>
+                        </span>
+                      ))}
+                      <label style={{
+                        padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                      }}>
+                        📁 Upload File
+                        <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt" multiple hidden onChange={e => {
+                          const files = e.target.files;
+                          if (!files) return;
+                          Array.from(files).forEach(file => {
+                            const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+                            const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", ppt: "doc", pptx: "doc", png: "image", jpg: "image", jpeg: "image", gif: "image", webp: "image", csv: "xls", txt: "file" };
+                            const type = typeMap[ext] ?? "file";
+                            const url = URL.createObjectURL(file);
+                            setPersonalAttachments(prev => [...prev, { type, label: file.name.substring(0, 35), url }]);
+                          });
+                          e.target.value = "";
+                        }} />
+                      </label>
+                      <button onClick={() => {
+                        const url = window.prompt("Enter file URL:");
+                        if (!url) return;
+                        const ext = url.split(".").pop()?.toLowerCase() ?? "";
+                        const typeMap: Record<string, string> = { pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls", png: "image", jpg: "image", jpeg: "image" };
+                        const type = typeMap[ext] ?? "file";
+                        const label = url.split("/").pop()?.substring(0, 30) ?? "File";
+                        setPersonalAttachments(prev => [...prev, { type, label, url }]);
+                      }} style={{
+                        padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                      }}>🔗 URL</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => { if (personalEditing) { setPersonalHtml(rebuildEmailHtml(personalBody, personalSubject)); } setPersonalEditing(!personalEditing); }} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+                      }}>{personalEditing ? "Done Editing" : "✏ Edit"}</button>
+                      <button onClick={handleSendPersonalEmail} disabled={personalSending || !personalBody} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
+                        backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                        opacity: personalSending || !personalBody ? 0.5 : 1,
+                      }}>{personalSending ? "Sending..." : "📧 Send Email"}</button>
+                      <button onClick={() => setPersonalSkipped(true)} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                      }}>Skip</button>
+                    </div>
+                  </>
+                )
+              )}
+            </div>
+          )}
+
+          {/* ── Web Form: SMS Follow-Up ── */}
           {webForm && item.contacts?.phone && (
             <div style={{
               padding: "12px 14px", backgroundColor: "#18181b", border: "1px solid #27272a",
               borderRadius: 8, opacity: smsSent || smsSkipped ? 0.5 : 1,
             }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  💬 SMS Response
+              <div onClick={() => !smsSent && !smsSkipped && setSmsCollapsed(!smsCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: smsCollapsed ? 0 : 8, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    💬 SMS Follow-Up
+                  </div>
                 </div>
-                {smsSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
-                {smsSkipped && <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600 }}>Skipped</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {smsSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
+                  {smsSkipped && <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600 }}>Skipped</span>}
+                  {!smsSent && !smsSkipped && <span style={{ fontSize: 10, color: "#52525b" }}>{smsCollapsed ? "▼" : "▲"}</span>}
+                </div>
               </div>
-              {loadingResponses ? (
-                <div style={{ fontSize: 12, color: "#52525b" }}>Generating SMS...</div>
-              ) : smsSent || smsSkipped ? null : (
-                <>
-                  <div style={{ marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.phone}</span>
-                  </div>
-                  {smsEditing ? (
-                    <textarea
-                      value={smsBody}
-                      onChange={e => setSmsBody(e.target.value)}
-                      rows={3}
-                      style={{
-                        width: "100%", padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #3f3f46",
-                        borderRadius: 4, color: "#a1a1aa", fontSize: 12, outline: "none", resize: "vertical",
-                        lineHeight: 1.6, marginBottom: 8,
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #27272a",
-                      borderRadius: 4, fontSize: 12, color: "#a1a1aa", lineHeight: 1.6,
-                      whiteSpace: "pre-wrap", marginBottom: 8,
-                    }}>
-                      {smsBody || "No SMS content generated"}
+              {!smsCollapsed && !smsSent && !smsSkipped && (
+                loadingResponses ? (
+                  <div style={{ fontSize: 12, color: "#52525b" }}>Generating SMS...</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>If phone # available. Quick personal text from OSC.</div>
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.phone}</span>
                     </div>
-                  )}
-
-                  {/* Attachments */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                    {smsAttachments.map((att, i) => (
-                      <span key={i} style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        padding: "3px 8px", borderRadius: 4, backgroundColor: "#18181b",
-                        border: "1px solid #27272a", fontSize: 10, color: "#a1a1aa",
+                    {smsEditing ? (
+                      <textarea
+                        value={smsBody}
+                        onChange={e => setSmsBody(e.target.value)}
+                        rows={3}
+                        style={{
+                          width: "100%", padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #3f3f46",
+                          borderRadius: 4, color: "#a1a1aa", fontSize: 12, outline: "none", resize: "vertical",
+                          lineHeight: 1.6, marginBottom: 8,
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #27272a",
+                        borderRadius: 4, fontSize: 12, color: "#a1a1aa", lineHeight: 1.6,
+                        whiteSpace: "pre-wrap", marginBottom: 8,
                       }}>
-                        {att.type === "link" ? "🔗" : "🖼"} {att.label}
-                        <span onClick={() => setSmsAttachments(prev => prev.filter((_, j) => j !== i))}
-                          style={{ cursor: "pointer", color: "#71717a", marginLeft: 2 }}>✕</span>
-                      </span>
-                    ))}
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button onClick={() => {
-                        const url = prompt("Enter link URL:");
-                        if (url) setSmsAttachments(prev => [...prev, { type: "link", label: url.replace(/https?:\/\//, "").substring(0, 30), url }]);
-                      }} style={{
-                        padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
-                        backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
-                      }}>🔗 Link</button>
-                      <button onClick={() => {
-                        const url = prompt("Enter photo URL:");
-                        if (url) setSmsAttachments(prev => [...prev, { type: "photo", label: "Photo", url }]);
-                      }} style={{
-                        padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
-                        backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
-                      }}>🖼 Photo</button>
+                        {smsBody || "No SMS content generated"}
+                      </div>
+                    )}
+
+                    {/* Attachments */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                      {smsAttachments.map((att, i) => (
+                        <span key={i} style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          padding: "3px 8px", borderRadius: 4, backgroundColor: "#18181b",
+                          border: "1px solid #27272a", fontSize: 10, color: "#a1a1aa",
+                        }}>
+                          {att.type === "link" ? "🔗" : "🖼"} {att.label}
+                          <span onClick={() => setSmsAttachments(prev => prev.filter((_, j) => j !== i))}
+                            style={{ cursor: "pointer", color: "#71717a", marginLeft: 2 }}>✕</span>
+                        </span>
+                      ))}
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <button onClick={() => {
+                          const url = prompt("Enter link URL:");
+                          if (url) setSmsAttachments(prev => [...prev, { type: "link", label: url.replace(/https?:\/\//, "").substring(0, 30), url }]);
+                        }} style={{
+                          padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
+                          backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
+                        }}>🔗 Link</button>
+                        <button onClick={() => {
+                          const url = prompt("Enter photo URL:");
+                          if (url) setSmsAttachments(prev => [...prev, { type: "photo", label: "Photo", url }]);
+                        }} style={{
+                          padding: "3px 8px", borderRadius: 4, border: "1px solid #27272a",
+                          backgroundColor: "#09090b", color: "#71717a", fontSize: 10, cursor: "pointer",
+                        }}>🖼 Photo</button>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setSmsEditing(!smsEditing)} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
-                    }}>{smsEditing ? "Done Editing" : "✏ Edit"}</button>
-                    <button onClick={handleSendSms} disabled={smsSending || !smsBody} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
-                      backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      opacity: smsSending || !smsBody ? 0.5 : 1,
-                    }}>{smsSending ? "Sending..." : "💬 Send SMS"}</button>
-                    <button onClick={() => setSmsSkipped(true)} style={{
-                      padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
-                      backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
-                    }}>Skip</button>
-                  </div>
-                </>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => setSmsEditing(!smsEditing)} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+                      }}>{smsEditing ? "Done Editing" : "✏ Edit"}</button>
+                      <button onClick={handleSendSms} disabled={smsSending || !smsBody} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
+                        backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                        opacity: smsSending || !smsBody ? 0.5 : 1,
+                      }}>{smsSending ? "Sending..." : "💬 Send SMS"}</button>
+                      <button onClick={() => setSmsSkipped(true)} style={{
+                        padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
+                        backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                      }}>Skip</button>
+                    </div>
+                  </>
+                )
               )}
             </div>
           )}

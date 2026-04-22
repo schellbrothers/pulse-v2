@@ -445,6 +445,9 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
   }
 
   // Priority: div+formType > generic+formType > div+default > generic+default
+  const ea = allTmpl.find(t => t.channel==="email_auto" && t.form_type_code===formType && t.division_id===divId)
+    ?? allTmpl.find(t => t.channel==="email_auto" && t.form_type_code===formType)
+    ?? allTmpl.find(t => t.channel==="email_auto" && t.form_type_code==="default");
   const ep = allTmpl.find(t => t.channel==="email_personal" && t.form_type_code===formType && t.division_id===divId)
     ?? allTmpl.find(t => t.channel==="email_personal" && t.form_type_code===formType)
     ?? allTmpl.find(t => t.channel==="email_personal" && t.form_type_code==="default");
@@ -452,13 +455,21 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
     ?? allTmpl.find(t => t.channel==="sms" && t.form_type_code===formType)
     ?? allTmpl.find(t => t.channel==="sms" && t.form_type_code==="default");
 
-  let emailSubject = ep ? render(ep.subject ?? "") : `Thank You — Schell Brothers`;
-  let emailBody = ep ? render(ep.body ?? "") : `Hi ${firstName}!\n\nThank you for reaching out. A member of our team will be in touch shortly.`;
+  // Auto-confirmation email (SendGrid noreply@)
+  let autoSubject = ea ? render(ea.subject ?? "") : `Thank You for Your Interest — Schell Brothers`;
+  let autoBody = ea ? render(ea.body ?? "") : `Hi ${firstName}!\n\nThank you for reaching out to Schell Brothers. We received your request and a member of our team will be in touch shortly.\n\nIn the meantime, feel free to explore our communities at schellbrothers.com.`;
+
+  // Personal follow-up email (OSC via Outlook)
+  let personalSubject = ep ? render(ep.subject ?? "") : `Welcome — Let's Find Your Perfect Home`;
+  let personalBody = ep ? render(ep.body ?? "") : `Hi ${firstName}!\n\nThank you for reaching out. I'd love to help you find your perfect home with Schell Brothers. Let me know if you have any questions — I'm here to help!`;
+
+  // SMS follow-up
   let smsBody = sm ? render(sm.body ?? "") : `Hi ${firstName}! Thanks for reaching out to Schell Brothers!`;
   
-  // Build branded HTML email — must match email-templates.py EXACTLY
-  const bodyHtml = emailBody.replace(/\n/g, "<br>");
-  const emailHtml = `
+  // Build branded HTML email helper
+  function buildBrandedHtml(subject: string, body: string): string {
+    const bodyHtml = body.replace(/\n/g, "<br>");
+    return `
     <div style="font-family: 'Georgia', 'Times New Roman', serif; max-width: 640px; margin: 0 auto; background: #ffffff; border: 4px solid #C41230;">
       <div style="background: #1B2A4A; padding: 28px 32px; text-align: center;">
         <img src="https://heartbeat-page-designer-production.s3.amazonaws.com/site-8/schell-logo-color-horizontal__76b84a3c12300dd95411702f2f9e9dd6-ebf486218337267c1b432845a3df25be.png" alt="Schell Brothers" style="height: 44px; max-width: 240px;" />
@@ -466,7 +477,7 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
       <div style="height: 4px; background: #C41230;"></div>
       <div style="padding: 40px 32px;">
         <h2 style="color: #1B2A4A; font-family: 'Georgia', serif; font-size: 26px; font-weight: 400; margin: 0 0 20px;">
-          ${emailSubject}
+          ${subject}
         </h2>
         <div style="color: #444; font-size: 15px; line-height: 1.8;">
           ${bodyHtml}
@@ -488,8 +499,12 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
         <p style="color: rgba(255,255,255,0.4); font-size: 10px; margin: 12px 0 0;">© 2026 Schell Brothers. All rights reserved.</p>
       </div>
     </div>`;
+  }
 
-  return { success: true, data: { email: { subject: emailSubject, body: emailBody, html: emailHtml }, sms: { body: smsBody }, form_type: formType } };
+  const autoHtml = buildBrandedHtml(autoSubject, autoBody);
+  const personalHtml = buildBrandedHtml(personalSubject, personalBody);
+
+  return { success: true, data: { email_auto: { subject: autoSubject, body: autoBody, html: autoHtml }, email_personal: { subject: personalSubject, body: personalBody, html: personalHtml }, sms: { body: smsBody }, form_type: formType } };
 }
 
 async function updateContact(contact_id: string, updates: Record<string, unknown>, ctx: ActionContext) {

@@ -107,19 +107,16 @@ export async function POST(request: Request) {
         }
 
         case "delivered": {
-          // Mark contact as email-verified
+          // Log delivery — do NOT create activity (noise)
           if (contactId) {
-            // Record delivery as activity
-            await supabase.from("activities").insert({
+            await supabase.from("action_log").insert({
               org_id: ORG_ID,
-              contact_id: contactId,
-              channel: "email",
-              direction: "outbound",
-              type: "email_delivered",
-              subject: `Email delivered to ${email}`,
-              occurred_at: new Date(event.timestamp * 1000).toISOString(),
-              triggered_by: "agent",
-              agent_name: "sendgrid_delivery_agent",
+              action_type: "email_delivered",
+              triggered_by: "system:sendgrid_webhook",
+              agent_name: "sendgrid",
+              confidence_score: 1.0,
+              reasoning: `Email delivered to ${email}`,
+              metadata: { contact_id: contactId, email, sg_message_id: event.sg_message_id },
             });
             delivered++;
           }
@@ -127,18 +124,16 @@ export async function POST(request: Request) {
         }
 
         case "open": {
-          // Record email open as engagement signal
+          // Log open as engagement signal — do NOT create activity
           if (contactId) {
-            await supabase.from("activities").insert({
+            await supabase.from("action_log").insert({
               org_id: ORG_ID,
-              contact_id: contactId,
-              channel: "email",
-              direction: "inbound",
-              type: "email_opened",
-              subject: `Opened email`,
-              occurred_at: new Date(event.timestamp * 1000).toISOString(),
-              triggered_by: "agent",
-              agent_name: "sendgrid_engagement_agent",
+              action_type: "email_opened",
+              triggered_by: "system:sendgrid_webhook",
+              agent_name: "sendgrid",
+              confidence_score: 1.0,
+              reasoning: `Email opened by ${email}`,
+              metadata: { contact_id: contactId, email, sg_message_id: event.sg_message_id },
             });
             opened++;
           }
@@ -146,18 +141,16 @@ export async function POST(request: Request) {
         }
 
         case "click": {
-          // Record link click as high engagement signal
+          // Log click as high engagement signal — do NOT create activity
           if (contactId) {
-            await supabase.from("activities").insert({
+            await supabase.from("action_log").insert({
               org_id: ORG_ID,
-              contact_id: contactId,
-              channel: "email",
-              direction: "inbound",
-              type: "email_clicked",
-              subject: `Clicked link: ${event.url ?? "unknown"}`,
-              occurred_at: new Date(event.timestamp * 1000).toISOString(),
-              triggered_by: "agent",
-              agent_name: "sendgrid_engagement_agent",
+              action_type: "email_clicked",
+              triggered_by: "system:sendgrid_webhook",
+              agent_name: "sendgrid",
+              confidence_score: 1.0,
+              reasoning: `Clicked: ${event.url ?? "unknown"}`,
+              metadata: { contact_id: contactId, email, url: event.url, sg_message_id: event.sg_message_id },
             });
           }
           break;

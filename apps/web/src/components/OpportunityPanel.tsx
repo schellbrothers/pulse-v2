@@ -1025,16 +1025,23 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                                     maxHeight: 400, overflowY: "auto",
                                   }}>
                                     {transcript.speaker_segments && Array.isArray(transcript.speaker_segments) && transcript.speaker_segments.length > 0 ? (
-                                      (transcript.speaker_segments as Array<{speaker?: string; text?: string}>).map((seg, i) => (
-                                        <div key={i} style={{ marginBottom: 10 }}>
-                                          <span style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, textTransform: "uppercase" }}>
-                                            {seg.speaker ?? "Speaker"}:
-                                          </span>
-                                          <span style={{ color: "#d4d4d8", marginLeft: 6 }}>
-                                            {seg.text ?? ""}
-                                          </span>
-                                        </div>
-                                      ))
+                                      (transcript.speaker_segments as Array<{speaker?: string; text?: string}>).map((seg, i) => {
+                                        const speaker = (seg.speaker ?? "Speaker").toLowerCase();
+                                        // Employee/system = dimmer, Prospect/buyer = blue (stands out)
+                                        const isEmployee = speaker.includes("grace") || speaker.includes("brooke") || speaker.includes("tess") || speaker.includes("melissa") || speaker.includes("tarah") || speaker.includes("lisa") || speaker.includes("system");
+                                        const speakerColor = isEmployee ? "#a1a1aa" : "#60a5fa";
+                                        const textColor = isEmployee ? "#a1a1aa" : "#e0edff";
+                                        return (
+                                          <div key={i} style={{ marginBottom: 8, paddingLeft: isEmployee ? 0 : 12, borderLeft: isEmployee ? "none" : "2px solid #60a5fa" }}>
+                                            <span style={{ color: speakerColor, fontWeight: 600, fontSize: 11, textTransform: "uppercase" }}>
+                                              {seg.speaker ?? "Speaker"}:
+                                            </span>
+                                            <span style={{ color: textColor, marginLeft: 6, fontSize: 12 }}>
+                                              {seg.text ?? ""}
+                                            </span>
+                                          </div>
+                                        );
+                                      })
                                     ) : (
                                       (transcript.raw_text ?? "No transcript text available.").split("\n\n").map((para, i) => (
                                         <p key={i} style={{ margin: "0 0 10px", color: "#d4d4d8" }}>{para}</p>

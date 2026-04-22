@@ -292,7 +292,7 @@ function parsePhoneParties(activity: Activity): { employee: string | null; exter
 
 export default function OpportunityPanel({ open, onClose, opportunity }: OpportunityPanelProps) {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<"history" | "activity" | "notes">("history");
+  const [activeTab, setActiveTab] = useState<"contact" | "history" | "activity" | "notes">("contact");
   const [history, setHistory] = useState<StageTransition[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -339,7 +339,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     setEditing(false);
     setEditingNotes(false);
     setNewNoteText("");
-    setActiveTab("history");
+    setActiveTab("contact");
     setHistory([]);
     setActivities([]);
     setLocalNotes(opportunity?.notes ?? null);
@@ -603,7 +603,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
         }}
       >
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid #1f1f1f", flexShrink: 0 }}>
+        <div style={{ padding: "16px 20px 14px", borderBottom: "none", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -623,10 +623,37 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
           </div>
         </div>
 
+        {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", padding: "0 16px", background: "#09090b", flexShrink: 0 }}>
+          {(["CONTACT", "ACTIVITY", "HISTORY", "NOTES"] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab.toLowerCase() as typeof activeTab)}
+              style={{
+                padding: "10px 16px",
+                fontSize: 11,
+                fontWeight: 600,
+                color: activeTab === tab.toLowerCase() ? "#fafafa" : "#71717a",
+                borderBottom: activeTab === tab.toLowerCase() ? "2px solid #fafafa" : "2px solid transparent",
+                background: "transparent",
+                border: "none",
+                borderBlockEnd: activeTab === tab.toLowerCase() ? "2px solid #fafafa" : "2px solid transparent",
+                cursor: "pointer",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
         {/* ── Scrollable content ──────────────────────────────────────────── */}
         <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {/* ── Contact Section ───────────────────────────────────────── */}
+
+            {/* ── Contact Tab ───────────────────────────────────────── */}
+            {activeTab === "contact" && (
+            <>
             <Section title="Contact">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                 <span style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Primary</span>
@@ -706,18 +733,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                       ) : null
                     }
                   />
-                  <Row
-                    label="Phone"
-                    value={
-                      opportunity.phone ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          {opportunity.phone}
-                          <a href={`tel:${opportunity.phone}`} style={{ textDecoration: "none" }} title="Call"><img src="/icons/activity/phone.svg" alt="Call" width={14} height={14} /></a>
-                          <a href={`sms:${opportunity.phone}`} style={{ textDecoration: "none" }} title="Text"><img src="/icons/activity/text.svg" alt="Text" width={14} height={14} /></a>
-                        </span>
-                      ) : null
-                    }
-                  />
+                  <Row label="Phone" value={opportunity.phone} />
                   <Row label="Source" value={opportunity.source} />
 
                   {/* Secondary — always show */}
@@ -750,11 +766,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                     label="Phone"
                     value={
                       secondary.phone_secondary ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          {secondary.phone_secondary}
-                          <a href={`tel:${secondary.phone_secondary}`} style={{ textDecoration: "none" }} title="Call"><img src="/icons/activity/phone.svg" alt="Call" width={14} height={14} /></a>
-                          <a href={`sms:${secondary.phone_secondary}`} style={{ textDecoration: "none" }} title="Text"><img src="/icons/activity/text.svg" alt="Text" width={14} height={14} /></a>
-                        </span>
+                        <span>{secondary.phone_secondary}</span>
                       ) : (
                         <span style={{ color: "#333", fontStyle: "italic" }}>Add secondary phone</span>
                       )
@@ -771,37 +783,12 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
               <Row label="Budget" value={formatBudget(opportunity.budget_min, opportunity.budget_max)} />
               {opportunity.floor_plan_name && <Row label="Floor Plan" value={opportunity.floor_plan_name} />}
             </Section>
-
-            {/* Notes moved to sub-tab */}
-
-            {/* ── Sub-tabs ─────────────────────────────────────────────── */}
-            <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: "1px solid #1a1a1a" }}>
-              {(["history", "activity", "notes"] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: "8px 16px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    cursor: "pointer",
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: activeTab === tab ? "2px solid #ededed" : "2px solid transparent",
-                    color: activeTab === tab ? "#ededed" : "#555",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+            </>
+            )}
 
             {/* ── History Tab ──────────────────────────────────────────── */}
             {activeTab === "history" && (
-              <div style={{ maxHeight: 320, overflowY: "auto" }}>
+              <div>
                 {historyLoading ? (
                   <p style={{ fontSize: 12, color: "#888", margin: 0 }}>Loading…</p>
                 ) : (
@@ -858,7 +845,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
             {/* ── Activity Tab ─────────────────────────────────────────── */}
             {activeTab === "activity" && (
-              <div style={{ maxHeight: 420, overflowY: "auto" }}>
+              <div>
                 {activityLoading ? (
                   <p style={{ fontSize: 12, color: "#888", margin: 0 }}>Loading…</p>
                 ) : activities.length === 0 ? (
@@ -1061,7 +1048,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             )}
 
             {activeTab === "notes" && (
-              <div style={{ maxHeight: 320, overflowY: "auto" }}>
+              <div>
                 {noteEntries.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
                     {noteEntries.map((entry, i) => (

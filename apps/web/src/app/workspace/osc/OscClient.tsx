@@ -695,12 +695,12 @@ function QueueCard({
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {item.contacts?.phone && (
               <>
-                <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="Call" style={{ fontSize: 18, textDecoration: "none", cursor: "pointer", padding: "2px" }}>📞</a>
-                <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="SMS" style={{ fontSize: 18, textDecoration: "none", cursor: "pointer", padding: "2px" }}>💬</a>
+                <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="Call" style={{ textDecoration: "none", cursor: "pointer", padding: "2px", display: "inline-flex" }}><img src="/icons/activity/phone.svg" alt="Call" width={16} height={16} /></a>
+                <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} title="SMS" style={{ textDecoration: "none", cursor: "pointer", padding: "2px", display: "inline-flex" }}><img src="/icons/activity/text.svg" alt="SMS" width={16} height={16} /></a>
               </>
             )}
             {item.contacts?.email && (
-              <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} title="Email" style={{ fontSize: 18, textDecoration: "none", cursor: "pointer", padding: "2px" }}>📧</a>
+              <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} title="Email" style={{ textDecoration: "none", cursor: "pointer", padding: "2px", display: "inline-flex" }}><img src="/icons/activity/email.svg" alt="Email" width={16} height={16} /></a>
             )}
           </div>
           <div style={{ fontSize: 11, color: "#52525b", textAlign: "right" }}>
@@ -729,9 +729,9 @@ function QueueCard({
               )}
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              {item.contacts?.phone && <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>📞</a>}
-              {item.contacts?.phone && <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>💬</a>}
-              {item.contacts?.email && <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 26, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>📧</a>}
+              {item.contacts?.phone && <a href={`tel:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}><img src="/icons/activity/phone.svg" alt="Call" width={24} height={24} /></a>}
+              {item.contacts?.phone && <a href={`sms:${item.contacts.phone}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}><img src="/icons/activity/text.svg" alt="SMS" width={24} height={24} /></a>}
+              {item.contacts?.email && <a href={`mailto:${item.contacts.email}`} onClick={e => e.stopPropagation()} style={{ textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}><img src="/icons/activity/email.svg" alt="Email" width={24} height={24} /></a>}
             </div>
           </div>
           <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>

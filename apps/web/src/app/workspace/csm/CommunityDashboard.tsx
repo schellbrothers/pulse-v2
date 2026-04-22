@@ -170,9 +170,15 @@ function classifyBucket(item: ProspectItem, todayTaskOppIds: Set<string>): CsmBu
   return "new_from_osc";
 }
 
-function channelIcon(ch: string | null): string {
-  const map: Record<string, string> = { call: "📞", phone: "📞", email: "📧", text: "💬", sms: "💬", chat: "💬" };
-  return map[ch ?? ""] ?? "📋";
+function channelIcon(ch: string | null): React.ReactNode {
+  const map: Record<string, string> = {
+    call: "/icons/activity/phone.svg", phone: "/icons/activity/phone.svg",
+    email: "/icons/activity/email.svg", text: "/icons/activity/text.svg",
+    sms: "/icons/activity/text.svg", chat: "/icons/activity/text.svg",
+  };
+  const src = map[ch ?? ""];
+  if (!src) return <img src="/icons/activity/phone.svg" alt="" width={14} height={14} style={{ verticalAlign: "middle" }} />;
+  return <img src={src} alt="" width={14} height={14} style={{ verticalAlign: "middle" }} />;
 }
 
 
@@ -480,11 +486,12 @@ function SnoozePicker({ onSnooze, onClose }: { onSnooze: (until: string) => void
 
 // ─── Action Button ────────────────────────────────────────────────────────────
 
-function ActionBtn({ label }: { label: string }) {
+function ActionBtn({ label }: { label: React.ReactNode }) {
   return (
     <button style={{
       padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
       backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+      display: "inline-flex", alignItems: "center", gap: 3,
     }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
       onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
@@ -571,10 +578,10 @@ function ProspectCard({
           {/* Action icons */}
           <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
             {item.contacts?.phone && (
-              <a href={`tel:${item.contacts.phone}`} style={{ fontSize: 18, textDecoration: "none", opacity: 0.7, padding: "4px" }}>📞</a>
+              <a href={`tel:${item.contacts.phone}`} style={{ textDecoration: "none", opacity: 0.7, padding: "4px" }}><img src="/icons/activity/phone.svg" alt="Call" width={18} height={18} /></a>
             )}
             {item.contacts?.email && (
-              <a href={`mailto:${item.contacts.email}`} style={{ fontSize: 18, textDecoration: "none", opacity: 0.7, padding: "4px" }}>📧</a>
+              <a href={`mailto:${item.contacts.email}`} style={{ textDecoration: "none", opacity: 0.7, padding: "4px" }}><img src="/icons/activity/email.svg" alt="Email" width={18} height={18} /></a>
             )}
           </div>
 
@@ -619,8 +626,8 @@ function ProspectCard({
             </div>
           )}
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-            <ActionBtn label="📞 Call" />
-            <ActionBtn label="📧 Email" />
+            <ActionBtn label={<><img src="/icons/activity/phone.svg" alt="" width={12} height={12} /> Call</>} />
+            <ActionBtn label={<><img src="/icons/activity/email.svg" alt="" width={12} height={12} /> Email</>} />
           </div>
         </div>
       )}
@@ -678,14 +685,14 @@ function TaskCard({
       )}
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", position: "relative" }}>
-        {(task.channel === "call" || task.channel === "phone") && <ActionBtn label="📞 Call" />}
-        {task.channel === "email" && <ActionBtn label="📧 Email" />}
-        {(task.channel === "text" || task.channel === "sms") && <ActionBtn label="💬 Text" />}
+        {(task.channel === "call" || task.channel === "phone") && <ActionBtn label={<><img src="/icons/activity/phone.svg" alt="" width={12} height={12} /> Call</>} />}
+        {task.channel === "email" && <ActionBtn label={<><img src="/icons/activity/email.svg" alt="" width={12} height={12} /> Email</>} />}
+        {(task.channel === "text" || task.channel === "sms") && <ActionBtn label={<><img src="/icons/activity/text.svg" alt="" width={12} height={12} /> Text</>} />}
         {!task.channel && (
           <>
-            <ActionBtn label="📞 Call" />
-            <ActionBtn label="📧 Email" />
-            <ActionBtn label="💬 Text" />
+            <ActionBtn label={<><img src="/icons/activity/phone.svg" alt="" width={12} height={12} /> Call</>} />
+            <ActionBtn label={<><img src="/icons/activity/email.svg" alt="" width={12} height={12} /> Email</>} />
+            <ActionBtn label={<><img src="/icons/activity/text.svg" alt="" width={12} height={12} /> Text</>} />
           </>
         )}
         {!readOnly && (

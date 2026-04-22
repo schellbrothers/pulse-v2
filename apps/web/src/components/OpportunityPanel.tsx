@@ -224,7 +224,7 @@ function parseNoteEntries(notes: string | null): Array<{ timestamp: string; text
 }
 
 const CHANNEL_ICONS: Record<string, string> = {
-  email: "📧", phone: "📞", sms: "💬", video: "🎥", voice: "🎙",
+  email: "/icons/activity/email.svg", phone: "/icons/activity/phone.svg", sms: "/icons/activity/text.svg", video: "🎥", voice: "🎙",
   web: "🌐", chat: "💭", app: "🖥", walk_in: "🚶", mail: "📬",
   webform: "📋", form: "📋",
 };
@@ -712,8 +712,8 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                       opportunity.phone ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                           {opportunity.phone}
-                          <a href={`tel:${opportunity.phone}`} style={{ textDecoration: "none", fontSize: 14 }} title="Call">📞</a>
-                          <a href={`sms:${opportunity.phone}`} style={{ textDecoration: "none", fontSize: 14 }} title="Text">💬</a>
+                          <a href={`tel:${opportunity.phone}`} style={{ textDecoration: "none" }} title="Call"><img src="/icons/activity/phone.svg" alt="Call" width={14} height={14} /></a>
+                          <a href={`sms:${opportunity.phone}`} style={{ textDecoration: "none" }} title="Text"><img src="/icons/activity/text.svg" alt="Text" width={14} height={14} /></a>
                         </span>
                       ) : null
                     }
@@ -752,8 +752,8 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                       secondary.phone_secondary ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                           {secondary.phone_secondary}
-                          <a href={`tel:${secondary.phone_secondary}`} style={{ textDecoration: "none", fontSize: 14 }} title="Call">📞</a>
-                          <a href={`sms:${secondary.phone_secondary}`} style={{ textDecoration: "none", fontSize: 14 }} title="Text">💬</a>
+                          <a href={`tel:${secondary.phone_secondary}`} style={{ textDecoration: "none" }} title="Call"><img src="/icons/activity/phone.svg" alt="Call" width={14} height={14} /></a>
+                          <a href={`sms:${secondary.phone_secondary}`} style={{ textDecoration: "none" }} title="Text"><img src="/icons/activity/text.svg" alt="Text" width={14} height={14} /></a>
                         </span>
                       ) : (
                         <span style={{ color: "#333", fontStyle: "italic" }}>Add secondary phone</span>

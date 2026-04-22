@@ -55,11 +55,11 @@ type SortDir = "asc" | "desc";
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 
 const CHANNEL_ICONS: Record<string, string> = {
-  email: "📧",
-  phone: "📞",
-  call: "📞",
-  sms: "💬",
-  text: "💬",
+  email: "/icons/activity/email.svg",
+  phone: "/icons/activity/phone.svg",
+  call: "/icons/activity/phone.svg",
+  sms: "/icons/activity/text.svg",
+  text: "/icons/activity/text.svg",
   video: "🎥",
   zoom: "🎥",
   meeting: "🎥",
@@ -74,10 +74,12 @@ const CHANNEL_ICONS: Record<string, string> = {
   rilla: "🎙",
 };
 
-function channelIcon(channel: string | null): string {
+function channelIcon(channel: string | null): React.ReactNode {
   if (!channel) return "📋";
   const key = channel.toLowerCase().trim();
-  return CHANNEL_ICONS[key] ?? "📋";
+  const val = CHANNEL_ICONS[key] ?? "📋";
+  if (val.startsWith("/")) return <img src={val} alt="" width={14} height={14} style={{ verticalAlign: "middle" }} />;
+  return val;
 }
 
 function initials(first: string, last: string): string {
@@ -627,13 +629,13 @@ export default function PipelineDetailView({
                       </div>
                     </td>
                     <td style={{ padding: "10px 14px", color: TEXT_SECONDARY }}>
-                      {item.source ? `${channelIcon(item.source)} ${item.source}` : "—"}
+                      {item.source ? <>{channelIcon(item.source)} {item.source}</> : "—"}
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       {renderScoreBadge(item.engagement_score) ?? <span style={{ color: TEXT_DIM }}>—</span>}
                     </td>
                     <td style={{ padding: "10px 14px", color: TEXT_SECONDARY }}>
-                      {lastAct ? `${channelIcon(lastAct.channel)} ${lastAct.channel ?? "—"}` : "—"}
+                      {lastAct ? <>{channelIcon(lastAct.channel)} {lastAct.channel ?? "—"}</> : "—"}
                     </td>
                     <td style={{ padding: "10px 14px", color: TEXT_SECONDARY }}>
                       {lastAct ? (lastAct.subject ?? "Activity") : "—"}

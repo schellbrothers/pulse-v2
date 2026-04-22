@@ -50,18 +50,18 @@ type CommHubTab = "urgent" | "needs_response" | "call" | "text" | "email" | "mee
 const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string }[] = [
   { id: "urgent", icon: "⚠", label: "Urgent" },
   { id: "needs_response", icon: "", label: "Needs Response" },
-  { id: "call", icon: "📞", label: "Call" },
-  { id: "text", icon: "💬", label: "Text" },
-  { id: "email", icon: "📧", label: "Email" },
+  { id: "call", icon: "/icons/activity/phone.svg", label: "Call" },
+  { id: "text", icon: "/icons/activity/text.svg", label: "Text" },
+  { id: "email", icon: "/icons/activity/email.svg", label: "Email" },
   { id: "meeting", icon: "🎥", label: "Meeting" },
 ];
 
 const CHANNEL_META: Record<string, { icon: string; label: string; color: string; bg: string }> = {
-  email: { icon: "📧", label: "Email", color: "#f97316", bg: "#431407" },
-  phone: { icon: "📞", label: "Call", color: "#60a5fa", bg: "#172554" },
-  call: { icon: "📞", label: "Call", color: "#60a5fa", bg: "#172554" },
-  sms: { icon: "💬", label: "Text", color: "#a78bfa", bg: "#2e1065" },
-  text: { icon: "💬", label: "Text", color: "#a78bfa", bg: "#2e1065" },
+  email: { icon: "/icons/activity/email.svg", label: "Email", color: "#f97316", bg: "#431407" },
+  phone: { icon: "/icons/activity/phone.svg", label: "Call", color: "#60a5fa", bg: "#172554" },
+  call: { icon: "/icons/activity/phone.svg", label: "Call", color: "#60a5fa", bg: "#172554" },
+  sms: { icon: "/icons/activity/text.svg", label: "Text", color: "#a78bfa", bg: "#2e1065" },
+  text: { icon: "/icons/activity/text.svg", label: "Text", color: "#a78bfa", bg: "#2e1065" },
   voicemail: { icon: "🎙", label: "Voicemail", color: "#f472b6", bg: "#500724" },
   webform: { icon: "🌐", label: "Web Form", color: "#34d399", bg: "#064e3b" },
   chat: { icon: "💭", label: "Chat", color: "#818cf8", bg: "#312e81" },
@@ -349,7 +349,7 @@ function ActivityCard({
             </>
           ) : activity.channel === "sms" || activity.channel === "text" ? (
             <>
-              <span style={{ fontWeight: 500, color: "#a78bfa" }}>💬 </span>
+              <span style={{ fontWeight: 500, color: "#a78bfa" }}><img src="/icons/activity/text.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} /></span>
               {activity.body ?? "No message content"}
             </>
           ) : activity.channel === "meeting" ? (
@@ -465,7 +465,7 @@ function ActivityCard({
                 fontSize: 10, padding: "2px 8px", borderRadius: 10,
                 backgroundColor: meta.bg, color: meta.color, fontWeight: 600,
               }}>
-                {meta.icon} {meta.label}
+                {meta.icon.startsWith("/") ? <><img src={meta.icon} alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />{meta.label}</> : <>{meta.icon} {meta.label}</>}
               </span>
               <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, border: "1px solid #3f3f46", color: "#71717a" }}>
                 Received
@@ -574,9 +574,9 @@ function ActivityCard({
                     border: "1px solid #27272a", borderRadius: 4, color: "#a1a1aa", outline: "none",
                   }}
                 >
-                  <option value="email">📧 Email</option>
-                  <option value="text">💬 Text</option>
-                  <option value="phone">📞 Phone</option>
+                  <option value="email">Email</option>
+                  <option value="text">Text</option>
+                  <option value="phone">Phone</option>
                 </select>
                 <select
                   style={{
@@ -844,7 +844,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
               cursor: "pointer", display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap",
               flexShrink: 0,
             }}>
-              {t.icon && <span>{t.icon}</span>}
+              {t.icon && <span>{t.icon.startsWith("/") ? <img src={t.icon} alt="" width={14} height={14} style={{ verticalAlign: "middle" }} /> : t.icon}</span>}
               {!isMobile && <span>{t.label}</span>}
               <span style={{
                 fontSize: isMobile ? 9 : 10, padding: "0 4px", borderRadius: 3, fontWeight: 600,

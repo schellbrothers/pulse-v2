@@ -157,10 +157,10 @@ function formatBudget(min: number | null, max: number | null): string {
 
 function sourceLabel(src: string | null): string {
   const map: Record<string, string> = {
-    called_osc: "📞 Called", texted_osc: "💬 Texted", webform_interest: "🌐 Web Form",
+    called_osc: "Called", texted_osc: "Texted", webform_interest: "🌐 Web Form",
     schedule_appt: "📅 Appt Request", ai_auto_promote: "🤖 AI Surfaced",
     website: "🌐 Website", realtor: "🏠 Realtor", walk_in: "🚶 Walk-in",
-    event: "🎪 Event", phone: "📞 Phone", referral: "👤 Referral",
+    event: "🎪 Event", phone: "Phone", referral: "👤 Referral",
     zillow: "🏠 Zillow", social_media: "📱 Social",
   };
   return map[src ?? ""] ?? src ?? "—";
@@ -178,11 +178,15 @@ const BUCKET_META: { id: QueueBucket; icon: string; label: string; description: 
   { id: "ai_surfaced", icon: "🤖", label: "AI", description: "AI-surfaced based on scoring/signals" },
 ];
 
-function channelIcon(ch: string | null): string {
+function channelIcon(ch: string | null): React.ReactNode {
   const map: Record<string, string> = {
-    call: "📞", phone: "📞", email: "📧", text: "💬", sms: "💬", chat: "💬",
+    call: "/icons/activity/phone.svg", phone: "/icons/activity/phone.svg",
+    email: "/icons/activity/email.svg", text: "/icons/activity/text.svg",
+    sms: "/icons/activity/text.svg", chat: "/icons/activity/text.svg",
   };
-  return map[ch ?? ""] ?? "📋";
+  const src = map[ch ?? ""];
+  if (!src) return <img src="/icons/activity/phone.svg" alt="" width={14} height={14} style={{ verticalAlign: "middle" }} />;
+  return <img src={src} alt="" width={14} height={14} style={{ verticalAlign: "middle" }} />;
 }
 
 function priorityBadge(p: string | null): { color: string; bg: string; label: string } {
@@ -841,7 +845,7 @@ function QueueCard({
               <div onClick={() => !autoSent && !autoSkipped && setAutoCollapsed(!autoCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: autoCollapsed ? 0 : 8, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    📧 Auto-Confirmation
+                    <img src="/icons/activity/email.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 4 }} />Auto-Confirmation
                   </div>
                   <span style={{ fontSize: 9, color: "#52525b", fontStyle: "italic" }}>SendGrid noreply@</span>
                 </div>
@@ -898,7 +902,7 @@ function QueueCard({
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
                         backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
                         opacity: autoSending || !autoBody ? 0.5 : 1,
-                      }}>{autoSending ? "Sending..." : "📧 Send Email"}</button>
+                      }}>{autoSending ? "Sending..." : <><img src="/icons/activity/email.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Send Email</>}</button>
                       <button onClick={() => setAutoSkipped(true)} style={{
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                         backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
@@ -919,7 +923,7 @@ function QueueCard({
               <div onClick={() => !personalSent && !personalSkipped && setPersonalCollapsed(!personalCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: personalCollapsed ? 0 : 8, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    📧 Personal Follow-Up
+                    <img src="/icons/activity/email.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 4 }} />Personal Follow-Up
                   </div>
                   <span style={{ fontSize: 9, color: "#52525b", fontStyle: "italic" }}>OSC via Outlook</span>
                 </div>
@@ -1055,7 +1059,7 @@ function QueueCard({
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
                         backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
                         opacity: personalSending || !personalBody ? 0.5 : 1,
-                      }}>{personalSending ? "Sending..." : "📧 Send Email"}</button>
+                      }}>{personalSending ? "Sending..." : <><img src="/icons/activity/email.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Send Email</>}</button>
                       <button onClick={() => setPersonalSkipped(true)} style={{
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                         backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
@@ -1076,7 +1080,7 @@ function QueueCard({
               <div onClick={() => !smsSent && !smsSkipped && setSmsCollapsed(!smsCollapsed)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: smsCollapsed ? 0 : 8, cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    💬 SMS Follow-Up
+                    <img src="/icons/activity/text.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 4 }} />SMS Follow-Up
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1154,7 +1158,7 @@ function QueueCard({
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #166534",
                         backgroundColor: "#052e16", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
                         opacity: smsSending || !smsBody ? 0.5 : 1,
-                      }}>{smsSending ? "Sending..." : "💬 Send SMS"}</button>
+                      }}>{smsSending ? "Sending..." : <><img src="/icons/activity/text.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Send SMS</>}</button>
                       <button onClick={() => setSmsSkipped(true)} style={{
                         padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                         backgroundColor: "#09090b", color: "#71717a", fontSize: 11, cursor: "pointer",
@@ -1211,19 +1215,19 @@ function QueueCard({
                   <a href={`tel:${item.contacts.phone}`} style={{
                     padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                     backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer", textDecoration: "none",
-                  }}>📞 Call</a>
+                  }}><img src="/icons/activity/phone.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Call</a>
                 )}
                 {item.contacts?.email && (
                   <a href={`mailto:${item.contacts.email}`} style={{
                     padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                     backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer", textDecoration: "none",
-                  }}>📧 Email</a>
+                  }}><img src="/icons/activity/email.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Email</a>
                 )}
                 {item.contacts?.phone && (
                   <a href={`sms:${item.contacts.phone}`} style={{
                     padding: "6px 12px", borderRadius: 4, border: "1px solid #27272a",
                     backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer", textDecoration: "none",
-                  }}>💬 Text</a>
+                  }}><img src="/icons/activity/text.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} />Text</a>
                 )}
               </div>
             </div>
@@ -1308,19 +1312,19 @@ function TaskCard({
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", position: "relative" }}>
         {task.channel === "call" || task.channel === "phone" ? (
-          <ActionBtn label="📞 Call" />
+          <ActionBtn label={<><img src="/icons/activity/phone.svg" alt="" width={12} height={12} /> Call</>} />
         ) : null}
         {task.channel === "email" ? (
-          <ActionBtn label="📧 Email" />
+          <ActionBtn label={<><img src="/icons/activity/email.svg" alt="" width={12} height={12} /> Email</>} />
         ) : null}
         {task.channel === "text" || task.channel === "sms" ? (
-          <ActionBtn label="💬 Text" />
+          <ActionBtn label={<><img src="/icons/activity/text.svg" alt="" width={12} height={12} /> Text</>} />
         ) : null}
         {!task.channel && (
           <>
-            <ActionBtn label="📞 Call" />
-            <ActionBtn label="📧 Email" />
-            <ActionBtn label="💬 Text" />
+            <ActionBtn label={<><img src="/icons/activity/phone.svg" alt="" width={12} height={12} /> Call</>} />
+            <ActionBtn label={<><img src="/icons/activity/email.svg" alt="" width={12} height={12} /> Email</>} />
+            <ActionBtn label={<><img src="/icons/activity/text.svg" alt="" width={12} height={12} /> Text</>} />
           </>
         )}
         <button onClick={onComplete} style={{
@@ -1344,11 +1348,12 @@ function TaskCard({
   );
 }
 
-function ActionBtn({ label }: { label: string }) {
+function ActionBtn({ label }: { label: React.ReactNode }) {
   return (
     <button style={{
       padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
       backgroundColor: "#09090b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+      display: "inline-flex", alignItems: "center", gap: 3,
     }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
       onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}

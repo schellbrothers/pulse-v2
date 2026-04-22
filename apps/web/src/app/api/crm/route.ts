@@ -467,7 +467,88 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
   let smsBody = sm ? render(sm.body ?? "") : `Hi ${firstName}! Thanks for reaching out to Schell Brothers!`;
   
   // Build branded HTML email helper
-  function buildBrandedHtml(subject: string, body: string): string {
+  const BUTTON_COLORS = ["#C41230", "#1B2A4A", "#686126"];
+  const TRACKING_BASE = "https://pulse-v2-nine.vercel.app/api/track/click";
+
+  interface CtaButton {
+    label: string;
+    url: string;
+    score_weight: number;
+    color?: string;
+  }
+
+  interface TrackingRecord {
+    tracking_id: string;
+    button_label: string;
+    button_url: string;
+    score_weight: number;
+  }
+
+  async function buildCtaButtonsHtml(
+    buttons: CtaButton[],
+    contactId: string,
+    opportunityId: string,
+    activityId: string | null,
+    renderFn: (s: string) => string
+  ): Promise<{ html: string; trackingRecords: TrackingRecord[] }> {
+    if (!buttons || buttons.length === 0) {
+      // Default button if no custom buttons configured
+      return {
+        html: `<div style="text-align: center; margin: 32px 0;">
+          <a href="https://schellbrothers.com" style="display: inline-block; background: #C41230; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 4px; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+            EXPLORE SCHELL BROTHERS
+          </a>
+        </div>`,
+        trackingRecords: [],
+      };
+    }
+
+    const trackingRecords: TrackingRecord[] = [];
+    const btnHtmlParts: string[] = [];
+
+    for (let i = 0; i < buttons.length && i < 3; i++) {
+      const btn = buttons[i];
+      const resolvedUrl = renderFn(btn.url);
+      const trackingId = crypto.randomUUID();
+      const color = btn.color || BUTTON_COLORS[i] || BUTTON_COLORS[0];
+      const trackingUrl = `${TRACKING_BASE}?id=${encodeURIComponent(trackingId)}&url=${encodeURIComponent(resolvedUrl)}`;
+
+      trackingRecords.push({
+        tracking_id: trackingId,
+        button_label: btn.label,
+        button_url: resolvedUrl,
+        score_weight: btn.score_weight ?? 5,
+      });
+
+      btnHtmlParts.push(
+        `<a href="${trackingUrl}" style="display: inline-block; background: ${color}; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 4px; font-size: 13px; font-weight: 600; margin: 0 8px 8px 0; letter-spacing: 0.5px;">
+          ${btn.label.toUpperCase()}
+        </a>`
+      );
+    }
+
+    // Store tracking records in email_clicks
+    if (trackingRecords.length > 0) {
+      const rows = trackingRecords.map((tr) => ({
+        org_id: ORG_ID,
+        activity_id: activityId,
+        contact_id: contactId,
+        opportunity_id: opportunityId,
+        button_label: tr.button_label,
+        button_url: tr.button_url,
+        score_weight: tr.score_weight,
+        tracking_id: tr.tracking_id,
+      }));
+      await supabase.from("email_clicks").insert(rows);
+    }
+
+    return {
+      html: `<div style="text-align: center; margin: 24px 0;">${btnHtmlParts.join("\n")}</div>`,
+      trackingRecords,
+    };
+  }
+
+  function buildBrandedHtml(subject: string, body: string, ctaHtml: string): string {
     const bodyHtml = body.replace(/\n/g, "<br>");
     return `
     <div style="font-family: 'Georgia', 'Times New Roman', serif; max-width: 640px; margin: 0 auto; background: #ffffff; border: 4px solid #C41230;">
@@ -482,11 +563,7 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
         <div style="color: #444; font-size: 15px; line-height: 1.8;">
           ${bodyHtml}
         </div>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="https://schellbrothers.com" style="display: inline-block; background: #C41230; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 4px; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
-            EXPLORE SCHELL BROTHERS
-          </a>
-        </div>
+        ${ctaHtml}
         <p style="color: #888; font-size: 13px; line-height: 1.6; margin: 0; font-style: italic;">
           We maximize happiness rather than profit — and it shows in everything we do.
         </p>
@@ -501,8 +578,16 @@ async function generateResponse(opportunity_id: string, ctx: ActionContext) {
     </div>`;
   }
 
-  const autoHtml = buildBrandedHtml(autoSubject, autoBody);
-  const personalHtml = buildBrandedHtml(personalSubject, personalBody);
+  // Build CTA buttons from template config
+  const autoButtons: CtaButton[] = (ea?.buttons as CtaButton[] | undefined) ?? [];
+  const personalButtons: CtaButton[] = (ep?.buttons as CtaButton[] | undefined) ?? [];
+
+  // Build HTML with tracked CTA buttons
+  const autoCta = await buildCtaButtonsHtml(autoButtons, opp.contact_id, opportunity_id, null, render);
+  const personalCta = await buildCtaButtonsHtml(personalButtons, opp.contact_id, opportunity_id, null, render);
+
+  const autoHtml = buildBrandedHtml(autoSubject, autoBody, autoCta.html);
+  const personalHtml = buildBrandedHtml(personalSubject, personalBody, personalCta.html);
 
   return { success: true, data: { email_auto: { subject: autoSubject, body: autoBody, html: autoHtml }, email_personal: { subject: personalSubject, body: personalBody, html: personalHtml }, sms: { body: smsBody }, form_type: formType } };
 }

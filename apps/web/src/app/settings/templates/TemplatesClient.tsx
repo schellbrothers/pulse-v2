@@ -6,12 +6,20 @@ import { useToast } from "@/components/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface TemplateButton {
+  label: string;
+  url: string;
+  score_weight: number;
+  color?: string;
+}
+
 interface Template {
   id: string;
   form_type_code: string;
   channel: string;
   subject: string | null;
   body: string;
+  buttons?: TemplateButton[];
   is_default: boolean;
   division_id: string | null;
   community_id: string | null;
@@ -130,7 +138,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
 
   const [templates, setTemplates] = useState<Template[]>(initial);
   const [selectedFormType, setSelectedFormType] = useState<string>(FORM_TYPES[0].code);
-  const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({});
+  const [edits, setEdits] = useState<Record<string, { subject: string; body: string; buttons?: TemplateButton[] }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [previewing, setPreviewing] = useState<Record<string, boolean>>({});
 
@@ -224,10 +232,11 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
 
   const getEdited = useCallback(
     (tpl: Template) => {
-      const e = edits[tpl.id];
+      const e = edits?.[tpl.id];
       return {
         subject: e?.subject ?? tpl.subject ?? "",
         body: e?.body ?? tpl.body ?? "",
+        buttons: e?.buttons ?? (tpl.buttons as TemplateButton[] | undefined) ?? [],
       };
     },
     [edits]
@@ -238,9 +247,24 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
       setEdits((prev) => ({
         ...prev,
         [id]: {
-          subject: prev[id]?.subject ?? tpl.subject ?? "",
-          body: prev[id]?.body ?? tpl.body ?? "",
+          subject: prev?.[id]?.subject ?? tpl.subject ?? "",
+          body: prev?.[id]?.body ?? tpl.body ?? "",
+          buttons: prev?.[id]?.buttons ?? (tpl.buttons as TemplateButton[] | undefined) ?? [],
           [field]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const setButtons = useCallback(
+    (id: string, buttons: TemplateButton[], tpl: Template) => {
+      setEdits((prev) => ({
+        ...prev,
+        [id]: {
+          subject: prev?.[id]?.subject ?? tpl.subject ?? "",
+          body: prev?.[id]?.body ?? tpl.body ?? "",
+          buttons,
         },
       }));
     },
@@ -249,7 +273,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
 
   const handleSave = useCallback(
     async (tpl: Template, channel: Channel) => {
-      const edited = edits[tpl.id];
+      const edited = edits?.[tpl.id];
       if (!edited) return;
 
       const scope = scopes[channel];
@@ -269,6 +293,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
           // Update existing template in place
           const updatePayload: Record<string, unknown> = {
             body: edited.body,
+            buttons: edited.buttons ?? [],
             updated_at: new Date().toISOString(),
           };
           if (tpl.channel !== "sms") {
@@ -292,6 +317,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
             form_type_code: tpl.form_type_code,
             channel: tpl.channel,
             body: edited.body,
+            buttons: edited.buttons ?? [],
             is_default: false,
             is_active: true,
             division_id: scope.communityId
@@ -364,7 +390,7 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
 
   // ── Render ──
 
-  const isDirty = (tpl: Template) => !!edits[tpl.id];
+  const isDirty = (tpl: Template) => !!edits?.[tpl.id];
 
   // Check if the resolved template is an exact scope match or a fallback
   const isFallback = useCallback(
@@ -700,6 +726,137 @@ export default function TemplatesClient({ templates: initial }: { templates: Tem
                   />
                 )}
               </div>
+
+              {/* CTA Buttons Editor (email channels only) */}
+              {!isSms && (
+                <div style={{ marginBottom: 14 }}>
+                  <label
+                    style={{ fontSize: 11, fontWeight: 600, color: "#a1a1aa", display: "block", marginBottom: 6 }}
+                  >
+                    CTA Buttons
+                  </label>
+                  {(edited.buttons ?? []).map((btn, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        alignItems: "center",
+                        marginBottom: 6,
+                        padding: "6px 8px",
+                        background: "#09090b",
+                        border: "1px solid #27272a",
+                        borderRadius: 4,
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={btn.label}
+                        onChange={(e) => {
+                          const next = [...(edited.buttons ?? [])];
+                          next[idx] = { ...next[idx], label: e.target.value };
+                          setButtons(tpl.id, next, tpl);
+                        }}
+                        placeholder="Label"
+                        style={{
+                          flex: "0 0 140px",
+                          padding: "4px 8px",
+                          background: "#18181b",
+                          border: "1px solid #27272a",
+                          borderRadius: 3,
+                          color: "#fafafa",
+                          fontSize: 12,
+                          outline: "none",
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={btn.url}
+                        onChange={(e) => {
+                          const next = [...(edited.buttons ?? [])];
+                          next[idx] = { ...next[idx], url: e.target.value };
+                          setButtons(tpl.id, next, tpl);
+                        }}
+                        placeholder="https://..."
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          padding: "4px 8px",
+                          background: "#18181b",
+                          border: "1px solid #27272a",
+                          borderRadius: 3,
+                          color: "#fafafa",
+                          fontSize: 12,
+                          outline: "none",
+                        }}
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={btn.score_weight}
+                        onChange={(e) => {
+                          const next = [...(edited.buttons ?? [])];
+                          next[idx] = { ...next[idx], score_weight: Math.max(1, Math.min(20, Number(e.target.value) || 1)) };
+                          setButtons(tpl.id, next, tpl);
+                        }}
+                        title="Score weight (1-20)"
+                        style={{
+                          flex: "0 0 48px",
+                          padding: "4px 6px",
+                          background: "#18181b",
+                          border: "1px solid #27272a",
+                          borderRadius: 3,
+                          color: "#fafafa",
+                          fontSize: 12,
+                          outline: "none",
+                          textAlign: "center",
+                        }}
+                      />
+                      <span style={{ fontSize: 10, color: "#52525b", whiteSpace: "nowrap" }}>pt</span>
+                      <button
+                        onClick={() => {
+                          const next = (edited.buttons ?? []).filter((_, i) => i !== idx);
+                          setButtons(tpl.id, next, tpl);
+                        }}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          fontSize: 14,
+                          padding: "2px 4px",
+                          lineHeight: 1,
+                        }}
+                        title="Remove button"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {(edited.buttons ?? []).length < 3 && (
+                    <button
+                      onClick={() => {
+                        const next = [...(edited.buttons ?? []), { label: "", url: "", score_weight: 5 }];
+                        setButtons(tpl.id, next, tpl);
+                      }}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: "#a1a1aa",
+                        background: "transparent",
+                        border: "1px dashed #3f3f46",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        marginTop: 2,
+                      }}
+                    >
+                      + Add Button
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Merge Variables */}
               <div style={{ marginBottom: 16 }}>

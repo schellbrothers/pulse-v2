@@ -955,15 +955,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                               {isPhone && (
                                 <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                                   {recordingUrl && (
-                                    <button
-                                      onClick={e => { e.stopPropagation(); window.open(recordingUrl, "_blank"); }}
-                                      style={{
-                                        padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                                        cursor: "pointer", border: "1px solid #27272a", background: "#18181b", color: "#a1a1aa",
-                                      }}
-                                    >
-                                      ▶ Play
-                                    </button>
+                                    <span style={{ fontSize: 10, color: "#4ade80" }}>🎙️</span>
                                   )}
                                   {a.transcript_id && (
                                     <button
@@ -1003,6 +995,20 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                           {/* Expanded transcript section */}
                           {isPhone && isExpanded && (
                             <div style={{ padding: "0 0 8px 32px" }}>
+                              {/* Embedded audio player */}
+                              {recordingUrl && (
+                                <div style={{ padding: "8px 0" }}>
+                                  <audio
+                                    controls
+                                    preload="none"
+                                    style={{
+                                      width: "100%", height: 36, borderRadius: 6,
+                                      filter: "invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)",
+                                    }}
+                                    src={recordingUrl}
+                                  />
+                                </div>
+                              )}
                               {isLoadingTranscript && (
                                 <div style={{ fontSize: 11, color: "#888", padding: "8px 0" }}>Loading transcript…</div>
                               )}

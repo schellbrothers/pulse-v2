@@ -1121,6 +1121,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                                 let utmContent = (wfMeta.utm_content as string) || "";
                                 let clickId = (wfMeta.gclid as string) || (wfMeta.msclkid as string) || (wfMeta.fbclid as string) || "";
                                 let clickIdType = wfMeta.gclid ? "gclid" : wfMeta.msclkid ? "msclkid" : wfMeta.fbclid ? "fbclid" : "";
+                                let gadCampaignId = (wfMeta.gad_campaignid as string) || "";
 
                                 // Fallback: parse from source_url if structured fields missing
                                 if (!adPlatform && !campaignName && sourceUrl) {
@@ -1136,6 +1137,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                                     campaignName = campaignName || u.searchParams.get("utm_campaign") || "";
                                     utmTerm = utmTerm || u.searchParams.get("utm_term") || "";
                                     utmContent = utmContent || u.searchParams.get("utm_content") || "";
+                                    gadCampaignId = gadCampaignId || pGadCampaign || "";
                                     if (pGclid || pGadCampaign) {
                                       adPlatform = "Google Ads";
                                       clickId = clickId || pGclid || "";
@@ -1157,8 +1159,13 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                                   } catch { /* invalid URL */ }
                                 }
 
-                                // Build display strings
-                                const campaignDisplay = campaignName || "";
+                                // For Google Ads: use gad_campaignid as campaign if no utm_campaign
+                                const campaignDisplay = campaignName || (gadCampaignId ? `ID: ${gadCampaignId}` : "");
+                                // For Google Ads without UTM: show "google / cpc" as source/medium
+                                if (adPlatform === "Google Ads" && !utmSource) {
+                                  utmSource = "google";
+                                  utmMedium = "cpc";
+                                }
                                 // Source / Medium line (e.g. "bing / cpc")
                                 const sourceMedium = [utmSource, utmMedium].filter(Boolean).join(" / ");
 

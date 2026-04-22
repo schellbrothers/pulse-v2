@@ -31,7 +31,7 @@ export function getActivityStyle(channel: string | null, type: string | null, di
   }
   // Web Form
   if (ch === "webform" || ch === "web_form" || ty === "webform") {
-    return { icon: "", label: "Web Form", borderColor: "#FF5E5E", bgColor: "rgba(255, 94, 94, 0.15)" };
+    return { icon: "/icons/activity/webform.svg", label: "Web Form", borderColor: "#FF5E5E", bgColor: "rgba(255, 94, 94, 0.15)" };
   }
   // Meeting/Appointment
   if (ch === "meeting" || ty === "meeting" || ty === "appointment") {

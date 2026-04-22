@@ -1095,24 +1095,56 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                               )}
 
                               {/* ── Web Form Drawer ── */}
-                              {isWebForm && (
-                                <>
-                                  <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 2 }}>
-                                    <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>FORM TYPE: </span>
-                                    {a.subject || "form"}
-                                  </div>
-                                  {a.metadata && (a.metadata as Record<string, unknown>).community && (
-                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 2 }}>
-                                      <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>COMMUNITY: </span>
-                                      {String((a.metadata as Record<string, unknown>).community)}
+                              {isWebForm && (() => {
+                                let wfMeta: Record<string, unknown> = {};
+                                try { wfMeta = typeof a.metadata === "string" ? JSON.parse(a.metadata) : (a.metadata ?? {}); } catch { /* */ }
+                                const formType = (wfMeta.form_type_code as string) || a.subject?.replace("Web form: ", "").split(" ")[0] || "form";
+                                const divName = (wfMeta.division_name as string) || "";
+                                const commName = (wfMeta.community_name as string) || "";
+                                const sourceUrl = (wfMeta.source_url as string) || "";
+                                const interested = (wfMeta.interested_in as string) || a.body || "";
+                                // Parse body if it's JSON (old format)
+                                let bodyText = interested;
+                                try {
+                                  const parsed = JSON.parse(interested);
+                                  bodyText = parsed.interested_in || "";
+                                } catch { /* not JSON, use as-is */ }
+                                return (
+                                  <>
+                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
+                                      <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>FORM TYPE:  </span>
+                                      {formType}
                                     </div>
-                                  )}
-                                  <div style={{ borderTop: "1px solid #27272a", marginBottom: 8, marginTop: 6 }} />
-                                  <div style={{ fontSize: 12, color: "#d4d4d8", lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 300, overflowY: "auto" }}>
-                                    {a.body || "(no message)"}
-                                  </div>
-                                </>
-                              )}
+                                    {divName && (
+                                      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
+                                        <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>DIVISION:  </span>
+                                        {divName}
+                                      </div>
+                                    )}
+                                    {commName && (
+                                      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
+                                        <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>COMMUNITY:  </span>
+                                        {commName}
+                                      </div>
+                                    )}
+                                    {sourceUrl && (
+                                      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3, wordBreak: "break-all" }}>
+                                        <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#71717a", fontSize: 10 }}>URL:  </span>
+                                        <a href={sourceUrl} target="_blank" rel="noreferrer" style={{ color: "#92af00", textDecoration: "none", fontSize: 11 }}>{sourceUrl}</a>
+                                      </div>
+                                    )}
+                                    {bodyText && (
+                                      <>
+                                        <div style={{ borderTop: "1px solid #27272a", marginBottom: 8, marginTop: 6 }} />
+                                        <div style={{ fontSize: 11, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>DETAILS:</div>
+                                        <div style={{ fontSize: 12, color: "#d4d4d8", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                                          {bodyText}
+                                        </div>
+                                      </>
+                                    )}
+                                  </>
+                                );
+                              })()}
 
                               {/* ── SMS Drawer ── */}
                               {isSms && (

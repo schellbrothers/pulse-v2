@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { getActivityStyle } from "@/lib/activity-styles";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 
@@ -863,45 +864,57 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                 ) : activities.length === 0 ? (
                   <p style={{ fontSize: 12, color: "#888", margin: 0 }}>No activities recorded</p>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {activities.map(a => {
                       const channelKey = a.channel ?? "";
-                      const icon = CHANNEL_ICONS[channelKey] ?? "📋";
-                      const channelLabel = CHANNEL_LABELS[channelKey] ?? channelKey.replace(/_/g, " ");
                       const isPhone = channelKey === "phone" || channelKey === "call";
                       const isExpanded = expandedActivityId === a.id;
                       const transcript = transcriptCache[a.id];
                       const isLoadingTranscript = transcriptLoading === a.id;
+
+                      // Pv1-style activity styling
+                      const style = getActivityStyle(a.channel, null, a.direction);
 
                       // Phone-specific parsing
                       const phoneDuration = isPhone ? parsePhoneDuration(a) : null;
                       const phoneParties = isPhone ? parsePhoneParties(a) : null;
                       const durationStr = phoneDuration ? formatDurationCompact(phoneDuration) : null;
 
-                      // Build subject display
-                      let subjectDisplay: string;
+                      // Build description in Pv1 format
+                      let description: string;
                       if (isPhone) {
-                        const dirLabel = a.direction === "inbound" ? "Inbound Call" : "Outbound Call";
-                        const parts = [dirLabel];
-                        if (phoneParties?.employee) parts.push(phoneParties.employee);
+                        const parts: string[] = [];
+                        if (phoneParties?.externalParty) parts.push(phoneParties.externalParty);
+                        else if (phoneParties?.employee) parts.push(phoneParties.employee);
                         if (durationStr) parts.push(durationStr);
-                        subjectDisplay = parts.join(" — ");
-                        if (parts.length === 1 && durationStr) subjectDisplay = `${dirLabel} — ${durationStr}`;
-                        else if (phoneParties?.employee && durationStr) subjectDisplay = `${dirLabel} — ${phoneParties.employee} · ${durationStr}`;
-                        else if (phoneParties?.employee) subjectDisplay = `${dirLabel} — ${phoneParties.employee}`;
-                        else if (durationStr) subjectDisplay = `${dirLabel} — ${durationStr}`;
-                        else subjectDisplay = dirLabel;
+                        description = parts.length > 0 ? parts.join(" — ") : "Unknown";
+                      } else if (channelKey === "email") {
+                        description = a.subject || a.body?.slice(0, 80) || "(no subject)";
+                      } else if (channelKey === "sms" || channelKey === "text") {
+                        description = a.body?.slice(0, 80) || "(no message)";
+                      } else if (channelKey === "webform" || channelKey === "web_form") {
+                        const formType = a.subject || "form";
+                        const preview = a.body?.slice(0, 60) || "";
+                        description = preview ? `${formType} — ${preview}` : formType;
+                      } else if (channelKey === "meeting") {
+                        description = a.subject || a.body?.slice(0, 80) || "Meeting";
                       } else {
-                        subjectDisplay = a.subject || "(no subject)";
+                        description = a.subject || a.body?.slice(0, 80) || "Activity";
                       }
 
                       // Recording URL
                       const recordingUrl = a.recording_url || transcript?.recording_url || null;
 
                       return (
-                        <div key={a.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                        <div key={a.id}>
                           <div
-                            style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0", cursor: isPhone ? "pointer" : "default" }}
+                            style={{
+                              borderLeft: `4px solid ${style.borderColor}`,
+                              backgroundColor: style.bgColor,
+                              padding: "8px 12px",
+                              borderRadius: "4px",
+                              cursor: isPhone ? "pointer" : "default",
+                            }}
                             onClick={() => {
                               if (isPhone) {
                                 const newId = isExpanded ? null : a.id;
@@ -912,84 +925,58 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                               }
                             }}
                           >
-                            <span style={{ fontSize: 16, flexShrink: 0, lineHeight: "20px" }}>
-                              {icon}
-                            </span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                                <span style={{ fontSize: 10, fontWeight: 600, color: "#999", textTransform: "uppercase" }}>
-                                  {channelLabel}
-                                </span>
-                                <span style={{
-                                  color: a.direction === "inbound" ? "#4ade80" : "#60a5fa",
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                }}>
-                                  {a.direction === "inbound" ? "↓ Inbound" : "↑ Outbound"}
-                                </span>
-                                {isPhone && a.transcript_id && (
-                                  <span style={{ fontSize: 9, color: "#34d399", fontWeight: 500 }}>📝</span>
-                                )}
-                              </div>
-                              <div style={{ fontSize: 12, color: "#ededed", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {subjectDisplay}
-                              </div>
-                              {isPhone && phoneParties?.externalParty && (
-                                <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 1 }}>
-                                  {phoneParties.externalParty}
-                                  {phoneParties.employee && (
-                                    <span style={{ color: "#555", fontSize: 10 }}> via {phoneParties.employee}</span>
-                                  )}
-                                </div>
-                              )}
-                              <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 2 }}>
-                                {formatDateTime(a.occurred_at)}
-                                {!isPhone && a.duration_sec != null && a.duration_sec > 0 && (
-                                  <span> · {Math.round(a.duration_sec / 60)}min</span>
-                                )}
-                                {a.sentiment && (
-                                  <span> · {a.sentiment}</span>
-                                )}
-                              </div>
-                              {/* Action buttons for phone activities */}
-                              {isPhone && (
-                                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                                  {recordingUrl && (
-                                    <span style={{ fontSize: 10, color: "#4ade80" }}>🎙️</span>
-                                  )}
-                                  {a.transcript_id && (
-                                    <button
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        const newId = isExpanded ? null : a.id;
-                                        setExpandedActivityId(newId);
-                                        if (newId && a.transcript_id && !transcriptCache[a.id]) {
-                                          fetchTranscript(a.transcript_id, a.id);
-                                        }
-                                      }}
-                                      style={{
-                                        padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                                        cursor: "pointer", border: "1px solid #27272a", background: "#18181b", color: "#a1a1aa",
-                                      }}
-                                    >
-                                      📝 Transcript
-                                    </button>
-                                  )}
-                                  {transcript?.raw_text && (
-                                    <button
-                                      onClick={e => { e.stopPropagation(); copyTranscript(a.id); }}
-                                      style={{
-                                        padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                                        cursor: "pointer", border: "1px solid #27272a", background: "#18181b",
-                                        color: copiedId === a.id ? "#4ade80" : "#a1a1aa",
-                                      }}
-                                    >
-                                      {copiedId === a.id ? "✓ Copied!" : "📋 Copy"}
-                                    </button>
-                                  )}
-                                </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 14, lineHeight: "18px" }}>{style.icon}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "#ededed" }}>{style.label}:</span>
+                              <span style={{ fontSize: 12, color: "#d4d4d8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                                {description}
+                              </span>
+                              {isPhone && a.transcript_id && (
+                                <span style={{ fontSize: 9, color: "#34d399", fontWeight: 500, flexShrink: 0 }}>📝</span>
                               )}
                             </div>
+                            <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 3 }}>
+                              {formatDateTime(a.occurred_at)}
+                              {a.sentiment && <span> · {a.sentiment}</span>}
+                            </div>
+                            {/* Action buttons for phone activities */}
+                            {isPhone && (
+                              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                                {recordingUrl && (
+                                  <span style={{ fontSize: 10, color: "#4ade80" }}>🎙️</span>
+                                )}
+                                {a.transcript_id && (
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      const newId = isExpanded ? null : a.id;
+                                      setExpandedActivityId(newId);
+                                      if (newId && a.transcript_id && !transcriptCache[a.id]) {
+                                        fetchTranscript(a.transcript_id, a.id);
+                                      }
+                                    }}
+                                    style={{
+                                      padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
+                                      cursor: "pointer", border: "1px solid #27272a", background: "#18181b", color: "#a1a1aa",
+                                    }}
+                                  >
+                                    📝 Transcript
+                                  </button>
+                                )}
+                                {transcript?.raw_text && (
+                                  <button
+                                    onClick={e => { e.stopPropagation(); copyTranscript(a.id); }}
+                                    style={{
+                                      padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
+                                      cursor: "pointer", border: "1px solid #27272a", background: "#18181b",
+                                      color: copiedId === a.id ? "#4ade80" : "#a1a1aa",
+                                    }}
+                                  >
+                                    {copiedId === a.id ? "✓ Copied!" : "📋 Copy"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Expanded transcript section */}

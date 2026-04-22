@@ -2,6 +2,7 @@
 
 import { sendEmail, sendSms, markRead } from "@/lib/crm-api";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { getActivityStyle } from "@/lib/activity-styles";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -166,6 +167,7 @@ function ActivityCard({
   onSendReply: (text: string, channel: string) => void;
 }) {
   const meta = getChannelMeta(activity.channel);
+  const actStyle = getActivityStyle(activity.channel, activity.type, activity.direction);
   const contactName = activity.contacts
     ? `${activity.contacts.first_name} ${activity.contacts.last_name}`
     : "Unknown";
@@ -174,7 +176,6 @@ function ActivityCard({
   const isInbound = activity.direction === "inbound";
   const dirArrow = isInbound ? "←" : "→";
   const dirLabel = isInbound ? "Received" : "Sent";
-  const borderColor = needsResponse ? "#f97316" : isRead ? "#27272a" : "#3f3f46";
 
   const [replyChannel, setReplyChannel] = useState(activity.channel ?? "email");
   const [replyText, setReplyText] = useState("");
@@ -232,7 +233,8 @@ function ActivityCard({
 
   return (
     <div style={{
-      border: "1px solid #27272a",
+      borderLeft: `4px solid ${actStyle.borderColor}`,
+      backgroundColor: actStyle.bgColor,
       borderRadius: 6,
       overflow: "hidden",
       transition: "all 0.15s",
@@ -245,7 +247,7 @@ function ActivityCard({
         }}
         style={{
           padding: "12px 16px",
-          backgroundColor: isRead && !needsResponse ? "transparent" : "#18181b",
+          backgroundColor: "transparent",
           cursor: "pointer",
           display: "flex",
           flexDirection: "column",
@@ -257,13 +259,12 @@ function ActivityCard({
       >
         {/* Top row: channel badge + priority badges + name + timestamp */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-          {/* Channel pill — ALWAYS visible */}
+          {/* Pv1-style icon + label */}
           <span style={{
-            fontSize: 9, padding: "2px 6px", borderRadius: 10,
-            backgroundColor: meta.bg, color: meta.color, fontWeight: 600,
-            display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap", flexShrink: 0,
+            fontSize: 12, fontWeight: 600, color: "#ededed",
+            display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", flexShrink: 0,
           }}>
-            {meta.icon} {dirArrow}
+            {actStyle.icon} {actStyle.label}
           </span>
 
           {/* Priority badges — ALWAYS visible when applicable */}

@@ -242,10 +242,10 @@ function StagePill({ label }: { label: string }) {
 
 function isWebFormSource(item: QueueItem): boolean {
   const src = item.opportunity_source ?? item.source ?? "";
-  return [
-    "webform_interest", "subscribe_region", "subscribe_community",
-    "schedule_visit", "schedule_appt", "prelaunch_community", "rsvp",
-  ].includes(src);
+  // Anything that's not schellie, ai, or pipeline is a web form variant
+  if (src === "schellie_conversion" || src === "ai_auto_promote") return false;
+  if (src === "promotion" || src === "demotion") return false;
+  return true;
 }
 
 // ─── Empty State ──────────────────────────────────────────────────────────────

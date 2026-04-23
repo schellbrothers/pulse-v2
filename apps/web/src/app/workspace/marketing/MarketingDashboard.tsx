@@ -346,7 +346,7 @@ export default function MarketingDashboard() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<LeadTab>("lead_div");
   const [communityFilter, setCommunityFilter] = useState<string | null>(null);
-  const [selectedPanel, setSelectedPanel] = useState<OpportunityPanelData | null>(null);
+  const [panelItem, setPanelItem] = useState<LeadItem | null>(null);
 
   // ── Fetch data ──
   const fetchData = useCallback(async () => {
@@ -640,12 +640,7 @@ export default function MarketingDashboard() {
                         communities={communities}
                         onPromoteToQueue={handlePromoteToQueue}
                         onAssignCommunity={handleAssignCommunity}
-                        onNameClick={() => setSelectedPanel({
-                          opportunityId: item.id,
-                          contactId: item.contact_id,
-                          communityId: item.community_id ?? undefined,
-                          divisionId: item.division_id ?? undefined,
-                        })}
+                        onNameClick={() => setPanelItem(item)}
                       />
                     ))}
                   </div>
@@ -751,10 +746,28 @@ export default function MarketingDashboard() {
       </div>
 
       {/* Opportunity Side Panel */}
-      {selectedPanel && (
+      {panelItem && (
         <OpportunityPanel
-          data={selectedPanel}
-          onClose={() => setSelectedPanel(null)}
+          open={!!panelItem}
+          onClose={() => setPanelItem(null)}
+          opportunity={{
+            id: panelItem.id,
+            contact_id: panelItem.contact_id,
+            first_name: panelItem.contacts?.first_name ?? "—",
+            last_name: panelItem.contacts?.last_name ?? "",
+            email: panelItem.contacts?.email ?? null,
+            phone: panelItem.contacts?.phone ?? null,
+            stage: panelItem.crm_stage,
+            source: panelItem.source ?? panelItem.opportunity_source,
+            community_name: panelItem.communities?.name ?? null,
+            division_name: labels.division ?? null,
+            budget_min: null,
+            budget_max: null,
+            floor_plan_name: null,
+            notes: null,
+            last_activity_at: panelItem.last_activity_at,
+            created_at: panelItem.created_at,
+          }}
         />
       )}
     </div>

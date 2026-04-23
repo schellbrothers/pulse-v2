@@ -776,7 +776,7 @@ function QueueCard({
               )}
             </div>
             <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
-              {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""}{(webForm || isSchellie) && (item.opportunity_source ?? item.source) ? ` · ${sourceLabel(item.opportunity_source ?? item.source)}` : ""}
+              {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""}{webForm && (item.opportunity_source ?? item.source) ? ` · ${sourceLabel(item.opportunity_source ?? item.source)}` : ""}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -822,7 +822,7 @@ function QueueCard({
             </div>
           </div>
           <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>
-            {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""}{(webForm || isSchellie) && (item.opportunity_source ?? item.source) ? ` · ${sourceLabel(item.opportunity_source ?? item.source)}` : ""} · {item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}
+            {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""}{webForm && (item.opportunity_source ?? item.source) ? ` · ${sourceLabel(item.opportunity_source ?? item.source)}` : ""} · {item.last_activity_at ? new Date(item.last_activity_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + new Date(item.last_activity_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}
           </div>
           <button onClick={() => setExpanded(!expanded)} style={{
             width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #27272a",

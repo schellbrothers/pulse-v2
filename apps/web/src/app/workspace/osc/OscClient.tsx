@@ -839,53 +839,7 @@ function QueueCard({
       {expanded && (
         <div style={{ padding: "0 16px 16px", borderTop: "1px solid #27272a", paddingTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* ── STEP 0: Agent Recommendation ── */}
-          <div style={{
-            padding: "12px 14px", backgroundColor: "#052e16", border: "1px solid #166534",
-            borderRadius: 8,
-          }}>
-            {loadingRec ? (
-              <div style={{ fontSize: 12, color: "#86efac" }}>Evaluating...</div>
-            ) : recommendation ? (
-              <>
-                <div style={{ fontSize: 10, color: "#4ade80", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                  Recommended
-                </div>
-                <div style={{ fontSize: 14, color: "#fafafa", fontWeight: 600, marginBottom: 4 }}>
-                  {recLabel} ({recommendation.confidence}%)
-                </div>
-                <div style={{ fontSize: 12, color: "#86efac", lineHeight: 1.5, marginBottom: 10 }}>
-                  {recommendation.reasoning}
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => onApproveAssign(
-                      item.id,
-                      recommendation.stage,
-                      recommendation.community_id ?? item.community_id,
-                      recommendation.reasoning,
-                      recommendation.confidence,
-                    )}
-                    style={{
-                      padding: "6px 16px", borderRadius: 6, border: "1px solid #166534",
-                      backgroundColor: "#14532d", color: "#4ade80", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    }}
-                  >Approve</button>
-                  <button
-                    onClick={() => onAssign(recommendation)}
-                    style={{
-                      padding: "6px 16px", borderRadius: 6, border: "1px solid #3f3f46",
-                      backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 12, cursor: "pointer",
-                    }}
-                  >Override</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 12, color: "#86efac" }}>No recommendation available</div>
-            )}
-          </div>
-
-          {/* ── Form / Schellie Details (compact) ── */}
+          {/* ── Form / Schellie Details (compact) — TOP ── */}
           {(webForm || isSchellie) && (
             <div style={{
               padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a",
@@ -951,6 +905,59 @@ function QueueCard({
             </div>
           )}
 
+
+          {/* ── AI Pipeline Recommendation (grey card) ── */}
+          {!loadingRec && recommendation && (
+            <div style={{
+              padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a",
+              borderRadius: 8,
+            }}>
+              <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                AI Pipeline Recommendation
+              </div>
+              <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.5, marginBottom: 8 }}>
+                {recommendation.reasoning}
+              </div>
+              {/* Slim green action bar */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "6px 10px", backgroundColor: "#052e16", border: "1px solid #166534",
+                borderRadius: 6,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <SourcePill item={item} />
+                  <span style={{ fontSize: 10, color: "#52525b" }}>→</span>
+                  <StagePill label={`${recLabel}`} />
+                  <span style={{ fontSize: 10, color: "#52525b" }}>({recommendation.confidence}%)</span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={() => onApproveAssign(
+                      item.id,
+                      recommendation.stage,
+                      recommendation.community_id ?? item.community_id,
+                      recommendation.reasoning,
+                      recommendation.confidence,
+                    )}
+                    style={{
+                      padding: "4px 12px", borderRadius: 4, border: "1px solid #166534",
+                      backgroundColor: "#14532d", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >Approve</button>
+                  <button
+                    onClick={() => onAssign(recommendation)}
+                    style={{
+                      padding: "4px 12px", borderRadius: 4, border: "1px solid #3f3f46",
+                      backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+                    }}
+                  >Override</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {loadingRec && (
+            <div style={{ padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 8, fontSize: 12, color: "#52525b" }}>Evaluating...</div>
+          )}
 
           {/* ── Schellie Conversation ── */}
           {isSchellie && (() => {
@@ -2157,7 +2164,6 @@ export default function OscClient() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Queue</span>
-                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: filteredQueueItems.length > 0 ? "#7f1d1d" : "#052e16", color: filteredQueueItems.length > 0 ? "#fca5a5" : "#4ade80" }}>{filteredQueueItems.length}</span>
                   </div>
                   <input
                     type="text"

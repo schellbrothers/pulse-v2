@@ -925,27 +925,26 @@ function QueueCard({
             {loadingRec ? (
               <div style={{ fontSize: 12, color: "#52525b" }}>Evaluating...</div>
             ) : recommendation ? (
-              <>
+              <div style={{
+                padding: "10px 12px", backgroundColor: "#052e16", border: "1px solid #166534",
+                borderRadius: 6,
+              }}>
                 {/* AI Recommendation label */}
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
-                  <img src="/icons/activity/ai.svg" alt="" width={12} height={12} style={{ opacity: 0.6 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  <span style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Recommendation</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                  <img src="/icons/activity/ai.svg" alt="" width={12} height={12} style={{ opacity: 0.8 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Recommendation</span>
                 </div>
                 {/* Next Steps */}
-                <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.5, marginBottom: 8 }}>
-                  <span style={{ color: "#71717a" }}>Next Steps: </span>{recommendation.reasoning}
+                <div style={{ fontSize: 12, color: "#86efac", lineHeight: 1.5, marginBottom: 10 }}>
+                  <span style={{ color: "#4ade80", fontWeight: 600 }}>Next Steps: </span>{recommendation.reasoning}
                 </div>
-                {/* Slim green action bar */}
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "6px 10px", backgroundColor: "#052e16", border: "1px solid #166534",
-                  borderRadius: 6,
-                }}>
+                {/* Action bar */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <StagePill label="OSC QUEUE" />
-                    <span style={{ fontSize: 10, color: "#52525b" }}>→</span>
+                    <span style={{ fontSize: 10, color: "#166534" }}>→</span>
                     <StagePill label={`${recLabel}`} />
-                    <span style={{ fontSize: 10, color: "#52525b" }}>({recommendation.confidence}%)</span>
+                    <span style={{ fontSize: 10, color: "#166534" }}>({recommendation.confidence}%)</span>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button
@@ -970,7 +969,7 @@ function QueueCard({
                     >Override</button>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               <div style={{ fontSize: 12, color: "#52525b" }}>No recommendation available</div>
             )}

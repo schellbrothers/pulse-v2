@@ -621,9 +621,7 @@ function QueueCard({
           setRecommendation({
             stage: "csm_queue",
             confidence: 85,
-            reasoning: src === "schellie_conversion"
-              ? "Schellie chat conversion — connect with buyer, confirm community fit, then assign to CSM Queue."
-              : `${sourceLabel(src)} — connect with buyer, confirm fit, then assign to CSM Queue.`,
+            reasoning: "Connect with buyer, confirm community fit, then assign to CSM Queue.",
             community_id: item.community_id,
             community_name: item.communities?.name ?? null,
           });
@@ -942,9 +940,9 @@ function QueueCard({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <StagePill label="OSC QUEUE" />
-                    <span style={{ fontSize: 10, color: "#166534" }}>→</span>
+                    <span style={{ fontSize: 10, color: "#86efac" }}>→</span>
                     <StagePill label={`${recLabel}`} />
-                    <span style={{ fontSize: 10, color: "#166534" }}>({recommendation.confidence}%)</span>
+                    <span style={{ fontSize: 10, color: "#86efac" }}>({recommendation.confidence}%)</span>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button

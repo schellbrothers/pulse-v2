@@ -2280,7 +2280,7 @@ export default function OscClient() {
             stage: "queue",
             source: panelItem.source ?? panelItem.opportunity_source,
             community_name: panelItem.communities?.name ?? null,
-            division_name: labels.division ?? null,
+            division_name: panelItem.divisions?.name ?? labels.division ?? null,
             budget_min: panelItem.budget_min,
             budget_max: panelItem.budget_max,
             floor_plan_name: null,

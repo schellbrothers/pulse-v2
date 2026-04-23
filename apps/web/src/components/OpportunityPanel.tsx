@@ -626,7 +626,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                 <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600, color: "#ededed", margin: 0, lineHeight: 1.3 }}>
                   {opportunity.first_name} {opportunity.last_name}
                 </h2>
-                <StageBadge stage={opportunity.stage} />
+                <StageBadge stage={opportunity.stage} context={opportunity.stage === "lead_div" ? (opportunity.division_name ?? undefined) : opportunity.stage === "lead_com" ? (opportunity.community_name ?? undefined) : undefined} />
               </div>
             </div>
             <button

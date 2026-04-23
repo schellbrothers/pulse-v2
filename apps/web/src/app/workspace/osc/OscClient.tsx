@@ -914,58 +914,67 @@ function QueueCard({
           )}
 
 
-          {/* ── AI Pipeline Recommendation (grey card) ── */}
-          {!loadingRec && recommendation && (
-            <div style={{
-              padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a",
-              borderRadius: 8,
-            }}>
-              <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                AI Pipeline Recommendation
-              </div>
-              <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.5, marginBottom: 8 }}>
-                {recommendation.reasoning}
-              </div>
-              {/* Slim green action bar */}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "6px 10px", backgroundColor: "#052e16", border: "1px solid #166534",
-                borderRadius: 6,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <SourcePill item={item} />
-                  <span style={{ fontSize: 10, color: "#52525b" }}>→</span>
-                  <StagePill label={`${recLabel}`} />
-                  <span style={{ fontSize: 10, color: "#52525b" }}>({recommendation.confidence}%)</span>
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => onApproveAssign(
-                      item.id,
-                      recommendation.stage,
-                      recommendation.community_id ?? item.community_id,
-                      recommendation.reasoning,
-                      recommendation.confidence,
-                    )}
-                    style={{
-                      padding: "4px 12px", borderRadius: 4, border: "1px solid #166534",
-                      backgroundColor: "#14532d", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                    }}
-                  >Approve</button>
-                  <button
-                    onClick={() => onAssign(recommendation)}
-                    style={{
-                      padding: "4px 12px", borderRadius: 4, border: "1px solid #3f3f46",
-                      backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
-                    }}
-                  >Override</button>
-                </div>
-              </div>
+          {/* ── PIPELINE ── */}
+          <div style={{
+            padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a",
+            borderRadius: 8,
+          }}>
+            <div style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+              Pipeline
             </div>
-          )}
-          {loadingRec && (
-            <div style={{ padding: "10px 12px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 8, fontSize: 12, color: "#52525b" }}>Evaluating...</div>
-          )}
+            {loadingRec ? (
+              <div style={{ fontSize: 12, color: "#52525b" }}>Evaluating...</div>
+            ) : recommendation ? (
+              <>
+                {/* AI Recommendation label */}
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                  <img src="/icons/activity/ai.svg" alt="" width={12} height={12} style={{ opacity: 0.6 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <span style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Recommendation</span>
+                </div>
+                {/* Next Steps */}
+                <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.5, marginBottom: 8 }}>
+                  <span style={{ color: "#71717a" }}>Next Steps: </span>{recommendation.reasoning}
+                </div>
+                {/* Slim green action bar */}
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "6px 10px", backgroundColor: "#052e16", border: "1px solid #166534",
+                  borderRadius: 6,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <StagePill label="OSC QUEUE" />
+                    <span style={{ fontSize: 10, color: "#52525b" }}>→</span>
+                    <StagePill label={`${recLabel}`} />
+                    <span style={{ fontSize: 10, color: "#52525b" }}>({recommendation.confidence}%)</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={() => onApproveAssign(
+                        item.id,
+                        recommendation.stage,
+                        recommendation.community_id ?? item.community_id,
+                        recommendation.reasoning,
+                        recommendation.confidence,
+                      )}
+                      style={{
+                        padding: "4px 12px", borderRadius: 4, border: "1px solid #166534",
+                        backgroundColor: "#14532d", color: "#4ade80", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >Approve</button>
+                    <button
+                      onClick={() => onAssign(recommendation)}
+                      style={{
+                        padding: "4px 12px", borderRadius: 4, border: "1px solid #3f3f46",
+                        backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 11, cursor: "pointer",
+                      }}
+                    >Override</button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 12, color: "#52525b" }}>No recommendation available</div>
+            )}
+          </div>
 
           {/* ── Schellie Conversation ── */}
           {isSchellie && (() => {

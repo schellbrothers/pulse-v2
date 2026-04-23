@@ -1143,9 +1143,10 @@ function QueueCard({
                   <div style={{ fontSize: 12, color: "#52525b" }}>Generating auto-confirmation...</div>
                 ) : (
                   <>
-                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>Sends instantly on form submit. Branded confirmation from noreply@schellbrothers.com.</div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.email}</span>
+                    <div style={{ fontSize: 9, color: "#4ade80", marginBottom: 6, lineHeight: 1.4, backgroundColor: "#052e16", padding: "4px 8px", borderRadius: 4, border: "1px solid #166534" }}>Sends instantly upon Approval of Pipeline</div>
+                    <div style={{ display: "flex", gap: 16, marginBottom: 6, fontSize: 10, color: "#52525b" }}>
+                      <span>To: <span style={{ color: "#a1a1aa" }}>{item.contacts.email}</span></span>
+                      <span>From: <span style={{ color: "#a1a1aa" }}>noreply@schellbrothers.com</span></span>
                     </div>
                     <div style={{ marginBottom: 6 }}>
                       <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
@@ -1220,9 +1221,10 @@ function QueueCard({
                   <div style={{ fontSize: 12, color: "#52525b" }}>Generating personal email...</div>
                 ) : (
                   <>
-                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>OSC sends 30–60 min after form. Personal touch from the assigned consultant.</div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.email}</span>
+                    <div style={{ fontSize: 9, color: "#4ade80", marginBottom: 6, lineHeight: 1.4, backgroundColor: "#052e16", padding: "4px 8px", borderRadius: 4, border: "1px solid #166534" }}>Sends upon Approval of Pipeline</div>
+                    <div style={{ display: "flex", gap: 16, marginBottom: 6, fontSize: 10, color: "#52525b" }}>
+                      <span>To: <span style={{ color: "#a1a1aa" }}>{item.contacts.email}</span></span>
+                      <span>From: <span style={{ color: "#a1a1aa" }}>OSC via Outlook</span></span>
                     </div>
                     <div style={{ marginBottom: 6 }}>
                       <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
@@ -1376,9 +1378,10 @@ function QueueCard({
                   <div style={{ fontSize: 12, color: "#52525b" }}>Generating SMS...</div>
                 ) : (
                   <>
-                    <div style={{ fontSize: 9, color: "#52525b", marginBottom: 6, lineHeight: 1.4 }}>If phone # available. Quick personal text from OSC.</div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, color: "#52525b" }}>To: {item.contacts.phone}</span>
+                    <div style={{ fontSize: 9, color: "#4ade80", marginBottom: 6, lineHeight: 1.4, backgroundColor: "#052e16", padding: "4px 8px", borderRadius: 4, border: "1px solid #166534" }}>Sends upon Approval of Pipeline</div>
+                    <div style={{ display: "flex", gap: 16, marginBottom: 6, fontSize: 10, color: "#52525b" }}>
+                      <span>To: <span style={{ color: "#a1a1aa" }}>{item.contacts.phone}</span></span>
+                      <span>From: <span style={{ color: "#a1a1aa" }}>OSC Zoom Phone</span></span>
                     </div>
                     {smsEditing ? (
                       <textarea

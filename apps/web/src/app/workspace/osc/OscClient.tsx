@@ -911,8 +911,8 @@ function QueueCard({
                 </div>
               )}
 
-              {/* ── Ad Attribution — only for web forms, not Schellie ── */}
-              {webForm && (() => {
+              {/* ── Ad Attribution — show when data exists (web or Schellie with UTM) ── */}
+              {(() => {
                 const m = wfMeta || {} as Record<string, unknown>;
                 const adPlatform = (m.ad_platform as string) || "";
                 const campaign = (m.utm_campaign as string) || ((m.gad_campaignid as string) ? `ID: ${m.gad_campaignid}` : "");
@@ -922,6 +922,9 @@ function QueueCard({
                 const pageUrl = (m.page_url as string) || "";
                 const clickId = (m.gclid as string) || (m.msclkid as string) || (m.fbclid as string) || "";
                 const clickType = m.gclid ? "gclid" : m.msclkid ? "msclkid" : m.fbclid ? "fbclid" : "";
+                // Only show if there's actual attribution data
+                const hasData = adPlatform || campaign || srcMed || term || clickId;
+                if (!hasData) return null;
                 const lbl = { fontSize: 9 as const, color: "#52525b", textTransform: "uppercase" as const, letterSpacing: "0.03em" };
                 const val = { fontSize: 11 as const, color: "#a1a1aa" };
                 return (

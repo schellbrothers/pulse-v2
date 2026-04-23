@@ -522,9 +522,29 @@ function QueueCard({
   const webForm = isWebFormSource(item);
   const bucket = classifyBucket(item);
 
+  // Webform activity metadata (ad attribution, UTM, etc.)
+  const [wfMeta, setWfMeta] = useState<Record<string, unknown> | null>(null);
+
   // When card expands, fetch agent recommendation + generated responses
   useEffect(() => {
     if (!expanded) return;
+
+    // Fetch webform activity metadata for ad attribution
+    if (webForm && !wfMeta) {
+      supabase
+        .from("activities")
+        .select("metadata")
+        .eq("opportunity_id", item.id)
+        .eq("channel", "webform")
+        .order("occurred_at", { ascending: false })
+        .limit(1)
+        .then(({ data }) => {
+          if (data?.[0]?.metadata) {
+            const m = typeof data[0].metadata === "string" ? JSON.parse(data[0].metadata) : data[0].metadata;
+            setWfMeta(m);
+          }
+        });
+    }
 
     // Fetch recommendation
     if (!recommendation && !loadingRec) {
@@ -587,7 +607,7 @@ function QueueCard({
         setLoadingResponses(false);
       }).catch(() => setLoadingResponses(false));
     }
-  }, [expanded, item.id, recommendation, loadingRec, webForm, responses, loadingResponses, item.opportunity_source, item.source, item.community_id, item.communities?.name]);
+  }, [expanded, item.id, recommendation, loadingRec, webForm, wfMeta, responses, loadingResponses, item.opportunity_source, item.source, item.community_id, item.communities?.name]);
 
   // Send auto-confirmation email via crm-api (SendGrid noreply@)
   async function handleSendAutoEmail() {
@@ -832,6 +852,57 @@ function QueueCard({
                   <div style={{ fontSize: 12, color: "#a1a1aa" }}>{item.contacts?.phone ?? "—"}</div>
                 </div>
               </div>
+
+              {/* ── Ad Attribution (from webform activity metadata) ── */}
+              {wfMeta && (wfMeta.ad_platform || wfMeta.utm_campaign || wfMeta.utm_source || wfMeta.gclid || wfMeta.msclkid || wfMeta.fbclid) && (() => {
+                const adPlatform = (wfMeta.ad_platform as string) || "";
+                const campaign = (wfMeta.utm_campaign as string) || ((wfMeta.gad_campaignid as string) ? `ID: ${wfMeta.gad_campaignid}` : "");
+                const srcMed = [(wfMeta.utm_source as string) || (adPlatform === "Google Ads" ? "google" : ""), (wfMeta.utm_medium as string) || (adPlatform === "Google Ads" ? "cpc" : "")].filter(Boolean).join(" / ");
+                const term = (wfMeta.utm_term as string) || "";
+                const content = (wfMeta.utm_content as string) || "";
+                const pageUrl = (wfMeta.page_url as string) || "";
+                const clickId = (wfMeta.gclid as string) || (wfMeta.msclkid as string) || (wfMeta.fbclid as string) || "";
+                const clickType = wfMeta.gclid ? "gclid" : wfMeta.msclkid ? "msclkid" : wfMeta.fbclid ? "fbclid" : "";
+                const lbl = { fontSize: 10 as const, color: "#52525b" };
+                const val = { fontSize: 12 as const, color: "#a1a1aa" };
+                return (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #27272a" }}>
+                    <div style={{ fontSize: 10, color: "#525252", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                      Ad Attribution
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {campaign && <div>
+                        <span style={lbl}>Campaign</span>
+                        <div style={val}>{campaign}</div>
+                      </div>}
+                      {adPlatform && <div>
+                        <span style={lbl}>Ad Platform</span>
+                        <div style={val}>{adPlatform}</div>
+                      </div>}
+                      {srcMed && <div>
+                        <span style={lbl}>Source / Medium</span>
+                        <div style={val}>{srcMed}</div>
+                      </div>}
+                      {term && <div>
+                        <span style={lbl}>Search Term</span>
+                        <div style={val}>{term}</div>
+                      </div>}
+                      {content && <div>
+                        <span style={lbl}>Ad Content</span>
+                        <div style={val}>{content}</div>
+                      </div>}
+                      {pageUrl && <div style={{ gridColumn: "1 / -1" }}>
+                        <span style={lbl}>Page URL</span>
+                        <div style={{ ...val, wordBreak: "break-all" }}><a href={pageUrl} target="_blank" rel="noreferrer" style={{ color: "#92af00", textDecoration: "none", fontSize: 12 }}>{pageUrl}</a></div>
+                      </div>}
+                      {clickId && <div style={{ gridColumn: "1 / -1" }}>
+                        <span style={lbl}>Click ID</span>
+                        <div style={{ ...val, wordBreak: "break-all" }}>{clickType}: {clickId}</div>
+                      </div>}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

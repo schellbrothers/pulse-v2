@@ -47,13 +47,13 @@ type CommHubTab = "urgent" | "needs_response" | "call" | "text" | "email" | "mee
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string }[] = [
-  { id: "urgent", icon: "⚠", label: "Urgent" },
+const COMM_HUB_TABS: { id: CommHubTab; icon: string; label: string; iconOnly?: boolean }[] = [
+  { id: "urgent", icon: "/icons/activity/urgent.svg", label: "Urgent", iconOnly: true },
   { id: "needs_response", icon: "", label: "Needs Response" },
-  { id: "call", icon: "/icons/activity/phone.svg", label: "Call" },
-  { id: "text", icon: "/icons/activity/text.svg", label: "Text" },
-  { id: "email", icon: "/icons/activity/email.svg", label: "Email" },
-  { id: "meeting", icon: "", label: "Meeting" },
+  { id: "call", icon: "/icons/activity/phone.svg", label: "Call", iconOnly: true },
+  { id: "text", icon: "/icons/activity/text.svg", label: "Text", iconOnly: true },
+  { id: "email", icon: "/icons/activity/email.svg", label: "Email", iconOnly: true },
+  { id: "meeting", icon: "/icons/activity/calendar.svg", label: "Meeting", iconOnly: true },
 ];
 
 const CHANNEL_META: Record<string, { icon: string; label: string; color: string; bg: string }> = {
@@ -170,7 +170,7 @@ function ActivityCard({
   const actStyle = getActivityStyle(activity.channel, activity.type, activity.direction);
   const contactName = activity.contacts
     ? `${activity.contacts.first_name} ${activity.contacts.last_name}`
-    : "Unknown";
+    : (activity.from_number || activity.to_number || "Unknown");
   const isRead = !!activity.is_read;
   const needsResponse = activity.needs_response && !activity.responded_at;
   const isInbound = activity.direction === "inbound";
@@ -802,32 +802,30 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, maxWidth: "100%" }}>
-      {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Comm Hub</span>
-        {urgentCount > 0 && (
-          <span style={{
-            fontSize: 10, padding: "2px 8px", borderRadius: 4, fontWeight: 600,
-            backgroundColor: "#7f1d1d", color: "#fca5a5",
-          }}>⚠ {urgentCount} Urgent</span>
-        )}
-      </div>
-
-      {/* ── Search ── */}
-      <div style={{ marginBottom: 10 }}>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search..."
-          style={{
-            width: "100%", padding: isMobile ? "6px 10px" : "8px 12px", backgroundColor: "#18181b",
-            border: "1px solid #27272a", borderRadius: 6, color: "#d4d4d8",
-            fontSize: isMobile ? 11 : 12, outline: "none",
-          }}
-          onFocus={e => (e.currentTarget.style.borderColor = "#3f3f46")}
-          onBlur={e => (e.currentTarget.style.borderColor = "#27272a")}
-        />
+      {/* ── Header + Search (unified with Queue) ── */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>Comm Hub</span>
+            {urgentCount > 0 && (
+              <span style={{
+                fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 600,
+                backgroundColor: "#7f1d1d", color: "#fca5a5",
+              }}>{urgentCount} urgent</span>
+            )}
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search comms..."
+            style={{
+              backgroundColor: "#09090b", border: "1px solid #27272a", borderRadius: 6,
+              padding: "5px 10px", fontSize: 11, color: "#a1a1aa", outline: "none",
+              width: 180,
+            }}
+          />
+        </div>
       </div>
 
       {/* ── Sub-tabs ── */}
@@ -844,12 +842,13 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
               cursor: "pointer", display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap",
               flexShrink: 0,
             }}>
-              {t.icon && <span>{t.icon.startsWith("/") ? <img src={t.icon} alt="" width={14} height={14} style={{ verticalAlign: "middle" }} /> : t.icon}</span>}
-              {!isMobile && <span>{t.label}</span>}
+              {t.icon && t.icon.startsWith("/") && <img src={t.icon} alt={t.label} title={t.label} width={14} height={14} style={{ verticalAlign: "middle" }} />}
+              {/* Show label only for non-icon tabs (Needs Response) */}
+              {!t.iconOnly && !isMobile && <span>{t.label}</span>}
               <span style={{
-                fontSize: isMobile ? 9 : 10, padding: "0 4px", borderRadius: 3, fontWeight: 600,
-                backgroundColor: t.id === "urgent" && count > 0 ? "#7f1d1d" : count > 0 ? "#172554" : "#27272a",
-                color: t.id === "urgent" && count > 0 ? "#fca5a5" : count > 0 ? "#60a5fa" : "#71717a",
+                fontSize: isMobile ? 9 : 10, padding: "0 5px", borderRadius: 3, fontWeight: 600,
+                backgroundColor: count > 0 ? "#7f1d1d" : "#27272a",
+                color: count > 0 ? "#fca5a5" : "#71717a",
               }}>{count}</span>
             </button>
           );

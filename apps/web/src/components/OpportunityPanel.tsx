@@ -335,6 +335,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
   const [editPhone2, setEditPhone2] = useState("");
   const [secondary, setSecondary] = useState<ContactSecondary>({ email_secondary: null, phone_secondary: null });
   const [secondaryMember, setSecondaryMember] = useState<ContactMember | null>(null);
+  const [resolvedDivision, setResolvedDivision] = useState<string | null>(null);
 
   // Notes state
   const [editingNotes, setEditingNotes] = useState(false);
@@ -362,6 +363,28 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     setExpandedActivityId(null);
     setTranscriptCache({});
   }, [opportunity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Resolve division name from opportunity's division_id
+  useEffect(() => {
+    if (opportunity?.division_name) {
+      setResolvedDivision(opportunity.division_name);
+      return;
+    }
+    if (!opportunity?.id) { setResolvedDivision(null); return; }
+    supabase
+      .from("opportunities")
+      .select("division_id, divisions(name)")
+      .eq("id", opportunity.id)
+      .single()
+      .then(({ data }) => {
+        const div = data?.divisions;
+        const name = Array.isArray(div) ? (div[0] as Record<string, unknown>)?.name as string : (div as Record<string, unknown>)?.name as string;
+        setResolvedDivision(name ?? null);
+      });
+  }, [opportunity?.id, opportunity?.division_name]);
+
+  // Effective division name: resolved > prop
+  const effectiveDivisionName = resolvedDivision ?? opportunity?.division_name ?? null;
 
   // Fetch secondary contact fields + secondary member
   useEffect(() => {
@@ -626,7 +649,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                 <h2 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600, color: "#ededed", margin: 0, lineHeight: 1.3 }}>
                   {opportunity.first_name} {opportunity.last_name}
                 </h2>
-                <StageBadge stage={opportunity.stage} context={opportunity.stage === "lead_div" ? (opportunity.division_name ?? undefined) : opportunity.stage === "lead_com" ? (opportunity.community_name ?? undefined) : undefined} />
+                <StageBadge stage={opportunity.stage} context={opportunity.stage === "lead_div" ? (effectiveDivisionName ?? undefined) : opportunity.stage === "lead_com" ? (opportunity.community_name ?? undefined) : undefined} />
               </div>
             </div>
             <button
@@ -794,7 +817,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
 
             {/* ── Interest Section ──────────────────────────────────────── */}
             <Section title="Interest">
-              <Row label="Division" value={opportunity.division_name} />
+              <Row label="Division" value={effectiveDivisionName} />
               <Row label="Community" value={opportunity.community_name ?? "—"} />
               <Row label="Budget" value={formatBudget(opportunity.budget_min, opportunity.budget_max)} />
               {opportunity.floor_plan_name && <Row label="Floor Plan" value={opportunity.floor_plan_name} />}
@@ -815,9 +838,9 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                     {history.map(t => (
                       <div key={t.id} style={{ lineHeight: 1.6 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          {t.from_stage ? <StageBadge stage={t.from_stage} context={t.from_stage === "lead_div" ? (opportunity?.division_name ?? undefined) : t.from_stage === "lead_com" ? (opportunity?.community_name ?? undefined) : undefined} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
+                          {t.from_stage ? <StageBadge stage={t.from_stage} context={t.from_stage === "lead_div" ? (effectiveDivisionName ?? undefined) : t.from_stage === "lead_com" ? (opportunity?.community_name ?? undefined) : undefined} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
                           <span style={{ color: "#888", fontSize: 12 }}>→</span>
-                          {t.to_stage ? <StageBadge stage={t.to_stage} context={t.to_stage === "lead_div" ? (opportunity?.division_name ?? undefined) : t.to_stage === "lead_com" ? (opportunity?.community_name ?? undefined) : undefined} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
+                          {t.to_stage ? <StageBadge stage={t.to_stage} context={t.to_stage === "lead_div" ? (effectiveDivisionName ?? undefined) : t.to_stage === "lead_com" ? (opportunity?.community_name ?? undefined) : undefined} /> : <span style={{ fontSize: 10, color: "#888" }}>—</span>}
                         </div>
                         <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 0, display: "inline" }}>
                           {formatDateTime(t.created_at)}

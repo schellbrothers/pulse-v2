@@ -759,19 +759,19 @@ function QueueCard({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "2px" }}>{name}</div>
-              {/* Source + path pills (history style) */}
-              {item.prior_stage ? (
+              {/* Source channel badge — always shown */}
+              <SourcePill item={item} />
+              {/* Prior stage path — for existing/re-engaged */}
+              {item.prior_stage && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : ""}`} />
                   <span style={{ fontSize: 9, color: "#52525b" }}>&rarr;</span>
                   <StagePill label="OSC QUEUE" />
                 </span>
-              ) : (
-                <SourcePill item={item} />
               )}
             </div>
             <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
-              {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""} · {item.opportunity_source ?? item.source ?? "webform"}
+              {divisionName}{item.communities?.name ? ` · ${item.communities.name}` : ""}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -801,14 +801,13 @@ function QueueCard({
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
               <div onClick={e => { e.stopPropagation(); onNameClick(); }} style={{ fontSize: 15, fontWeight: 600, color: "#fafafa", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#3f3f46", textUnderlineOffset: "3px" }}>{name}</div>
-              {item.prior_stage ? (
+              <SourcePill item={item} />
+              {item.prior_stage && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : ""}`} />
                   <span style={{ fontSize: 9, color: "#52525b" }}>&rarr;</span>
                   <StagePill label="OSC QUEUE" />
                 </span>
-              ) : (
-                <SourcePill item={item} />
               )}
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>

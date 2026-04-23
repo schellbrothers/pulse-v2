@@ -881,15 +881,16 @@ function QueueCard({
               </div>
 
               {/* ── Ad Attribution (from webform activity metadata) ── */}
-              {wfMeta && (wfMeta.ad_platform || wfMeta.utm_campaign || wfMeta.utm_source || wfMeta.gclid || wfMeta.msclkid || wfMeta.fbclid || wfMeta.gad_campaignid) && (() => {
-                const adPlatform = (wfMeta.ad_platform as string) || "";
-                const campaign = (wfMeta.utm_campaign as string) || ((wfMeta.gad_campaignid as string) ? `ID: ${wfMeta.gad_campaignid}` : "");
-                const srcMed = [(wfMeta.utm_source as string) || (adPlatform === "Google Ads" ? "google" : ""), (wfMeta.utm_medium as string) || (adPlatform === "Google Ads" ? "cpc" : "")].filter(Boolean).join(" / ");
-                const term = (wfMeta.utm_term as string) || "";
-                const content = (wfMeta.utm_content as string) || "";
-                const pageUrl = (wfMeta.page_url as string) || "";
-                const clickId = (wfMeta.gclid as string) || (wfMeta.msclkid as string) || (wfMeta.fbclid as string) || "";
-                const clickType = wfMeta.gclid ? "gclid" : wfMeta.msclkid ? "msclkid" : wfMeta.fbclid ? "fbclid" : "";
+              {(() => {
+                const m = wfMeta || {} as Record<string, unknown>;
+                const adPlatform = (m.ad_platform as string) || "";
+                const campaign = (m.utm_campaign as string) || ((m.gad_campaignid as string) ? `ID: ${m.gad_campaignid}` : "");
+                const srcMed = [(m.utm_source as string) || (adPlatform === "Google Ads" ? "google" : ""), (m.utm_medium as string) || (adPlatform === "Google Ads" ? "cpc" : "")].filter(Boolean).join(" / ");
+                const term = (m.utm_term as string) || "";
+                const content = (m.utm_content as string) || "";
+                const pageUrl = (m.page_url as string) || "";
+                const clickId = (m.gclid as string) || (m.msclkid as string) || (m.fbclid as string) || "";
+                const clickType = m.gclid ? "gclid" : m.msclkid ? "msclkid" : m.fbclid ? "fbclid" : "";
                 const lbl = { fontSize: 10 as const, color: "#52525b" };
                 const val = { fontSize: 12 as const, color: "#a1a1aa" };
                 return (
@@ -898,34 +899,34 @@ function QueueCard({
                       Ad Attribution
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {campaign && <div>
+                      <div>
                         <span style={lbl}>Campaign</span>
-                        <div style={val}>{campaign}</div>
-                      </div>}
-                      {adPlatform && <div>
+                        <div style={val}>{campaign || "—"}</div>
+                      </div>
+                      <div>
                         <span style={lbl}>Ad Platform</span>
-                        <div style={val}>{adPlatform}</div>
-                      </div>}
-                      {srcMed && <div>
+                        <div style={val}>{adPlatform || "—"}</div>
+                      </div>
+                      <div>
                         <span style={lbl}>Source / Medium</span>
-                        <div style={val}>{srcMed}</div>
-                      </div>}
-                      {term && <div>
+                        <div style={val}>{srcMed || "—"}</div>
+                      </div>
+                      <div>
                         <span style={lbl}>Search Term</span>
-                        <div style={val}>{term}</div>
-                      </div>}
-                      {content && <div>
+                        <div style={val}>{term || "—"}</div>
+                      </div>
+                      <div>
                         <span style={lbl}>Ad Content</span>
-                        <div style={val}>{content}</div>
-                      </div>}
-                      {pageUrl && <div style={{ gridColumn: "1 / -1" }}>
-                        <span style={lbl}>Page URL</span>
-                        <div style={{ ...val, wordBreak: "break-all" }}><a href={pageUrl} target="_blank" rel="noreferrer" style={{ color: "#92af00", textDecoration: "none", fontSize: 12 }}>{pageUrl}</a></div>
-                      </div>}
-                      {clickId && <div style={{ gridColumn: "1 / -1" }}>
+                        <div style={val}>{content || "—"}</div>
+                      </div>
+                      <div>
                         <span style={lbl}>Click ID</span>
-                        <div style={{ ...val, wordBreak: "break-all" }}>{clickType}: {clickId}</div>
-                      </div>}
+                        <div style={{ ...val, wordBreak: "break-all" }}>{clickId ? `${clickType}: ${clickId}` : "—"}</div>
+                      </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <span style={lbl}>Page URL</span>
+                        <div style={{ ...val, wordBreak: "break-all" }}>{pageUrl ? <a href={pageUrl} target="_blank" rel="noreferrer" style={{ color: "#92af00", textDecoration: "none", fontSize: 12 }}>{pageUrl}</a> : "—"}</div>
+                      </div>
                     </div>
                   </div>
                 );

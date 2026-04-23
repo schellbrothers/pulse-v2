@@ -845,13 +845,13 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                             lineHeight: "16px",
                           }}
                         >
-                          WEB
+                          {opportunity.source === "schellie" ? "SCHELLIE" : "WEB"}
                         </span>
                         <span style={{ color: "#888", fontSize: 12 }}>→</span>
-                        <StageBadge stage={opportunity.stage} />
+                        <StageBadge stage="queue" />
                       </div>
                       <div style={{ fontSize: 11, color: "#7aafdf", marginTop: 0, display: "inline" }}>
-                        {formatDateTime(opportunity.last_activity_at ?? opportunity.created_at)} · Created via web form
+                        {formatDateTime(opportunity.created_at)} · {opportunity.source === "schellie" ? "Created via Schellie chat" : "Created via web form"}
                       </div>
                     </div>
                   </div>

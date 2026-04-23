@@ -779,7 +779,7 @@ function QueueCard({
               {/* Prior stage path — for existing/re-engaged */}
               {item.prior_stage && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : ""}`} />
+                  <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : item.prior_stage === "lead_div" ? `: ${divisionName}` : ""}`} />
                   <span style={{ fontSize: 9, color: "#52525b" }}>&rarr;</span>
                   <StagePill label="OSC QUEUE" />
                 </span>
@@ -819,7 +819,7 @@ function QueueCard({
               <SourcePill item={item} />
               {item.prior_stage && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : ""}`} />
+                  <StagePill label={`${stageLabel(item.prior_stage)}${item.prior_community ? `: ${item.prior_community}` : item.prior_stage === "lead_div" ? `: ${divisionName}` : ""}`} />
                   <span style={{ fontSize: 9, color: "#52525b" }}>&rarr;</span>
                   <StagePill label="OSC QUEUE" />
                 </span>

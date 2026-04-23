@@ -1130,7 +1130,7 @@ function QueueCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img src="/icons/activity/email.svg" alt="" width={12} height={12} />
                   <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Auto-Confirmation</span>
-                  {autoCollapsed && autoSubject && <span style={{ fontSize: 10, color: "#52525b" }}>— {autoSubject.slice(0, 40)}</span>}
+                  {autoSubject && <span style={{ fontSize: 10, color: "#a1a1aa" }}>— {autoSubject}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {autoSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
@@ -1148,9 +1148,9 @@ function QueueCard({
                       <span>To: <span style={{ color: "#a1a1aa" }}>{item.contacts.email}</span></span>
                       <span>From: <span style={{ color: "#a1a1aa" }}>noreply@schellbrothers.com</span></span>
                     </div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
-                      {autoEditing ? (
+                    {autoEditing && (
+                      <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
                         <input
                           value={autoSubject}
                           onChange={e => setAutoSubject(e.target.value)}
@@ -1159,10 +1159,8 @@ function QueueCard({
                             borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none", marginTop: 2,
                           }}
                         />
-                      ) : (
-                        <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2 }}>{autoSubject || "—"}</div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     {autoEditing ? (
                       <div className="quill-dark" style={{ marginBottom: 8 }}>
                         <ReactQuill
@@ -1208,7 +1206,7 @@ function QueueCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img src="/icons/activity/email.svg" alt="" width={12} height={12} />
                   <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Personal Follow-Up</span>
-                  {personalCollapsed && personalSubject && <span style={{ fontSize: 10, color: "#52525b" }}>— {personalSubject.slice(0, 40)}</span>}
+                  {personalSubject && <span style={{ fontSize: 10, color: "#a1a1aa" }}>— {personalSubject}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {personalSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}
@@ -1221,14 +1219,14 @@ function QueueCard({
                   <div style={{ fontSize: 12, color: "#52525b" }}>Generating personal email...</div>
                 ) : (
                   <>
-                    <div style={{ fontSize: 9, color: "#4ade80", marginBottom: 6, lineHeight: 1.4, backgroundColor: "#052e16", padding: "4px 8px", borderRadius: 4, border: "1px solid #166534" }}>Sends upon Approval of Pipeline</div>
+                    <div style={{ fontSize: 9, color: "#4ade80", marginBottom: 6, lineHeight: 1.4, backgroundColor: "#052e16", padding: "4px 8px", borderRadius: 4, border: "1px solid #166534" }}>Sends 45 min after Approval of Pipeline</div>
                     <div style={{ display: "flex", gap: 16, marginBottom: 6, fontSize: 10, color: "#52525b" }}>
                       <span>To: <span style={{ color: "#a1a1aa" }}>{item.contacts.email}</span></span>
                       <span>From: <span style={{ color: "#a1a1aa" }}>OSC via Outlook</span></span>
                     </div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
-                      {personalEditing ? (
+                    {personalEditing && (
+                      <div style={{ marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: "#52525b" }}>Subject:</span>
                         <input
                           value={personalSubject}
                           onChange={e => setPersonalSubject(e.target.value)}
@@ -1237,10 +1235,8 @@ function QueueCard({
                             borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none", marginTop: 2,
                           }}
                         />
-                      ) : (
-                        <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2 }}>{personalSubject || "—"}</div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     {personalEditing ? (
                       <div className="quill-dark" style={{ marginBottom: 8 }}>
                         <ReactQuill
@@ -1365,7 +1361,7 @@ function QueueCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img src="/icons/activity/text.svg" alt="" width={12} height={12} />
                   <span style={{ fontSize: 10, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>SMS Follow-Up</span>
-                  {smsCollapsed && smsBody && <span style={{ fontSize: 10, color: "#52525b" }}>— {smsBody.slice(0, 40)}...</span>}
+                  {smsBody && <span style={{ fontSize: 10, color: "#a1a1aa" }}>— {smsBody.slice(0, 50)}{smsBody.length > 50 ? "..." : ""}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {smsSent && <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600 }}>✓ Sent</span>}

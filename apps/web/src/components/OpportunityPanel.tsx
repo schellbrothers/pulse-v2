@@ -1280,26 +1280,34 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
                                 const visitInterest = sMeta.visit_interest as boolean;
                                 const labelStyle = { fontWeight: 600 as const, textTransform: "uppercase" as const, letterSpacing: "0.04em", color: "#71717a", fontSize: 10 };
 
+                                // Build AI summary
+                                const budget = (sMeta.budget as string) || "";
+                                const summaryParts: string[] = [];
+                                if (motivation) summaryParts.push(motivation);
+                                if (commName) summaryParts.push(`Interested in ${commName}.`);
+                                if (budget) summaryParts.push(`Budget: ${budget}.`);
+                                if (visitInterest) summaryParts.push("Wants to schedule a visit.");
+                                if (summaryParts.length === 0 && convo.length > 0) {
+                                  const userMsgs = convo.filter(msg => msg.role === "user").slice(-3);
+                                  summaryParts.push(userMsgs.map(msg => msg.content).join(" | "));
+                                }
+                                const aiSummary = summaryParts.join(" ");
+
                                 return (
                                   <>
-                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
-                                      <span style={labelStyle}>DIVISION:  </span>{divName || "—"}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
-                                      <span style={labelStyle}>COMMUNITY:  </span>{commName || "—"}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
-                                      <span style={labelStyle}>MESSAGES:  </span>{msgCount} {duration > 0 ? `· ${durationStr}` : ""}
-                                    </div>
-                                    {motivation && (
-                                      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
-                                        <span style={labelStyle}>MOTIVATION:  </span>{motivation}
+                                    {/* AI Summary - green box */}
+                                    {aiSummary && (
+                                      <div style={{
+                                        padding: "8px 10px", backgroundColor: "#052e16", border: "1px solid #166534",
+                                        borderRadius: 6, marginBottom: 8,
+                                      }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                                          <img src="/icons/activity/ai.svg" alt="" width={12} height={12} style={{ opacity: 0.8 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                          <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Summary</span>
+                                        </div>
+                                        <div style={{ fontSize: 12, color: "#86efac", lineHeight: 1.5 }}>{aiSummary}</div>
                                       </div>
                                     )}
-                                    <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 3 }}>
-                                      <span style={labelStyle}>VISIT INTEREST:  </span>{visitInterest ? "Yes" : "—"}
-                                    </div>
-                                    <div style={{ borderTop: "1px solid #27272a", marginBottom: 8, marginTop: 6 }} />
                                     <div style={{ fontSize: 11, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>CONVERSATION:</div>
                                     {convo.length > 0 ? (
                                       <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, padding: 8, backgroundColor: "#0c1929", borderRadius: 6, border: "1px solid #1e293b" }}>

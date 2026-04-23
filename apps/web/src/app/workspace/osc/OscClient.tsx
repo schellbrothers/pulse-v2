@@ -612,24 +612,32 @@ function QueueCard({
     if (!recommendation && !loadingRec) {
       setLoadingRec(true);
       evaluateQueueItem(item.id, { triggered_by: "human" }).then(result => {
-        if (result.success && result.data?.recommendation) {
+        const src = item.opportunity_source ?? item.source;
+        const isHighIntent = src === "schedule_appt" || src === "schedule_visit" || src === "schellie_conversion";
+
+        // For high-intent sources, always use our routing logic (CSM Queue)
+        // regardless of what the MCP evaluation returns
+        if (isHighIntent) {
+          setRecommendation({
+            stage: "csm_queue",
+            confidence: 85,
+            reasoning: src === "schellie_conversion"
+              ? "Schellie chat conversion — connect with buyer, confirm community fit, then assign to CSM Queue."
+              : `${sourceLabel(src)} — connect with buyer, confirm fit, then assign to CSM Queue.`,
+            community_id: item.community_id,
+            community_name: item.communities?.name ?? null,
+          });
+        } else if (result.success && result.data?.recommendation) {
           const rec = result.data.recommendation as AgentRecommendation;
           setRecommendation(rec);
         } else {
-          // Fallback recommendation based on form data
-          const src = item.opportunity_source ?? item.source;
-          // High-intent signals → CSM Queue
-          const isHighIntent = src === "schedule_appt" || src === "schedule_visit" || src === "schellie_conversion";
-          const fallbackStage = isHighIntent ? "csm_queue"
-            : src === "subscribe_region" ? "lead_div"
+          // Fallback for non-high-intent
+          const fallbackStage = src === "subscribe_region" ? "lead_div"
             : item.community_id ? "lead_com" : "lead_div";
-          const fallbackReasoning = isHighIntent
-            ? `High intent: ${src === "schellie_conversion" ? "Schellie chat conversion — wants to visit. Connect with buyer, confirm fit, then assign to CSM." : `${sourceLabel(src)} — connect with buyer then assign to CSM.`}`
-            : `Based on form type: ${sourceLabel(src)}`;
           setRecommendation({
             stage: fallbackStage,
-            confidence: isHighIntent ? 85 : 70,
-            reasoning: fallbackReasoning,
+            confidence: 70,
+            reasoning: `Based on form type: ${sourceLabel(src)}`,
             community_id: item.community_id,
             community_name: item.communities?.name ?? null,
           });

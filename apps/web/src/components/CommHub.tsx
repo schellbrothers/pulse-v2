@@ -231,210 +231,64 @@ function ActivityCard({
     }
   }
 
+  // Determine from/to labels
+  const employeeName = (() => {
+    try {
+      const m = typeof activity.metadata === "string" ? JSON.parse(activity.metadata) : activity.metadata;
+      return (m as Record<string, unknown>)?.employee_name as string || "OSC";
+    } catch { return "OSC"; }
+  })();
+  const fromTo = isInbound ? `${contactName} \u2192 ${employeeName}` : `${employeeName} \u2192 ${contactName}`;
+
   return (
     <div style={{
-      borderLeft: `4px solid ${actStyle.borderColor}`,
+      borderLeft: `3px solid ${actStyle.borderColor}`,
       backgroundColor: actStyle.bgColor,
-      borderRadius: 6,
+      borderRadius: 4,
       overflow: "hidden",
-      transition: "all 0.15s",
     }}>
-      {/* Card header (clickable) */}
+      {/* Compact row */}
       <div
-        onClick={() => {
-          onExpand();
-          if (!isRead) onMarkRead();
-        }}
+        onClick={() => { onExpand(); if (!isRead) onMarkRead(); }}
         style={{
-          padding: "12px 16px",
-          backgroundColor: "transparent",
+          padding: "7px 10px",
           cursor: "pointer",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           gap: 6,
-          transition: "background-color 0.1s",
         }}
         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#1c1c1f")}
-        onMouseLeave={e => (e.currentTarget.style.backgroundColor = isRead && !needsResponse ? "transparent" : "#18181b")}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
       >
-        {/* Top row: channel badge + priority badges + name + timestamp */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-          {/* Pv1-style icon + label */}
-          <span style={{
-            fontSize: 12, fontWeight: 600, color: "#ededed",
-            display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", flexShrink: 0,
-          }}>
-            {actStyle.icon.startsWith("/") ? (
-              <img src={actStyle.icon} alt="" width={14} height={14} />
-            ) : (
-              <span>{actStyle.icon}</span>
-            )}
-            {actStyle.label}
-          </span>
+        {/* Icon */}
+        <span style={{ flexShrink: 0, display: "inline-flex" }}>
+          {actStyle.icon.startsWith("/") ? <img src={actStyle.icon} alt="" width={14} height={14} /> : <span style={{ fontSize: 14 }}>{actStyle.icon}</span>}
+        </span>
 
-          {/* Priority badges — ALWAYS visible when applicable */}
-          {activity.is_urgent && (
-            <span style={{
-              fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600,
-              backgroundColor: "#7f1d1d", color: "#fca5a5", flexShrink: 0,
-            }}>⚠</span>
-          )}
-          {needsResponse && (
-            <span style={{
-              fontSize: 9, padding: "1px 5px", borderRadius: 3, fontWeight: 600,
-              backgroundColor: "#422006", color: "#fbbf24", flexShrink: 0,
-            }}>NR</span>
-          )}
-
-          {/* Contact name */}
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#fafafa", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {contactName}
-          </span>
-
-          {/* Timestamp */}
-          <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0 }}>
-            {relativeTime(activity.occurred_at)}
-          </span>
+        {/* Channel + Subject + From/To */}
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11, color: "#ededed", fontWeight: 500, flexShrink: 0 }}>
+              {actStyle.label} {isInbound ? "In" : "Out"}{activity.subject ? ":" : ""}
+            </span>
+            <span style={{ fontSize: 11, color: "#a1a1aa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {activity.subject || (activity.body ?? "").slice(0, 60)}
+            </span>
+          </div>
+          <div style={{ fontSize: 10, color: "#52525b", marginTop: 1 }}>
+            {fromTo}
+          </div>
         </div>
 
-        {/* Second row: direction badge + mark read */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ flex: 1 }} />
-          {/* Direction badge */}
-          <span style={{
-            fontSize: 9, padding: "2px 7px", borderRadius: 3, fontWeight: 500,
-            border: "1px solid #3f3f46", color: "#71717a",
-          }}>{dirLabel}</span>
-          {/* Mark read button */}
-          {!isRead && (
-            <button
-              onClick={e => { e.stopPropagation(); onMarkRead(); }}
-              title="Mark as read"
-              style={{
-                padding: "2px 6px", borderRadius: 3, border: "1px solid #27272a",
-                backgroundColor: "transparent", color: "#52525b", fontSize: 10,
-                cursor: "pointer", opacity: 0.6,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
-            >✓</button>
-          )}
-        </div>
+        {/* NR badge */}
+        {needsResponse && <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, fontWeight: 600, backgroundColor: "#422006", color: "#fbbf24", flexShrink: 0 }}>NR</span>}
 
-        {/* Message preview — channel-specific rendering */}
-        <div style={{
-          fontSize: 13, color: "#a1a1aa", lineHeight: 1.5,
-          padding: "6px 10px", backgroundColor: "#0f0f12", borderRadius: 4,
-          overflow: "hidden", textOverflow: "ellipsis",
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const,
-        }}>
-          {(activity.channel === "phone" || activity.channel === "call") ? (
-            <>
-              <span style={{ fontWeight: 500, color: "#60a5fa" }}>
-                {getCallPreview(activity)}
-              </span>
-              {(() => {
-                const parties = parseCommPhoneParties(activity);
-                return parties.externalParty ? (
-                  <div style={{ fontSize: 11, color: "#a1a1aa", marginTop: 2 }}>
-                    {parties.externalParty}
-                    {parties.employee && <span style={{ color: "#52525b", fontSize: 10 }}> via {parties.employee}</span>}
-                  </div>
-                ) : activity.from_number && activity.to_number ? (
-                  <span style={{ color: "#52525b", fontSize: 11, marginLeft: 8 }}>
-                    {activity.from_number} → {activity.to_number}
-                  </span>
-                ) : null;
-              })()}
-            </>
-          ) : activity.channel === "sms" || activity.channel === "text" ? (
-            <>
-              <span style={{ fontWeight: 500, color: "#a78bfa" }}><img src="/icons/activity/text.svg" alt="" width={12} height={12} style={{ verticalAlign: "middle", marginRight: 3 }} /></span>
-              {activity.body ?? "No message content"}
-            </>
-          ) : activity.channel === "meeting" ? (
-            <>
-              <span style={{ fontWeight: 500, color: "#f472b6" }}>Video </span>
-              {getMeetingPreview(activity)}
-            </>
-          ) : (
-            <>
-              {activity.subject && <span style={{ fontWeight: 500, color: "#d4d4d8" }}>{activity.subject} — </span>}
-              {activity.body ?? "No content"}
-            </>
-          )}
-        </div>
-
-        {/* Action buttons for phone/call activities */}
-        {(activity.channel === "phone" || activity.channel === "call") && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            {(() => {
-              const recUrl = (transcriptData?.recording_url) || null;
-              return recUrl ? (
-                <button
-                  onClick={e => { e.stopPropagation(); window.open(recUrl, "_blank"); }}
-                  style={{
-                    padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                    cursor: "pointer", border: "1px solid #27272a", background: "#18181b", color: "#a1a1aa",
-                  }}
-                >▶ Play</button>
-              ) : null;
-            })()}
-            {activity.transcript_id && (
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  setShowTranscript(!showTranscript);
-                  if (!showTranscript) loadTranscript();
-                }}
-                style={{
-                  padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                  cursor: "pointer", border: "1px solid #27272a", background: "#18181b",
-                  color: showTranscript ? "#34d399" : "#a1a1aa",
-                }}
-              >Transcript</button>
-            )}
-            {transcriptData?.raw_text && (
-              <button
-                onClick={e => { e.stopPropagation(); copyTranscript(); }}
-                style={{
-                  padding: "2px 8px", fontSize: 10, fontWeight: 500, borderRadius: 3,
-                  cursor: "pointer", border: "1px solid #27272a", background: "#18181b",
-                  color: copied ? "#4ade80" : "#a1a1aa",
-                }}
-              >{copied ? "✓ Copied!" : "Copy"}</button>
-            )}
-            {!activity.transcript_id && (
-              <span style={{ fontSize: 10, color: "#3f3f46" }}>No transcript</span>
-            )}
-          </div>
-        )}
-
-        {/* Transcript badge for non-phone channels */}
-        {activity.transcript_id && activity.channel !== "phone" && activity.channel !== "call" && (
-          <div style={{
-            fontSize: 10, color: "#34d399", padding: "2px 8px",
-            backgroundColor: "#064e3b", borderRadius: 3,
-            display: "inline-flex", alignItems: "center", gap: 4, width: "fit-content",
-          }}>
-            Transcript available
-          </div>
-        )}
-
-        {/* AI suggestion preview (only when not expanded and needs response) */}
-        {!isExpanded && needsResponse && (
-          <div style={{
-            fontSize: 11, color: "#f59e0b", lineHeight: 1.4,
-            padding: "6px 10px", backgroundColor: "#1c1409", borderRadius: 4,
-            border: "1px solid #422006",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            AI: {generateAiReply(activity).split("\n")[2] || "Click to view suggested reply..."}
-          </div>
-        )}
+        {/* Timestamp */}
+        <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0, whiteSpace: "nowrap" }}>
+          {new Date(activity.occurred_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })} {new Date(activity.occurred_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </span>
       </div>
 
-      {/* Expanded conversation + reply */}
       {isExpanded && (
         <div style={{
           borderTop: "1px solid #27272a",
@@ -669,7 +523,24 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     } else if (divisionId) {
       query = query.eq("division_id", divisionId);
     }
-    // When no scope (ALL), load all activities with a contact_id
+
+    // User (OSC) filter: only show activities on this user's opportunities
+    if (teamFilter && teamFilter !== "all") {
+      const { data: userOpps } = await supabase
+        .from("opportunities")
+        .select("id")
+        .eq("osc_id", teamFilter)
+        .eq("is_active", true);
+      const oppIds = (userOpps ?? []).map((o: Record<string, unknown>) => o.id as string);
+      if (oppIds.length > 0) {
+        query = query.in("opportunity_id", oppIds);
+      } else {
+        // No opportunities for this user — return empty
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
+    }
 
     const { data } = await query;
 
@@ -682,7 +553,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
     setActivities(flat);
     setLoading(false);
-  }, [communityId, divisionId]);
+  }, [communityId, divisionId, teamFilter]);
 
   useEffect(() => {
     fetchActivities();
@@ -705,7 +576,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [scopeId, fetchActivities, communityId, divisionId]);
+  }, [scopeId, fetchActivities, communityId, divisionId, teamFilter]);
 
   // ── Computed ──
   // Apply excludeChannel filter globally

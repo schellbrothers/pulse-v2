@@ -40,6 +40,9 @@ interface CommActivity {
   type: string | null;
   from_number: string | null;
   to_number: string | null;
+  recording_url: string | null;
+  metadata: unknown;
+  opportunity_id: string | null;
   contacts: { first_name: string; last_name: string; email: string | null; phone: string | null } | null;
 }
 

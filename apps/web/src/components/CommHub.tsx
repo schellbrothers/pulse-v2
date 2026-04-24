@@ -730,7 +730,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
           <div style={{
             padding: 32, textAlign: "center", backgroundColor: "#18181b", border: "1px solid #27272a",
             borderRadius: 6, color: "#52525b", fontSize: 12,
-          }}>No activities in this view</div>
+          }}>No activities in this view (loaded: {activities.length}, base: {baseActivities.length}, filtered: {filteredActivities.length})</div>
         ) : (
           filteredActivities.map(a => (
             <ActivityCard

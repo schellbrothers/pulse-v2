@@ -649,9 +649,9 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Determine scope
-  const scopeField = communityId ? "community_id" : "division_id";
-  const scopeId = communityId ?? divisionId;
+  // Determine scope — null means ALL
+  const scopeField = communityId ? "community_id" : divisionId ? "division_id" : null;
+  const scopeId = communityId ?? divisionId ?? "all";
 
   // ── Fetch activities ──
   const fetchActivities = useCallback(async () => {
@@ -663,10 +663,13 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
       .order("occurred_at", { ascending: false })
       .limit(200);
 
-    // Scope filtering: phone activities don't have community_id/division_id
-    // directly — they're linked through opportunities. For now, show ALL
-    // activities that have a contact_id (they're relevant to the CRM).
-    // Future: filter via opportunity join for proper division scoping.
+    // Scope filtering by division/community when set
+    if (communityId) {
+      query = query.eq("community_id", communityId);
+    } else if (divisionId) {
+      query = query.eq("division_id", divisionId);
+    }
+    // When no scope (ALL), load all activities with a contact_id
 
     const { data } = await query;
 
@@ -788,17 +791,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     setExpandedId(null);
   }
 
-  // ── No scope ──
-  if (!scopeId) {
-    return (
-      <div style={{
-        padding: 32, textAlign: "center", fontSize: 12, color: "#52525b",
-        backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 8,
-      }}>
-        Select a scope to view communications
-      </div>
-    );
-  }
+  // No empty state — always show (ALL when no scope)
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0, maxWidth: "100%" }}>

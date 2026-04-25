@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import CodeViewer from "@/components/CodeViewer";
 
 interface HealthData {
   status: string;
@@ -28,6 +29,7 @@ export default function MCPToolsPage() {
   const [paramsJson, setParamsJson] = useState<string>("{}");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [inspectTool, setInspectTool] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -240,7 +242,13 @@ export default function MCPToolsPage() {
                         marginBottom: tool.description ? 6 : 0,
                       }}
                     >
-                      {tool.name}
+                      <span
+                        onClick={(e) => { e.stopPropagation(); setInspectTool(tool.name); }}
+                        style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "rgba(255,255,255,0.2)", textUnderlineOffset: "2px" }}
+                        title="Click to inspect tool definition"
+                      >
+                        {tool.name}
+                      </span>
                     </div>
                     {tool.description && (
                       <div
@@ -461,6 +469,16 @@ function Stat({
       >
         {value}
       </div>
+
+      {/* MCP Tool Inspector */}
+      {inspectTool && (
+        <CodeViewer
+          open={!!inspectTool}
+          onClose={() => setInspectTool(null)}
+          type="mcp"
+          name={inspectTool}
+        />
+      )}
     </div>
   );
 }

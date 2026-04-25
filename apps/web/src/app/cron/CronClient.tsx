@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import CodeViewer from "@/components/CodeViewer";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
@@ -212,6 +213,7 @@ type SyncEntry = {
 export default function CronClient() {
   const [data, setData] = useState<Record<string, SyncEntry | null>>({});
   const [loading, setLoading] = useState(true);
+  const [inspectScript, setInspectScript] = useState<{ type: "script" | "api"; name: string } | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchData = useCallback(async () => {
@@ -372,7 +374,13 @@ export default function CronClient() {
                         borderRadius: 3,
                       }}
                     >
-                      {feed.script}
+                      <span
+                        onClick={() => setInspectScript({ type: feed.script.startsWith("/api/") ? "api" : "script", name: feed.script })}
+                        style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "rgba(255,255,255,0.2)", textUnderlineOffset: "2px" }}
+                        title="Click to view source"
+                      >
+                        {feed.script}
+                      </span>
                     </code>
                   </td>
 
@@ -463,6 +471,16 @@ export default function CronClient() {
           })}
         </span>
       </div>
+
+      {/* Source Code Viewer */}
+      {inspectScript && (
+        <CodeViewer
+          open={!!inspectScript}
+          onClose={() => setInspectScript(null)}
+          type={inspectScript.type}
+          name={inspectScript.name}
+        />
+      )}
     </div>
   );
 }

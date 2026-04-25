@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
-// ─── Workflow Definitions ──────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
-interface WorkflowNode {
+interface WNode {
   id: string;
   label: string;
   type: "trigger" | "process" | "store" | "ai" | "output" | "cron" | "webhook" | "mcp";
-  description: string;
+  icon: string;
+  desc: string;
   x: number;
   y: number;
-  status?: "active" | "error" | "pending";
   cron?: string;
   script?: string;
   table?: string;
-  mcp_tool?: string;
+  mcp?: string;
 }
 
-interface WorkflowEdge {
+interface WEdge {
   from: string;
   to: string;
   label?: string;
@@ -27,194 +27,206 @@ interface WorkflowEdge {
 interface Workflow {
   id: string;
   name: string;
-  description: string;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
+  desc: string;
+  nodes: WNode[];
+  edges: WEdge[];
 }
+
+// ─── Node Styles ────────────────────────────────────────────────────────────
+
+const STYLES: Record<string, { bg: string; border: string; text: string; icon_bg: string }> = {
+  trigger:  { bg: "#0f1d3d", border: "#1e40af", text: "#60a5fa", icon_bg: "#1e3a5f" },
+  process:  { bg: "#1a1a1e", border: "#3f3f46", text: "#d4d4d8", icon_bg: "#27272a" },
+  store:    { bg: "#052e16", border: "#166534", text: "#4ade80", icon_bg: "#14532d" },
+  ai:       { bg: "#1e0a3e", border: "#7c3aed", text: "#a78bfa", icon_bg: "#3b0764" },
+  output:   { bg: "#271207", border: "#92400e", text: "#fbbf24", icon_bg: "#422006" },
+  cron:     { bg: "#082f49", border: "#0369a1", text: "#38bdf8", icon_bg: "#0c4a6e" },
+  webhook:  { bg: "#2d0a1a", border: "#9f1239", text: "#f9a8d4", icon_bg: "#500724" },
+  mcp:      { bg: "#042f2e", border: "#0d9488", text: "#5eead4", icon_bg: "#134e4a" },
+};
+
+const NODE_W = 160;
+const NODE_H = 56;
+const PORT_R = 5;
+
+// ─── Workflows ──────────────────────────────────────────────────────────────
 
 const WORKFLOWS: Workflow[] = [
   {
     id: "zoom-meetings",
     name: "Zoom Meetings → Activity + Recording + Transcript",
-    description: "End-to-end pipeline from Zoom meeting completion to searchable transcripts in Pv2",
+    desc: "End-to-end pipeline from Zoom meeting completion to searchable transcripts",
     nodes: [
-      { id: "zoom-api", label: "Zoom Cloud\nRecordings API", type: "trigger", description: "GET /accounts/me/recordings — fetches all cloud recordings since last sync", x: 80, y: 160, status: "active" },
-      { id: "cron-meetings", label: "Cron: 3× Daily", type: "cron", description: "Runs at 6:10 AM, 12:10 PM, 6:10 PM ET", x: 80, y: 60, cron: "10 6,12,18 * * *", script: "hbx-sync-zoom-meetings.py", status: "active" },
-      { id: "parse-files", label: "Parse Recording\nFiles", type: "process", description: "Extract MP4 (video), M4A (audio), VTT (transcript) from recording_files array", x: 280, y: 160 },
-      { id: "match-contact", label: "Match Participants\n→ Contacts", type: "process", description: "Match participant emails to contacts table. Links to opportunity.", x: 480, y: 100 },
-      { id: "download-transcript", label: "Download Zoom\nTranscript", type: "process", description: "If Zoom provides VTT transcript, download and parse to text", x: 480, y: 220 },
-      { id: "activities-table", label: "activities", type: "store", description: "channel=meeting, recording_url, duration, subject, contact_id, opportunity_id", x: 700, y: 100, table: "activities" },
-      { id: "transcripts-table", label: "transcripts", type: "store", description: "raw_text, activity_id, source=zoom_meeting, duration_seconds", x: 700, y: 220, table: "transcripts" },
-      { id: "cron-transcribe", label: "Cron: Every 30m", type: "cron", description: "Runs every 30 min 7am-8pm. Backfills missing transcripts.", x: 700, y: 340, cron: "*/30 7-20 * * *", script: "hbx-transcribe-calls.py", status: "active" },
-      { id: "whisper", label: "OpenAI Whisper\nBackfill", type: "ai", description: "For recordings WITHOUT Zoom transcript: download audio → Whisper API → transcript", x: 900, y: 340 },
-      { id: "link-transcript", label: "Link transcript_id\nto activity", type: "process", description: "UPDATE activities SET transcript_id = X WHERE id = Y", x: 900, y: 220 },
-      { id: "opp-panel", label: "OpportunityPanel\nActivity Tab", type: "output", description: "Shows meeting with Play button, transcript viewer, copy button", x: 1100, y: 100 },
-      { id: "comm-hub", label: "Comm Hub\nMeeting Tab", type: "output", description: "Compact row in meeting tab with duration and timestamp", x: 1100, y: 220 },
-      { id: "ai-extract", label: "DGX Spark\nIntelligence Extract", type: "ai", description: "Extract buyer preferences, objections, next steps from transcript", x: 900, y: 100, mcp_tool: "extract_intelligence" },
+      { id: "cron", label: "Cron: 3× Daily", type: "cron", icon: "⏱", desc: "6:10 AM, 12:10 PM, 6:10 PM ET", x: 40, y: 30, cron: "10 6,12,18 * * *", script: "hbx-sync-zoom-meetings.py" },
+      { id: "zoom", label: "Zoom Recordings API", type: "trigger", icon: "📹", desc: "GET /accounts/me/recordings", x: 40, y: 150 },
+      { id: "parse", label: "Parse Files", type: "process", icon: "📂", desc: "Extract MP4, M4A, VTT from recording_files", x: 280, y: 150 },
+      { id: "match", label: "Match Contacts", type: "process", icon: "👤", desc: "Participant email → contacts table → opportunity", x: 500, y: 80 },
+      { id: "dl-tx", label: "Download Transcript", type: "process", icon: "📝", desc: "Download VTT transcript from Zoom", x: 500, y: 230 },
+      { id: "acts", label: "activities", type: "store", icon: "💾", desc: "channel=meeting, recording_url, duration, transcript_id", x: 720, y: 80, table: "activities" },
+      { id: "txs", label: "transcripts", type: "store", icon: "💾", desc: "raw_text, activity_id, source=zoom_meeting", x: 720, y: 230, table: "transcripts" },
+      { id: "link", label: "Link transcript → activity", type: "process", icon: "🔗", desc: "UPDATE activities SET transcript_id", x: 940, y: 155 },
+      { id: "cron2", label: "Cron: Every 30m", type: "cron", icon: "⏱", desc: "Whisper backfill for missing transcripts", x: 500, y: 370, cron: "*/30 7-20 * * *", script: "hbx-transcribe-calls.py" },
+      { id: "whisper", label: "Whisper AI", type: "ai", icon: "🧠", desc: "OpenAI Whisper transcribes audio for calls without Zoom transcript", x: 720, y: 370 },
+      { id: "spark", label: "DGX Spark Extract", type: "ai", icon: "✦", desc: "Extract preferences, objections, next steps from transcript", x: 1160, y: 80, mcp: "extract_intelligence" },
+      { id: "panel", label: "Opportunity Panel", type: "output", icon: "📊", desc: "Play recording, view transcript, AI summary", x: 1160, y: 230 },
+      { id: "hub", label: "Comm Hub", type: "output", icon: "💬", desc: "Meeting tab with compact row", x: 1160, y: 370 },
     ],
     edges: [
-      { from: "cron-meetings", to: "zoom-api", label: "triggers" },
-      { from: "zoom-api", to: "parse-files", label: "recordings[]" },
-      { from: "parse-files", to: "match-contact", label: "participants" },
-      { from: "parse-files", to: "download-transcript", label: "VTT file" },
-      { from: "match-contact", to: "activities-table", label: "contact_id" },
-      { from: "download-transcript", to: "transcripts-table", label: "raw_text" },
-      { from: "activities-table", to: "link-transcript" },
-      { from: "transcripts-table", to: "link-transcript" },
-      { from: "cron-transcribe", to: "whisper", label: "no transcript?" },
-      { from: "whisper", to: "transcripts-table", label: "raw_text" },
-      { from: "whisper", to: "link-transcript" },
-      { from: "activities-table", to: "opp-panel" },
-      { from: "transcripts-table", to: "opp-panel" },
-      { from: "activities-table", to: "comm-hub" },
-      { from: "transcripts-table", to: "ai-extract", label: "raw_text" },
-      { from: "ai-extract", to: "activities-table", label: "metadata" },
+      { from: "cron", to: "zoom", label: "triggers" },
+      { from: "zoom", to: "parse", label: "recordings" },
+      { from: "parse", to: "match", label: "participants" },
+      { from: "parse", to: "dl-tx", label: "VTT file" },
+      { from: "match", to: "acts", label: "contact_id" },
+      { from: "dl-tx", to: "txs", label: "raw_text" },
+      { from: "acts", to: "link" },
+      { from: "txs", to: "link" },
+      { from: "cron2", to: "whisper", label: "no transcript?" },
+      { from: "whisper", to: "txs", label: "raw_text" },
+      { from: "link", to: "spark" },
+      { from: "link", to: "panel" },
+      { from: "link", to: "hub" },
     ],
   },
   {
-    id: "outlook-emails",
+    id: "outlook",
     name: "Outlook Emails → Activity + AI Reply",
-    description: "Grace's email sync with contact matching, NR/Urgent classification, and AI-generated replies",
+    desc: "Email sync with contact matching, NR/Urgent classification, and AI-generated replies",
     nodes: [
-      { id: "graph-api", label: "Microsoft Graph\nAPI", type: "trigger", description: "GET /users/grace@.../mailFolders/inbox/messages + sentitems", x: 80, y: 160, status: "active" },
-      { id: "cron-email", label: "Cron: Every 15m", type: "cron", description: "Runs every 15 min 7am-8pm ET", x: 80, y: 60, cron: "*/15 7-20 * * *", script: "hbx-sync-outlook-emails.py", status: "active" },
-      { id: "match-email", label: "Match Sender/To\n→ Contacts", type: "process", description: "Pre-loaded email→contact map. Links to opportunity + division.", x: 300, y: 160 },
-      { id: "classify", label: "NR / Urgent\nClassification", type: "ai", description: "Pattern matching: thanks=no-reply, call me back=urgent", x: 500, y: 100 },
-      { id: "activities", label: "activities", type: "store", description: "channel=email, direction, subject, body, needs_response, is_urgent", x: 700, y: 160, table: "activities" },
-      { id: "spark-reply", label: "DGX Spark\nAI Reply", type: "ai", description: "Generates personalized reply using full conversation + MCP data", x: 700, y: 280 },
-      { id: "mcp-data", label: "MCP Tools", type: "mcp", description: "get_community_details, get_floor_plans, get_divisions — same as Schellie", x: 500, y: 280, mcp_tool: "get_community_details" },
-      { id: "store-reply", label: "Store ai_reply\nin metadata", type: "process", description: "metadata.ai_reply = generated response, metadata.ai_reply_generated_at", x: 900, y: 280 },
-      { id: "comm-hub-nr", label: "Comm Hub\nNeeds Response", type: "output", description: "Shows in NR tab with wait time countdown and AI suggested reply", x: 900, y: 100 },
-      { id: "opp-panel-2", label: "OpportunityPanel\nActivity Tab", type: "output", description: "Email in activity timeline with full body", x: 900, y: 160 },
+      { id: "cron", label: "Cron: Every 15m", type: "cron", icon: "⏱", desc: "7am-8pm ET", x: 40, y: 30, cron: "*/15 7-20 * * *", script: "hbx-sync-outlook-emails.py" },
+      { id: "graph", label: "Microsoft Graph API", type: "trigger", icon: "📧", desc: "GET /users/grace@.../messages (inbox + sent)", x: 40, y: 150 },
+      { id: "preload", label: "Preload Contacts", type: "process", icon: "📋", desc: "395 email→contact mappings in memory", x: 280, y: 150 },
+      { id: "match", label: "Match Email → Contact", type: "process", icon: "👤", desc: "Sender/recipient → contact_id + opportunity", x: 500, y: 80 },
+      { id: "classify", label: "NR / Urgent", type: "ai", icon: "🏷", desc: "Pattern match: thanks=no-reply, call me=urgent", x: 500, y: 230 },
+      { id: "acts", label: "activities", type: "store", icon: "💾", desc: "channel=email, needs_response, is_urgent, division_id", x: 720, y: 150, table: "activities" },
+      { id: "mcp", label: "MCP Tools", type: "mcp", icon: "🔧", desc: "get_community_details, get_floor_plans, get_divisions", x: 720, y: 310, mcp: "get_community_details" },
+      { id: "spark", label: "DGX Spark Reply", type: "ai", icon: "✦", desc: "Full context + MCP data → personalized reply", x: 940, y: 310 },
+      { id: "store", label: "Store ai_reply", type: "process", icon: "💾", desc: "metadata.ai_reply + metadata.ai_reply_generated_at", x: 940, y: 150 },
+      { id: "hub", label: "Comm Hub NR", type: "output", icon: "💬", desc: "NR tab with AI reply in green box", x: 1160, y: 80 },
+      { id: "panel", label: "Opportunity Panel", type: "output", icon: "📊", desc: "Email in activity timeline", x: 1160, y: 230 },
     ],
     edges: [
-      { from: "cron-email", to: "graph-api", label: "triggers" },
-      { from: "graph-api", to: "match-email", label: "messages[]" },
-      { from: "match-email", to: "classify", label: "inbound" },
-      { from: "match-email", to: "activities", label: "all" },
-      { from: "classify", to: "activities", label: "NR/Urgent flags" },
-      { from: "activities", to: "spark-reply", label: "NR inbound" },
-      { from: "mcp-data", to: "spark-reply", label: "real data" },
-      { from: "spark-reply", to: "store-reply" },
-      { from: "store-reply", to: "activities", label: "metadata update" },
-      { from: "activities", to: "comm-hub-nr" },
-      { from: "activities", to: "opp-panel-2" },
+      { from: "cron", to: "graph", label: "triggers" },
+      { from: "graph", to: "preload", label: "843 emails" },
+      { from: "preload", to: "match", label: "86 matched" },
+      { from: "preload", to: "classify" },
+      { from: "match", to: "acts", label: "contact + opp" },
+      { from: "classify", to: "acts", label: "NR/Urgent" },
+      { from: "acts", to: "spark", label: "NR inbound" },
+      { from: "mcp", to: "spark", label: "real data" },
+      { from: "spark", to: "store", label: "ai_reply" },
+      { from: "store", to: "acts", label: "metadata update" },
+      { from: "acts", to: "hub" },
+      { from: "acts", to: "panel" },
     ],
   },
   {
-    id: "webform-pipeline",
+    id: "webform",
     name: "Web Form → Queue → Pipeline",
-    description: "Webform submission to OSC Queue with AI recommendation and auto-confirmation emails",
+    desc: "Webform submission to OSC Queue with AI recommendation",
     nodes: [
-      { id: "hb-api", label: "Heartbeat API\npulse2-lead-forms", type: "trigger", description: "Fetches new web form submissions from SchellBrothers.com", x: 80, y: 160, status: "active" },
-      { id: "cron-wf", label: "Cron: Every 5m", type: "cron", description: "Vercel API route + Python backup sync", x: 80, y: 60, script: "/api/sync/webforms", status: "active" },
-      { id: "parse-utm", label: "Parse UTM +\nAd Attribution", type: "process", description: "Extract gclid, utm_source, utm_campaign from landing page URL", x: 280, y: 100 },
-      { id: "match-create", label: "Find/Create\nContact", type: "process", description: "Match by email/phone. Create new contact if not found.", x: 280, y: 220 },
-      { id: "contacts", label: "contacts", type: "store", description: "first_name, last_name, email, phone, source", x: 480, y: 220, table: "contacts" },
-      { id: "opportunities", label: "opportunities\n(queue)", type: "store", description: "crm_stage=queue, opportunity_source, division_id, community_id", x: 480, y: 100, table: "opportunities" },
-      { id: "activities-wf", label: "activities\n(webform)", type: "store", description: "channel=webform, UTM metadata, form_type_code", x: 480, y: 340, table: "activities" },
-      { id: "ai-rec", label: "AI Pipeline\nRecommendation", type: "ai", description: "Analyze form type + ad data → recommend Lead:Div, Lead:Com, or CSM Queue", x: 700, y: 100 },
-      { id: "sendgrid", label: "SendGrid\nAuto-Confirm", type: "output", description: "Branded confirmation email via noreply@schellbrothers.com", x: 700, y: 340 },
-      { id: "osc-queue", label: "OSC Queue\nCommand Center", type: "output", description: "Card with form details, ad attribution, AI recommendation, approve/override", x: 900, y: 160 },
+      { id: "cron", label: "Cron: Every 5m", type: "cron", icon: "⏱", desc: "Vercel API + Python backup", x: 40, y: 30, script: "/api/sync/webforms" },
+      { id: "hb", label: "Heartbeat API", type: "trigger", icon: "🌐", desc: "pulse2-lead-forms endpoint", x: 40, y: 150 },
+      { id: "utm", label: "Parse UTM + Ads", type: "process", icon: "📊", desc: "gclid, utm_source, utm_campaign from URL", x: 280, y: 80 },
+      { id: "contact", label: "Find/Create Contact", type: "process", icon: "👤", desc: "Match email/phone or create new", x: 280, y: 230 },
+      { id: "contacts", label: "contacts", type: "store", icon: "💾", desc: "first_name, last_name, email, phone, source", x: 500, y: 230, table: "contacts" },
+      { id: "opps", label: "opportunities (queue)", type: "store", icon: "💾", desc: "crm_stage=queue, division_id, community_id", x: 500, y: 80, table: "opportunities" },
+      { id: "acts", label: "activities (webform)", type: "store", icon: "💾", desc: "channel=webform, UTM metadata", x: 500, y: 370, table: "activities" },
+      { id: "rec", label: "AI Recommendation", type: "ai", icon: "✦", desc: "Form type + ad data → Lead:Div, Lead:Com, CSM Queue", x: 720, y: 80 },
+      { id: "sg", label: "SendGrid Email", type: "output", icon: "📧", desc: "Branded auto-confirmation on approval", x: 720, y: 370 },
+      { id: "queue", label: "OSC Queue", type: "output", icon: "📋", desc: "Card with details, attribution, approve/override", x: 940, y: 150 },
     ],
     edges: [
-      { from: "cron-wf", to: "hb-api", label: "triggers" },
-      { from: "hb-api", to: "parse-utm", label: "form data" },
-      { from: "hb-api", to: "match-create", label: "name/email/phone" },
-      { from: "parse-utm", to: "activities-wf", label: "UTM metadata" },
-      { from: "match-create", to: "contacts" },
-      { from: "contacts", to: "opportunities", label: "contact_id" },
-      { from: "opportunities", to: "ai-rec" },
-      { from: "activities-wf", to: "sendgrid", label: "on approval" },
-      { from: "ai-rec", to: "osc-queue" },
-      { from: "opportunities", to: "osc-queue" },
+      { from: "cron", to: "hb", label: "triggers" },
+      { from: "hb", to: "utm" },
+      { from: "hb", to: "contact" },
+      { from: "contact", to: "contacts" },
+      { from: "contacts", to: "opps", label: "contact_id" },
+      { from: "utm", to: "acts", label: "UTM data" },
+      { from: "opps", to: "rec" },
+      { from: "acts", to: "sg", label: "on approval" },
+      { from: "rec", to: "queue" },
+      { from: "opps", to: "queue" },
     ],
   },
   {
-    id: "sms-webhook",
+    id: "sms",
     name: "SMS Webhook → Activity + NR/Urgent",
-    description: "Real-time Zoom SMS events via webhook with contact matching and AI classification",
+    desc: "Real-time Zoom SMS events with contact matching and AI classification",
     nodes: [
-      { id: "zoom-event", label: "Zoom Webhook\nphone.sms_received", type: "webhook", description: "Real-time event from Zoom when SMS sent/received", x: 80, y: 160, status: "active" },
-      { id: "extract-phone", label: "Extract Phone\nNumbers", type: "process", description: "Try from.phone_number, from_number, caller_number, sender.phone_number", x: 300, y: 160 },
-      { id: "match-phone", label: "Match Phone\n→ Contact", type: "process", description: "Lookup in contacts.phone, contacts.phone_secondary, contact_members.phone", x: 500, y: 100 },
-      { id: "classify-sms", label: "NR / Urgent\nClassification", type: "ai", description: "thanks=no-reply, call me back=urgent, question=needs response", x: 500, y: 220 },
-      { id: "activities-sms", label: "activities", type: "store", description: "channel=sms, from_number, to_number, contact_id, division_id, needs_response, is_urgent", x: 700, y: 160, table: "activities" },
-      { id: "comm-hub-sms", label: "Comm Hub\nText Tab", type: "output", description: "Shows in text tab and NR tab if needs response", x: 900, y: 160 },
+      { id: "hook", label: "Zoom Webhook", type: "webhook", icon: "⚡", desc: "phone.sms_received / phone.sms_sent events", x: 40, y: 150 },
+      { id: "phone", label: "Extract Phone #", type: "process", icon: "📱", desc: "Try from.phone_number, from_number, sender.phone_number", x: 280, y: 150 },
+      { id: "match", label: "Match → Contact", type: "process", icon: "👤", desc: "contacts.phone, phone_secondary, contact_members.phone", x: 500, y: 80 },
+      { id: "class", label: "NR / Urgent", type: "ai", icon: "🏷", desc: "thanks=no-reply, call me=urgent", x: 500, y: 230 },
+      { id: "acts", label: "activities", type: "store", icon: "💾", desc: "channel=sms, from/to, contact_id, division_id, NR, urgent", x: 720, y: 150, table: "activities" },
+      { id: "hub", label: "Comm Hub Text", type: "output", icon: "💬", desc: "Text tab + NR tab if needs response", x: 940, y: 150 },
     ],
     edges: [
-      { from: "zoom-event", to: "extract-phone", label: "payload" },
-      { from: "extract-phone", to: "match-phone", label: "external number" },
-      { from: "extract-phone", to: "classify-sms", label: "message body" },
-      { from: "match-phone", to: "activities-sms", label: "contact_id" },
-      { from: "classify-sms", to: "activities-sms", label: "NR/Urgent" },
-      { from: "activities-sms", to: "comm-hub-sms" },
+      { from: "hook", to: "phone", label: "payload" },
+      { from: "phone", to: "match", label: "ext number" },
+      { from: "phone", to: "class", label: "body" },
+      { from: "match", to: "acts", label: "contact_id" },
+      { from: "class", to: "acts", label: "NR/Urgent" },
+      { from: "acts", to: "hub" },
     ],
   },
   {
-    id: "staff-sync",
+    id: "staff",
     name: "Staff Assignments Sync",
-    description: "Daily sync of CSM and OSC assignments from Heartbeat to Pv2 user table",
+    desc: "Daily CSM + OSC assignments from Heartbeat → user table",
     nodes: [
-      { id: "cron-staff", label: "Cron: Daily 5 AM", type: "cron", description: "Full refresh of CSM + OSC assignments", x: 80, y: 120, cron: "0 5 * * *", script: "hbx-sync-staff-assignments.py", status: "active" },
-      { id: "hb-csms", label: "Heartbeat API\nsource=csms", type: "trigger", description: "Per community: GET CSMs with phone + employee_id", x: 300, y: 80 },
-      { id: "hb-osc", label: "Heartbeat API\nsource=osc", type: "trigger", description: "Per division: GET OSC with phone", x: 300, y: 180 },
-      { id: "match-phone-staff", label: "Match by Phone\n→ Zoom Users", type: "process", description: "HB virtual_phone → users.zoom_phone_number (10-digit match)", x: 540, y: 120 },
-      { id: "users-table", label: "users", type: "store", description: "52 sales users: zoom_user_id, phone, email, role, division_id", x: 740, y: 80, table: "users" },
-      { id: "assignments-table", label: "user_community\nassignments", type: "store", description: "73 CSM↔community mappings (many-to-many)", x: 740, y: 180, table: "user_community_assignments" },
+      { id: "cron", label: "Cron: Daily 5 AM", type: "cron", icon: "⏱", desc: "Full refresh", x: 40, y: 120, cron: "0 5 * * *", script: "hbx-sync-staff-assignments.py" },
+      { id: "csms", label: "HB source=csms", type: "trigger", icon: "🏠", desc: "Per community: CSMs with phone + employee_id", x: 280, y: 60 },
+      { id: "osc", label: "HB source=osc", type: "trigger", icon: "🏠", desc: "Per division: OSC with phone", x: 280, y: 200 },
+      { id: "match", label: "Match by Phone", type: "process", icon: "📱", desc: "HB virtual_phone → users.zoom_phone_number", x: 540, y: 120 },
+      { id: "users", label: "users", type: "store", icon: "💾", desc: "52 users: zoom_id, phone, email, role, division", x: 760, y: 60, table: "users" },
+      { id: "assign", label: "assignments", type: "store", icon: "💾", desc: "73 CSM↔community mappings", x: 760, y: 200, table: "user_community_assignments" },
     ],
     edges: [
-      { from: "cron-staff", to: "hb-csms", label: "per community" },
-      { from: "cron-staff", to: "hb-osc", label: "per division" },
-      { from: "hb-csms", to: "match-phone-staff", label: "virtual_phone" },
-      { from: "hb-osc", to: "match-phone-staff", label: "virtual_phone" },
-      { from: "match-phone-staff", to: "users-table", label: "role update" },
-      { from: "match-phone-staff", to: "assignments-table", label: "CSM assignments" },
+      { from: "cron", to: "csms", label: "per community" },
+      { from: "cron", to: "osc", label: "per division" },
+      { from: "csms", to: "match", label: "phone" },
+      { from: "osc", to: "match", label: "phone" },
+      { from: "match", to: "users", label: "role update" },
+      { from: "match", to: "assign", label: "CSM links" },
     ],
   },
 ];
 
-// ─── Node Colors ──────────────────────────────────────────────────────────────
+// ─── Bezier path between two nodes ──────────────────────────────────────────
 
-const NODE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  trigger: { bg: "#172554", border: "#1e40af", text: "#60a5fa" },
-  process: { bg: "#18181b", border: "#3f3f46", text: "#a1a1aa" },
-  store: { bg: "#052e16", border: "#166534", text: "#4ade80" },
-  ai: { bg: "#2e1065", border: "#7c3aed", text: "#a78bfa" },
-  output: { bg: "#422006", border: "#92400e", text: "#fbbf24" },
-  cron: { bg: "#0c4a6e", border: "#0369a1", text: "#38bdf8" },
-  webhook: { bg: "#500724", border: "#9f1239", text: "#f9a8d4" },
-  mcp: { bg: "#134e4a", border: "#0d9488", text: "#5eead4" },
-};
+function bezierPath(x1: number, y1: number, x2: number, y2: number): string {
+  const midX = (x1 + x2) / 2;
+  return `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+}
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export default function WorkflowsPage() {
-  const [selectedWorkflow, setSelectedWorkflow] = useState(WORKFLOWS[0].id);
-  const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
-  
-  const workflow = WORKFLOWS.find(w => w.id === selectedWorkflow) || WORKFLOWS[0];
-  
-  // Calculate SVG viewBox
-  const maxX = Math.max(...workflow.nodes.map(n => n.x)) + 200;
-  const maxY = Math.max(...workflow.nodes.map(n => n.y)) + 100;
+  const [selWf, setSelWf] = useState(WORKFLOWS[0].id);
+  const [selNode, setSelNode] = useState<WNode | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const wf = WORKFLOWS.find(w => w.id === selWf) || WORKFLOWS[0];
+  const maxX = Math.max(...wf.nodes.map(n => n.x)) + NODE_W + 60;
+  const maxY = Math.max(...wf.nodes.map(n => n.y)) + NODE_H + 60;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: "#09090b", color: "#fafafa" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: "#0a0a0f", color: "#fafafa" }}>
       {/* Header */}
-      <div style={{ padding: "16px 24px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", gap: 16 }}>
-        <span style={{ fontSize: 16, fontWeight: 600 }}>Workflows</span>
-        <div style={{ display: "flex", gap: 4 }}>
+      <div style={{ padding: "14px 24px", borderBottom: "1px solid #1a1a22", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em" }}>Workflows</span>
+        <div style={{ display: "flex", gap: 2, backgroundColor: "#111116", borderRadius: 8, padding: 2 }}>
           {WORKFLOWS.map(w => (
             <button
               key={w.id}
-              onClick={() => { setSelectedWorkflow(w.id); setSelectedNode(null); }}
+              onClick={() => { setSelWf(w.id); setSelNode(null); }}
               style={{
-                padding: "6px 12px", fontSize: 11, borderRadius: 6, cursor: "pointer",
-                border: selectedWorkflow === w.id ? "1px solid #3f3f46" : "1px solid transparent",
-                backgroundColor: selectedWorkflow === w.id ? "#18181b" : "transparent",
-                color: selectedWorkflow === w.id ? "#fafafa" : "#71717a",
-                fontWeight: selectedWorkflow === w.id ? 600 : 400,
+                padding: "6px 14px", fontSize: 11, borderRadius: 6, cursor: "pointer",
+                border: "none",
+                backgroundColor: selWf === w.id ? "#1e1e28" : "transparent",
+                color: selWf === w.id ? "#fafafa" : "#52525b",
+                fontWeight: selWf === w.id ? 600 : 400,
+                transition: "all 0.15s",
               }}
             >
               {w.name.split("→")[0].trim()}
@@ -223,59 +235,85 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
-      {/* Workflow Title */}
-      <div style={{ padding: "12px 24px", borderBottom: "1px solid #1a1a1a" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "#fafafa" }}>{workflow.name}</div>
-        <div style={{ fontSize: 11, color: "#71717a", marginTop: 2 }}>{workflow.description}</div>
+      {/* Title bar */}
+      <div style={{ padding: "10px 24px", borderBottom: "1px solid #111116" }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{wf.name}</div>
+        <div style={{ fontSize: 11, color: "#52525b", marginTop: 2 }}>{wf.desc}</div>
       </div>
 
-      {/* Canvas + Detail */}
+      {/* Canvas + Panel */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* SVG Canvas */}
-        <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-          <svg viewBox={`0 0 ${maxX} ${maxY}`} style={{ width: "100%", height: "100%", minHeight: 400 }}>
+        <div style={{ flex: 1, overflow: "auto", position: "relative" }}>
+          {/* Grid background */}
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.03,
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }} />
+          <svg ref={svgRef} viewBox={`-20 -20 ${maxX + 40} ${maxY + 40}`} style={{ width: "100%", height: "100%", minHeight: 500 }}>
             <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3f3f46" />
+              <marker id="arrowhead" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#3f3f46" />
               </marker>
             </defs>
 
-            {/* Edges */}
-            {workflow.edges.map((e, i) => {
-              const fromNode = workflow.nodes.find(n => n.id === e.from);
-              const toNode = workflow.nodes.find(n => n.id === e.to);
-              if (!fromNode || !toNode) return null;
-              const x1 = fromNode.x + 70;
-              const y1 = fromNode.y + 20;
-              const x2 = toNode.x + 70;
-              const y2 = toNode.y + 20;
+            {/* Edges — smooth bezier curves */}
+            {wf.edges.map((e, i) => {
+              const fn = wf.nodes.find(n => n.id === e.from);
+              const tn = wf.nodes.find(n => n.id === e.to);
+              if (!fn || !tn) return null;
+
+              // Output port (right center of from node)
+              const x1 = fn.x + NODE_W;
+              const y1 = fn.y + NODE_H / 2;
+              // Input port (left center of to node)
+              const x2 = tn.x;
+              const y2 = tn.y + NODE_H / 2;
+
+              const path = bezierPath(x1, y1, x2, y2);
               const midX = (x1 + x2) / 2;
               const midY = (y1 + y2) / 2;
+
               return (
                 <g key={i}>
-                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#3f3f46" strokeWidth={1.5} markerEnd="url(#arrow)" />
+                  <path d={path} fill="none" stroke="#2a2a35" strokeWidth={2} markerEnd="url(#arrowhead)" />
+                  {/* Output port dot */}
+                  <circle cx={x1} cy={y1} r={PORT_R} fill="#2a2a35" stroke="#3f3f46" strokeWidth={1} />
+                  {/* Input port dot */}
+                  <circle cx={x2} cy={y2} r={PORT_R} fill="#2a2a35" stroke="#3f3f46" strokeWidth={1} />
+                  {/* Edge label */}
                   {e.label && (
-                    <text x={midX} y={midY - 6} textAnchor="middle" fontSize={8} fill="#52525b">{e.label}</text>
+                    <g>
+                      <rect x={midX - e.label.length * 3.2} y={midY - 9} width={e.label.length * 6.4} height={14} rx={4} fill="#111116" stroke="#1e1e28" strokeWidth={0.5} />
+                      <text x={midX} y={midY + 1} textAnchor="middle" fontSize={8} fill="#52525b" fontFamily="system-ui">{e.label}</text>
+                    </g>
                   )}
                 </g>
               );
             })}
 
             {/* Nodes */}
-            {workflow.nodes.map(node => {
-              const colors = NODE_COLORS[node.type] || NODE_COLORS.process;
-              const isSelected = selectedNode?.id === node.id;
+            {wf.nodes.map(node => {
+              const s = STYLES[node.type] || STYLES.process;
+              const isSel = selNode?.id === node.id;
               return (
-                <g key={node.id} onClick={() => setSelectedNode(node)} style={{ cursor: "pointer" }}>
+                <g key={node.id} onClick={() => setSelNode(node)} style={{ cursor: "pointer" }}>
+                  {/* Node body */}
                   <rect
-                    x={node.x} y={node.y} width={140} height={44} rx={8}
-                    fill={colors.bg} stroke={isSelected ? "#fafafa" : colors.border} strokeWidth={isSelected ? 2 : 1}
+                    x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx={12}
+                    fill={s.bg}
+                    stroke={isSel ? "#fafafa" : s.border}
+                    strokeWidth={isSel ? 2 : 1}
+                    filter={isSel ? "" : ""}
                   />
-                  {node.label.split("\n").map((line, li) => (
-                    <text key={li} x={node.x + 70} y={node.y + 18 + li * 14} textAnchor="middle" fontSize={10} fontWeight={600} fill={colors.text}>
-                      {line}
-                    </text>
-                  ))}
+                  {/* Icon circle */}
+                  <circle cx={node.x + 24} cy={node.y + NODE_H / 2} r={14} fill={s.icon_bg} stroke={s.border} strokeWidth={0.5} />
+                  <text x={node.x + 24} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={12}>{node.icon}</text>
+                  {/* Label */}
+                  <text x={node.x + 50} y={node.y + NODE_H / 2 + 4} fontSize={10} fontWeight={600} fill={s.text} fontFamily="system-ui">
+                    {node.label}
+                  </text>
                 </g>
               );
             })}
@@ -283,54 +321,63 @@ export default function WorkflowsPage() {
         </div>
 
         {/* Detail Panel */}
-        <div style={{ width: 300, borderLeft: "1px solid #27272a", padding: 16, overflow: "auto" }}>
-          {selectedNode ? (
+        <div style={{ width: 280, borderLeft: "1px solid #1a1a22", padding: 16, overflow: "auto", backgroundColor: "#0d0d12" }}>
+          {selNode ? (
             <>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#fafafa", marginBottom: 8 }}>{selectedNode.label.replace("\n", " ")}</div>
-              <div style={{
-                fontSize: 9, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 12,
-                backgroundColor: NODE_COLORS[selectedNode.type]?.bg || "#18181b",
-                color: NODE_COLORS[selectedNode.type]?.text || "#a1a1aa",
-                border: `1px solid ${NODE_COLORS[selectedNode.type]?.border || "#3f3f46"}`,
-                fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
-              }}>
-                {selectedNode.type}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 20 }}>{selNode.icon}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selNode.label}</div>
+                  <span style={{
+                    fontSize: 9, padding: "2px 8px", borderRadius: 4,
+                    backgroundColor: STYLES[selNode.type]?.bg, color: STYLES[selNode.type]?.text,
+                    border: `1px solid ${STYLES[selNode.type]?.border}`,
+                    fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
+                  }}>{selNode.type}</span>
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.6, marginBottom: 16 }}>{selectedNode.description}</div>
-              {selectedNode.cron && (
-                <div style={{ fontSize: 11, color: "#52525b", marginBottom: 4 }}>
-                  <span style={{ color: "#71717a", fontWeight: 600 }}>Cron:</span> {selectedNode.cron}
+              <div style={{ fontSize: 12, color: "#a1a1aa", lineHeight: 1.6, marginBottom: 16 }}>{selNode.desc}</div>
+
+              {selNode.cron && (
+                <div style={{ padding: "8px 12px", backgroundColor: "#111116", borderRadius: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: "#52525b", textTransform: "uppercase", marginBottom: 2 }}>Cron Schedule</div>
+                  <div style={{ fontSize: 12, color: "#38bdf8", fontFamily: "monospace" }}>{selNode.cron}</div>
                 </div>
               )}
-              {selectedNode.script && (
-                <div style={{ fontSize: 11, color: "#52525b", marginBottom: 4 }}>
-                  <span style={{ color: "#71717a", fontWeight: 600 }}>Script:</span> {selectedNode.script}
+              {selNode.script && (
+                <div style={{ padding: "8px 12px", backgroundColor: "#111116", borderRadius: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: "#52525b", textTransform: "uppercase", marginBottom: 2 }}>Script</div>
+                  <div style={{ fontSize: 11, color: "#a1a1aa", fontFamily: "monospace" }}>{selNode.script}</div>
                 </div>
               )}
-              {selectedNode.table && (
-                <div style={{ fontSize: 11, color: "#52525b", marginBottom: 4 }}>
-                  <span style={{ color: "#71717a", fontWeight: 600 }}>Table:</span> {selectedNode.table}
+              {selNode.table && (
+                <div style={{ padding: "8px 12px", backgroundColor: "#111116", borderRadius: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: "#52525b", textTransform: "uppercase", marginBottom: 2 }}>Supabase Table</div>
+                  <div style={{ fontSize: 12, color: "#4ade80", fontFamily: "monospace" }}>{selNode.table}</div>
                 </div>
               )}
-              {selectedNode.mcp_tool && (
-                <div style={{ fontSize: 11, color: "#52525b", marginBottom: 4 }}>
-                  <span style={{ color: "#71717a", fontWeight: 600 }}>MCP Tool:</span> {selectedNode.mcp_tool}
+              {selNode.mcp && (
+                <div style={{ padding: "8px 12px", backgroundColor: "#111116", borderRadius: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: "#52525b", textTransform: "uppercase", marginBottom: 2 }}>MCP Tool</div>
+                  <div style={{ fontSize: 11, color: "#5eead4", fontFamily: "monospace" }}>{selNode.mcp}</div>
                 </div>
               )}
 
               {/* Legend */}
-              <div style={{ marginTop: 24, borderTop: "1px solid #27272a", paddingTop: 12 }}>
-                <div style={{ fontSize: 10, color: "#52525b", fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>Node Types</div>
-                {Object.entries(NODE_COLORS).map(([type, colors]) => (
+              <div style={{ marginTop: 20, paddingTop: 12, borderTop: "1px solid #1a1a22" }}>
+                <div style={{ fontSize: 9, color: "#3f3f46", textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>Node Types</div>
+                {Object.entries(STYLES).map(([type, s]) => (
                   <div key={type} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: colors.bg, border: `1px solid ${colors.border}` }} />
-                    <span style={{ fontSize: 10, color: colors.text, textTransform: "uppercase" }}>{type}</span>
+                    <div style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: s.bg, border: `1px solid ${s.border}` }} />
+                    <span style={{ fontSize: 10, color: s.text, textTransform: "uppercase", fontWeight: 500 }}>{type}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div style={{ fontSize: 12, color: "#52525b" }}>Click a node to see details</div>
+            <div style={{ color: "#3f3f46", fontSize: 12, textAlign: "center", paddingTop: 40 }}>
+              Click a node to inspect
+            </div>
           )}
         </div>
       </div>

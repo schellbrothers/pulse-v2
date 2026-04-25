@@ -582,11 +582,15 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
   const fetchActivities = useCallback(async () => {
     setLoading(true);
 
+    // 7-day window for Comm Hub — it's a working dashboard, not full history
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
     let query = supabase
       .from("activities")
       .select("id, contact_id, opportunity_id, channel, direction, subject, body, occurred_at, is_read, read_at, needs_response, responded_at, is_urgent, sentiment, duration_seconds, transcript_id, recording_url, metadata, type, from_number, to_number, contacts(first_name, last_name, email, phone)")
+      .gte("occurred_at", sevenDaysAgo)
       .order("occurred_at", { ascending: false })
-      .limit(1000);
+      .limit(2000);
 
     // Scope filtering by division/community when set
     if (communityId) {
@@ -769,14 +773,18 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     return URGENT_PATTERNS.some(p => p.test(text));
   };
 
-  const counts = useMemo(() => ({
-    urgent: baseActivities.filter(a => isUrgent(a)).length,
-    needs_response: baseActivities.filter(a => isSmartNR(a)).length,
-    call: baseActivities.filter(a => a.channel === "phone" || a.channel === "call").length,
-    text: baseActivities.filter(a => a.channel === "sms" || a.channel === "text").length,
-    email: baseActivities.filter(a => a.channel === "email").length,
-    meeting: baseActivities.filter(a => a.channel === "meeting").length,
-  }), [baseActivities]);
+  // Counts: red badges show NR count per channel, not total count
+  const counts = useMemo(() => {
+    const nrItems = baseActivities.filter(a => isSmartNR(a));
+    return {
+      urgent: baseActivities.filter(a => isUrgent(a)).length,
+      needs_response: nrItems.length,
+      call: nrItems.filter(a => a.channel === "phone" || a.channel === "call").length,
+      text: nrItems.filter(a => a.channel === "sms" || a.channel === "text").length,
+      email: nrItems.filter(a => a.channel === "email").length,
+      meeting: 0, // meetings don't need replies
+    };
+  }, [baseActivities]);
 
   const urgentCount = counts.urgent;
 

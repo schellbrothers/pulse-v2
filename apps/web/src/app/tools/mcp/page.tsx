@@ -479,6 +479,6 @@ function Stat({
       >
         {value}
       </div>
-
+    </div>
   );
 }

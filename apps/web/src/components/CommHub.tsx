@@ -754,8 +754,23 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
   const isSmartNR = (a: CommActivity) => a.needs_response && !a.responded_at && a.direction === "inbound" && !smartNR.has(a.id);
 
+  // Client-side urgent detection (supplements DB is_urgent field)
+  const URGENT_PATTERNS = [
+    /call me|call me back|please call|can you call/i,
+    /right now|asap|urgent|emergency|immediately/i,
+    /appointment today|visit today|come by today/i,
+    /need help now|need to talk|need a response/i,
+    /contract.*deadline|offer.*expir|expires today/i,
+  ];
+  const isUrgent = (a: CommActivity) => {
+    if (a.is_urgent) return true;
+    if (a.direction !== "inbound") return false;
+    const text = ((a.subject ?? "") + " " + (a.body ?? "")).slice(0, 300);
+    return URGENT_PATTERNS.some(p => p.test(text));
+  };
+
   const counts = useMemo(() => ({
-    urgent: baseActivities.filter(a => a.is_urgent).length,
+    urgent: baseActivities.filter(a => isUrgent(a)).length,
     needs_response: baseActivities.filter(a => isSmartNR(a)).length,
     call: baseActivities.filter(a => a.channel === "phone" || a.channel === "call").length,
     text: baseActivities.filter(a => a.channel === "sms" || a.channel === "text").length,
@@ -769,7 +784,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     let items = baseActivities;
 
     // Tab filter
-    if (activeTab === "urgent") items = items.filter(a => a.is_urgent);
+    if (activeTab === "urgent") items = items.filter(a => isUrgent(a));
     else if (activeTab === "needs_response") items = items.filter(a => isSmartNR(a));
     else if (activeTab === "call") items = items.filter(a => a.channel === "phone" || a.channel === "call");
     else if (activeTab === "text") items = items.filter(a => a.channel === "sms" || a.channel === "text");

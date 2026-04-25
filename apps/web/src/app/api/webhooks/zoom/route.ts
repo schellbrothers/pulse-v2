@@ -55,12 +55,17 @@ export async function POST(request: Request) {
     }
 
     const direction = event === "phone.sms_sent" ? "outbound" : "inbound";
-    const fromNumber = payload.from?.phone_number || payload.caller_number || "";
-    const toNumber = payload.to?.phone_number || payload.callee_number || "";
-    const messageBody = payload.message || payload.body || "";
-    const dateTime = payload.date_time || new Date().toISOString();
-    const senderName = payload.from?.display_name || payload.from?.name || "";
-    const recipientName = payload.to?.display_name || payload.to?.name || "";
+    // Zoom SMS payload can have phone numbers in various locations
+    const fromNumber = payload.from?.phone_number || payload.from_number || payload.caller_number || payload.sender?.phone_number || "";
+    const toNumber = payload.to?.phone_number || payload.to_number || payload.callee_number || payload.recipient?.phone_number || "";
+    const messageBody = payload.message || payload.body || payload.content || "";
+    const dateTime = payload.date_time || payload.timestamp || new Date().toISOString();
+    const senderName = payload.from?.display_name || payload.from?.name || payload.sender?.name || "";
+    const recipientName = payload.to?.display_name || payload.to?.name || payload.recipient?.name || "";
+
+    // Log full payload for debugging (remove once stable)
+    console.log(`[zoom-sms] ${event} payload keys:`, Object.keys(payload));
+    console.log(`[zoom-sms] from=${fromNumber} to=${toNumber} body=${messageBody.slice(0, 50)}`);
 
     // Determine which number is the external party
     const externalNumber = direction === "outbound" ? toNumber : fromNumber;
@@ -93,6 +98,37 @@ export async function POST(request: Request) {
       }
     }
 
+    // Get division/community from opportunity
+    let divisionId: string | null = null;
+    let communityId: string | null = null;
+    if (opportunityId) {
+      const { data: opp } = await supabase
+        .from("opportunities")
+        .select("division_id, community_id")
+        .eq("id", opportunityId)
+        .single();
+      if (opp) {
+        divisionId = opp.division_id;
+        communityId = opp.community_id;
+      }
+    }
+
+    // NR/Urgent classification for inbound
+    let needsResponse = direction === "inbound";
+    let isUrgent = false;
+    if (direction === "inbound" && messageBody) {
+      const text = messageBody.toLowerCase().trim();
+      // No-reply patterns
+      if (text.length < 100) {
+        const noReply = [/^thanks?[!.\s]*$/i, /^thank you/i, /^ok[!.\s]*$/i, /^sounds good/i, /^got it/i, /^awesome/i, /^will do/i, /^\uD83D\uDC4D/];
+        if (noReply.some(p => p.test(text))) needsResponse = false;
+      }
+      if (text.length < 80 && /^thank/i.test(text) && !text.includes("?")) needsResponse = false;
+      // Urgent patterns
+      const urgentP = [/call me/i, /asap/i, /urgent/i, /right now/i, /today/i, /need help/i, /contract.*deadline/i];
+      if (urgentP.some(p => p.test(text))) isUrgent = true;
+    }
+
     // Create activity
     await supabase.from("activities").insert({
       org_id: ORG_ID,
@@ -101,19 +137,25 @@ export async function POST(request: Request) {
       direction,
       contact_id: contactId,
       opportunity_id: opportunityId,
+      division_id: divisionId,
+      community_id: communityId,
       occurred_at: dateTime,
       subject: `${direction === "inbound" ? "Inbound" : "Outbound"} Text — ${employeeName}`,
       body: messageBody,
       from_number: fromNumber,
       to_number: toNumber,
       is_read: direction === "outbound",
-      needs_response: direction === "inbound",
+      needs_response: needsResponse,
+      is_urgent: isUrgent,
       metadata: JSON.stringify({
         zoom_event: event,
         sender_name: senderName,
         recipient_name: recipientName,
         employee_name: employeeName,
+        from_phone: fromNumber,
+        to_phone: toNumber,
         match_method: contactId ? "phone_exact" : "no_match",
+        raw_payload_keys: Object.keys(payload),
       }),
     });
 

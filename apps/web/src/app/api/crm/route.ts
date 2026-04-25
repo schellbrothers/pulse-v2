@@ -226,7 +226,7 @@ async function assignOpportunity(
 }
 
 // TEST MODE: redirect all outbound emails to this address
-const EMAIL_TEST_MODE = true;
+const EMAIL_TEST_MODE = false;
 const EMAIL_TEST_REDIRECT = "lance@schellbrothers.com";
 
 async function sendEmail(

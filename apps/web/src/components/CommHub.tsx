@@ -156,16 +156,27 @@ function generateAiReply(activity: CommActivity): string {
 
 // ─── Activity Card ────────────────────────────────────────────────────────────
 
+function formatWaitTime(ms: number): string {
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ${mins % 60}m`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ${hrs % 24}h`;
+}
+
 function ActivityCard({
   activity,
   isExpanded,
   onExpand,
   onMarkRead,
   onSendReply,
+  waitTimeMs,
 }: {
   activity: CommActivity;
   isExpanded: boolean;
   onExpand: () => void;
+  waitTimeMs?: number;
   onMarkRead: () => void;
   onSendReply: (text: string, channel: string) => void;
 }) {
@@ -285,6 +296,11 @@ function ActivityCard({
 
         {/* NR badge */}
         {needsResponse && <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, fontWeight: 600, backgroundColor: "#422006", color: "#fbbf24", flexShrink: 0 }}>NR</span>}
+        {waitTimeMs != null && waitTimeMs > 0 && (
+          <span style={{ fontSize: 9, color: waitTimeMs > 3600000 ? "#f87171" : waitTimeMs > 1800000 ? "#fbbf24" : "#4ade80", flexShrink: 0, fontWeight: 600 }}>
+            {formatWaitTime(waitTimeMs)}
+          </span>
+        )}
 
         {/* Timestamp */}
         <span style={{ fontSize: 10, color: "#52525b", flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -590,31 +606,77 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
   // Smart NR: an inbound is NOT "needs response" if there's an outbound
   // to the same contact_id with a later timestamp
-  const smartNR = useMemo(() => {
+  // Smart NR: determine which inbound items truly need a response
+  // 1. Already responded (outbound to same contact after this inbound)
+  // 2. AI inference: message doesn't warrant a reply ("thanks", "got it", closers)
+  const NO_REPLY_PATTERNS = [
+    /^thanks?[!.\s]*$/i, /^thank you[!.\s]*$/i, /^ty[!.\s]*$/i,
+    /^ok[!.\s]*$/i, /^okay[!.\s]*$/i, /^got it[!.\s]*$/i,
+    /^sounds good[!.\s]*$/i, /^perfect[!.\s]*$/i, /^great[!.\s]*$/i,
+    /^awesome[!.\s]*$/i, /^will do[!.\s]*$/i, /^np[!.\s]*$/i,
+    /have a (good|great|nice|wonderful) (weekend|evening|night|day|one)/i,
+    /^(happy|merry) (holidays|christmas|thanksgiving|new year)/i,
+    /^(no worries|no problem|all good|all set)/i,
+    /^(see you|talk (to you )?soon|take care|ttyl)/i,
+    /^(unsubscribe|remove me|stop)/i,
+  ];
+
+  function isNoReplyMessage(body: string | null): boolean {
+    if (!body) return false;
+    const trimmed = body.trim();
+    if (trimmed.length > 100) return false; // Long messages probably need a reply
+    return NO_REPLY_PATTERNS.some(p => p.test(trimmed));
+  }
+
+  const { smartNR, replyTimes } = useMemo(() => {
     const responded = new Set<string>();
-    // Build a map: contact_id -> latest outbound timestamp
+    const noReply = new Set<string>();
+    const times: Record<string, number> = {}; // activity.id -> ms since received
+
+    // Build maps: contact_id+channel -> latest outbound timestamp
     const latestOutbound: Record<string, string> = {};
     for (const a of baseActivities) {
       if (a.direction === "outbound" && a.contact_id) {
-        const existing = latestOutbound[a.contact_id];
+        const key = `${a.contact_id}:${a.channel}`;
+        const existing = latestOutbound[key];
         if (!existing || a.occurred_at > existing) {
-          latestOutbound[a.contact_id] = a.occurred_at;
+          latestOutbound[key] = a.occurred_at;
+        }
+        // Also track by contact_id only (cross-channel response)
+        const keyAll = a.contact_id;
+        if (!latestOutbound[keyAll] || a.occurred_at > latestOutbound[keyAll]) {
+          latestOutbound[keyAll] = a.occurred_at;
         }
       }
     }
-    // Mark inbound NR items as responded if outbound exists after them
+
     for (const a of baseActivities) {
-      if (a.needs_response && !a.responded_at && a.direction === "inbound" && a.contact_id) {
-        const lastOut = latestOutbound[a.contact_id];
-        if (lastOut && lastOut > a.occurred_at) {
-          responded.add(a.id);
-        }
+      if (!a.needs_response || a.responded_at || a.direction !== "inbound" || !a.contact_id) continue;
+
+      // Check 1: outbound exists after this inbound (same channel or any channel)
+      const keyChannel = `${a.contact_id}:${a.channel}`;
+      const lastOutChannel = latestOutbound[keyChannel];
+      const lastOutAny = latestOutbound[a.contact_id];
+      if ((lastOutChannel && lastOutChannel > a.occurred_at) || (lastOutAny && lastOutAny > a.occurred_at)) {
+        responded.add(a.id);
+        continue;
       }
+
+      // Check 2: AI inference — message doesn't need a reply
+      if (isNoReplyMessage(a.body)) {
+        noReply.add(a.id);
+        continue;
+      }
+
+      // Track reply time (ms since received)
+      times[a.id] = Date.now() - new Date(a.occurred_at).getTime();
     }
-    return responded;
+
+    const allExcluded = new Set([...responded, ...noReply]);
+    return { smartNR: allExcluded, replyTimes: times };
   }, [baseActivities]);
 
-  const isSmartNR = (a: CommActivity) => a.needs_response && !a.responded_at && !smartNR.has(a.id);
+  const isSmartNR = (a: CommActivity) => a.needs_response && !a.responded_at && a.direction === "inbound" && !smartNR.has(a.id);
 
   const counts = useMemo(() => ({
     urgent: baseActivities.filter(a => a.is_urgent).length,
@@ -768,6 +830,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
               onExpand={() => setExpandedId(expandedId === a.id ? null : a.id)}
               onMarkRead={() => handleMarkRead(a.id)}
               onSendReply={(text, channel) => handleSendReply(a, text, channel)}
+              waitTimeMs={replyTimes[a.id]}
             />
           ))
         )}

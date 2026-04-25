@@ -1,29 +1,15 @@
 /**
  * Script/Source Inspector API
- * 
- * GET /api/inspect?type=script&name=hbx-sync-zoom-calls.py
- * GET /api/inspect?type=api&name=/api/sync/webforms
- * GET /api/inspect?type=mcp&name=capture_lead
- * 
- * Returns the source code for inspection in the UI.
+ * Reads scripts from local filesystem (Mac Mini) or shows unavailable on Vercel.
+ * MCP tools fetched from MCP server directly.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+
 const MCP_URL = process.env.PV2_MCP_URL || "https://pv2-mcp.vercel.app";
 const MCP_KEY = process.env.PV2_MCP_API_KEY || "pv2-mcp-secret-key-change-me";
-const GH_TOKEN = process.env.GITHUB_TOKEN || "";
-
-async function fetchGitHubFile(repo: string, path: string): Promise<string | null> {
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-      headers: { Authorization: `token ${GH_TOKEN}`, Accept: "application/vnd.github.v3.raw" },
-    });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch { return null; }
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -35,35 +21,38 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    if (type === "script") {
-      // Fetch Python script from GitHub
-      const content = await fetchGitHubFile("Schellbrothers/pulse-v2", `scripts/${name}`);
-      // Try HBx scripts location if not found
-      const finalContent = content || await fetchGitHubFile("Schellbrothers/pulse-v2", name);
-      if (!finalContent) {
-        return NextResponse.json({ error: `Script not found: ${name}` }, { status: 404 });
+    if (type === "script" || type === "api") {
+      // Read from local filesystem (only works on Mac Mini, not Vercel serverless)
+      try {
+        const fs = await import("fs");
+        const pathMod = await import("path");
+        
+        let filePath: string;
+        if (type === "api") {
+          const routePath = name.replace(/^\/api\//, "");
+          filePath = pathMod.join(process.cwd(), "src/app/api", routePath, "route.ts");
+        } else {
+          const SCRIPTS_DIR = process.env.HBX_SCRIPTS_DIR || "/Users/schellie/.openclaw/workspace/HBx/scripts";
+          filePath = pathMod.join(SCRIPTS_DIR, name);
+        }
+        
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, "utf-8");
+          const lang = name.endsWith(".ts") ? "typescript" : name.endsWith(".sh") ? "bash" : "python";
+          return NextResponse.json({
+            name, type, language: lang,
+            path: filePath,
+            lines: content.split("\n").length,
+            content,
+          });
+        }
+      } catch {
+        // fs not available on serverless — expected on Vercel
       }
-      return NextResponse.json({
-        name, type: "python", language: "python",
-        path: `HBx/scripts/${name}`,
-        lines: finalContent.split("\n").length,
-        content: finalContent,
-      });
-    }
 
-    if (type === "api") {
-      // Fetch API route source from GitHub
-      const routePath = name.replace(/^\/api\//, "");
-      const content = await fetchGitHubFile("Schellbrothers/pulse-v2", `apps/web/src/app/api/${routePath}/route.ts`);
-      if (!content) {
-        return NextResponse.json({ error: `API route not found: ${name}` }, { status: 404 });
-      }
       return NextResponse.json({
-        name, type: "api", language: "typescript",
-        path: `apps/web/src/app/api/${routePath}/route.ts`,
-        lines: content.split("\n").length,
-        content,
-      });
+        error: `Script inspection requires local access. View from Mac Mini or add GITHUB_TOKEN env var.`,
+      }, { status: 404 });
     }
 
     if (type === "mcp") {
@@ -71,10 +60,12 @@ export async function GET(request: NextRequest) {
         const res = await fetch(`${MCP_URL}/tools`, {
           headers: { Authorization: `Bearer ${MCP_KEY}` },
         });
-        if (!res.ok) throw new Error(`MCP server returned ${res.status}`);
+        if (!res.ok) throw new Error(`MCP: ${res.status}`);
         const data = await res.json();
         const tools = data.tools || data.result || data;
-        const tool = Array.isArray(tools) ? tools.find((t: Record<string, unknown>) => t.name === name) : null;
+        const tool = Array.isArray(tools)
+          ? tools.find((t: Record<string, unknown>) => t.name === name)
+          : null;
         return NextResponse.json({
           name, type: "mcp", language: "json",
           content: JSON.stringify(tool || tools, null, 2),

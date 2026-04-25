@@ -693,18 +693,24 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
 
   function isNoReplyMessage(body: string | null): boolean {
     if (!body) return false;
-    const trimmed = body.trim();
+    // Strip quoted email replies (everything after "Sent from", "On ... wrote:", etc.)
+    let trimmed = body.trim();
+    const quoteIdx = trimmed.search(/\n\s*(Sent from|On .+wrote:|---+|__+|From:)/i);
+    if (quoteIdx > 0) trimmed = trimmed.slice(0, quoteIdx).trim();
+
     // Short messages — check strict patterns
-    if (trimmed.length <= 100) {
+    if (trimmed.length <= 120) {
       if (NO_REPLY_PATTERNS.some(p => p.test(trimmed))) return true;
     }
-    // First 200 chars — check broader patterns (email body starts)
+    // First 200 chars of original message (not quoted)
     const head = trimmed.slice(0, 200);
-    // If it's just a short thanks with no question marks, no reply needed
-    if (head.length < 80 && /^thank/i.test(head) && !head.includes("?")) return true;
+    // Short thanks with no question
+    if (head.length < 120 && /^thank/i.test(head) && !head.includes("?")) return true;
     if (NO_REPLY_BODY_PATTERNS.some(p => p.test(head))) return true;
-    // "Have a great weekend" anywhere in short message
+    // Closers
     if (trimmed.length < 150 && /have a (good|great|nice|wonderful) (weekend|evening|night|day)/i.test(trimmed) && !trimmed.includes("?")) return true;
+    // "I'll look into this" + thanks
+    if (trimmed.length < 120 && /^I.ll (look|check|review)/i.test(trimmed)) return true;
     return false;
   }
 

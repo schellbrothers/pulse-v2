@@ -708,52 +708,103 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     return false;
   }
 
+  // Normalize email subject for thread grouping (strip Re:, Fwd:, etc)
+  function normalizeSubject(s: string | null): string {
+    if (!s) return "";
+    return s.replace(/^(re|fwd|fw):\s*/gi, "").trim().toLowerCase();
+  }
+
   const { smartNR, replyTimes } = useMemo(() => {
-    const responded = new Set<string>();
-    const noReply = new Set<string>();
-    const times: Record<string, number> = {}; // activity.id -> ms since received
+    const excluded = new Set<string>();
+    const times: Record<string, number> = {};
 
-    // Build maps: contact_id+channel -> latest outbound timestamp
-    const latestOutbound: Record<string, string> = {};
+    // Step 1: Build outbound maps
+    // SMS: contact_id -> latest outbound timestamp
+    // Email: contact_id + normalized_subject -> latest outbound timestamp
+    const smsOutbound: Record<string, string> = {};  // contact_id -> latest outbound ts
+    const emailOutbound: Record<string, string> = {}; // contact_id:subject -> latest outbound ts
+    const phoneOutbound: Record<string, string> = {}; // contact_id -> latest outbound ts
+
     for (const a of baseActivities) {
-      if (a.direction === "outbound" && a.contact_id) {
-        const key = `${a.contact_id}:${a.channel}`;
-        const existing = latestOutbound[key];
-        if (!existing || a.occurred_at > existing) {
-          latestOutbound[key] = a.occurred_at;
+      if (a.direction !== "outbound" || !a.contact_id) continue;
+      const ch = a.channel ?? "";
+      if (ch === "sms" || ch === "text") {
+        if (!smsOutbound[a.contact_id] || a.occurred_at > smsOutbound[a.contact_id]) {
+          smsOutbound[a.contact_id] = a.occurred_at;
         }
-        // Also track by contact_id only (cross-channel response)
-        const keyAll = a.contact_id;
-        if (!latestOutbound[keyAll] || a.occurred_at > latestOutbound[keyAll]) {
-          latestOutbound[keyAll] = a.occurred_at;
+      } else if (ch === "email") {
+        const key = `${a.contact_id}:${normalizeSubject(a.subject)}`;
+        if (!emailOutbound[key] || a.occurred_at > emailOutbound[key]) {
+          emailOutbound[key] = a.occurred_at;
+        }
+      } else if (ch === "phone" || ch === "call") {
+        if (!phoneOutbound[a.contact_id] || a.occurred_at > phoneOutbound[a.contact_id]) {
+          phoneOutbound[a.contact_id] = a.occurred_at;
         }
       }
     }
 
+    // Step 2: For SMS — only keep the LATEST inbound per contact (one NR per opportunity)
+    const smsLatestInbound: Record<string, { id: string; ts: string }> = {};
     for (const a of baseActivities) {
-      if (!a.needs_response || a.responded_at || a.direction !== "inbound" || !a.contact_id) continue;
-
-      // Check 1: outbound exists after this inbound (same channel or any channel)
-      const keyChannel = `${a.contact_id}:${a.channel}`;
-      const lastOutChannel = latestOutbound[keyChannel];
-      const lastOutAny = latestOutbound[a.contact_id];
-      if ((lastOutChannel && lastOutChannel > a.occurred_at) || (lastOutAny && lastOutAny > a.occurred_at)) {
-        responded.add(a.id);
-        continue;
+      if (a.direction !== "inbound" || !a.contact_id) continue;
+      if (a.channel !== "sms" && a.channel !== "text") continue;
+      if (!a.needs_response || a.responded_at) continue;
+      const existing = smsLatestInbound[a.contact_id];
+      if (!existing || a.occurred_at > existing.ts) {
+        if (existing) excluded.add(existing.id); // exclude older one
+        smsLatestInbound[a.contact_id] = { id: a.id, ts: a.occurred_at };
+      } else {
+        excluded.add(a.id); // this is older
       }
+    }
 
-      // Check 2: AI inference — message doesn't need a reply
+    // Step 3: For Email — only keep the LATEST inbound per contact+subject thread
+    const emailLatestInbound: Record<string, { id: string; ts: string }> = {};
+    for (const a of baseActivities) {
+      if (a.direction !== "inbound" || !a.contact_id) continue;
+      if (a.channel !== "email") continue;
+      if (!a.needs_response || a.responded_at) continue;
+      const key = `${a.contact_id}:${normalizeSubject(a.subject)}`;
+      const existing = emailLatestInbound[key];
+      if (!existing || a.occurred_at > existing.ts) {
+        if (existing) excluded.add(existing.id);
+        emailLatestInbound[key] = { id: a.id, ts: a.occurred_at };
+      } else {
+        excluded.add(a.id);
+      }
+    }
+
+    // Step 4: Check if outbound exists after the latest inbound (clears NR)
+    for (const [contactId, { id, ts }] of Object.entries(smsLatestInbound)) {
+      const lastOut = smsOutbound[contactId];
+      if (lastOut && lastOut > ts) excluded.add(id);
+    }
+    for (const [key, { id, ts }] of Object.entries(emailLatestInbound)) {
+      const lastOut = emailOutbound[key];
+      if (lastOut && lastOut > ts) excluded.add(id);
+    }
+
+    // Step 5: Check all remaining inbound for no-reply patterns
+    for (const a of baseActivities) {
+      if (excluded.has(a.id)) continue;
+      if (!a.needs_response || a.responded_at || a.direction !== "inbound") continue;
       if (isNoReplyMessage(a.body)) {
-        noReply.add(a.id);
+        excluded.add(a.id);
         continue;
       }
-
-      // Track reply time (ms since received)
-      times[a.id] = Date.now() - new Date(a.occurred_at).getTime();
+      // Phone: check if outbound exists
+      if ((a.channel === "phone" || a.channel === "call") && a.contact_id) {
+        const lastOut = phoneOutbound[a.contact_id];
+        if (lastOut && lastOut > a.occurred_at) { excluded.add(a.id); continue; }
+      }
+      // Track reply time
+      if (!excluded.has(a.id) && a.contact_id) {
+        times[a.id] = Date.now() - new Date(a.occurred_at).getTime();
+      }
     }
 
-    const allExcluded = new Set([...responded, ...noReply]);
-    return { smartNR: allExcluded, replyTimes: times };
+    return { smartNR: excluded, replyTimes: times };
   }, [baseActivities]);
 
   const isSmartNR = (a: CommActivity) => a.needs_response && !a.responded_at && a.direction === "inbound" && !smartNR.has(a.id);

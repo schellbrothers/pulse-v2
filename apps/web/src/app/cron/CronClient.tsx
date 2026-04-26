@@ -143,6 +143,16 @@ const FEEDS: FeedDef[] = [
     filterVal: "staff_assignments",
     times: ["5:00 AM"],
   },
+  {
+    num: 13,
+    name: "SLA Engine",
+    description: "Evaluates queue items, NR, and prospect follow-ups against SLA timers. Creates tasks on breach.",
+    schedule: "Every 5 min (7am-8pm)",
+    script: "hbx-sla-engine.py",
+    filterCol: "channel",
+    filterVal: "sla_breach",
+    times: [],
+  },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

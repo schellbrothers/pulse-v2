@@ -330,6 +330,7 @@ export default function WorkflowsPage() {
             position: "absolute", inset: 0, opacity: 0.03,
             backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
             backgroundSize: "24px 24px",
+            pointerEvents: "none",
           }} />
           <svg ref={svgRef} viewBox={`-20 -20 ${maxX + 40} ${maxY + 40}`} style={{ width: "100%", height: "100%", minHeight: 500 }}>
             <defs>

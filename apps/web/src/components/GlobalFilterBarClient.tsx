@@ -183,24 +183,29 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
       setDivision(user.division_id);
     }
 
-    // If no community set, auto-set from user's first community assignment
+    // If no community set, auto-set only if user has exactly one community
     const userComms = userCommunities[userId] ?? [];
-    if (!filter.communityId && userComms.length > 0) {
-      // If user has exactly one community, auto-select it
-      // If multiple, set the first one (user can change)
+    if (!filter.communityId && userComms.length === 1) {
       const targetComm = userComms[0];
-      // Make sure it's in the right division
       const comm = communities.find(c => c.id === targetComm);
       if (comm) {
         if (!filter.divisionId) {
           setDivision(comm.division_id);
         }
-        // Use setTimeout to allow division state to settle first
         setTimeout(() => setCommunity(targetComm), 0);
       }
+    } else if (!filter.communityId && userComms.length > 1) {
+      // Multiple communities — set division but let user pick community
+      // Find the common division (if all same) or use first
+      const commDivs = userComms.map(cid => communities.find(c => c.id === cid)?.division_id).filter(Boolean);
+      const uniqueDivs = [...new Set(commDivs)];
+      if (!filter.divisionId && uniqueDivs.length === 1 && uniqueDivs[0]) {
+        setDivision(uniqueDivs[0]);
+      }
+      // Don't auto-select community — show "N available" in dropdown
     }
 
-    // Set user after div/community are set
+    // Set user after div is set
     setTimeout(() => setUser(userId), 10);
   }, [allUsers, userCommunities, communities, filter.divisionId, filter.communityId, setDivision, setCommunity, setUser]);
 
@@ -214,9 +219,15 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
     }
   }, [filter, divisions, communities, allUsers, setLabels]);
 
-  const filteredCommunities = filter.divisionId
-    ? communities.filter(c => c.division_id === filter.divisionId)
-    : communities;
+  // When user is selected, show only their assigned communities
+  // When division is selected, show communities in that division
+  // Otherwise show all
+  const userCommIds = filter.userId ? new Set(userCommunities[filter.userId] ?? []) : null;
+  const filteredCommunities = userCommIds
+    ? communities.filter(c => userCommIds.has(c.id))
+    : filter.divisionId
+      ? communities.filter(c => c.division_id === filter.divisionId)
+      : communities;
 
   return (
     <div style={{

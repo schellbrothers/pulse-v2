@@ -442,31 +442,87 @@ export default function WorkflowsPage() {
                   <div style={{ fontSize: 11, color: "#5eead4", fontFamily: "monospace" }}>{selNode.mcp}</div>
                 </div>
               )}
-              {selNode.sla && (
+              {selNode.sla && (() => {
+                const sla = selNode.sla!;
+                const isEditing = slaEdit?.id === sla.id;
+                const displayVal = sla.unit === "days" ? Math.round(sla.defaultMinutes / 1440)
+                  : sla.unit === "hours" ? Math.round(sla.defaultMinutes / 60)
+                  : sla.defaultMinutes;
+                const unitLabel = sla.unit === "days" ? "days" : sla.unit === "hours" ? "hours" : "min";
+                const toMinutes = (v: number) => sla.unit === "days" ? v * 1440 : sla.unit === "hours" ? v * 60 : v;
+
+                return (
                 <div style={{ padding: "12px", backgroundColor: "#111116", borderRadius: 8, marginBottom: 8, border: "1px solid #451a03" }}>
                   <div style={{ fontSize: 9, color: "#b45309", textTransform: "uppercase", marginBottom: 6, fontWeight: 600 }}>SLA Timer</div>
-                  <div style={{ fontSize: 13, color: "#fbbf24", fontWeight: 600, marginBottom: 4 }}>{selNode.sla.label}</div>
-                  <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 9, color: "#52525b" }}>TARGET</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#f87171" }}>
-                        {selNode.sla.unit === "days" ? `${Math.round(selNode.sla.defaultMinutes / 1440)}d`
-                          : selNode.sla.unit === "hours" ? `${Math.round(selNode.sla.defaultMinutes / 60)}h`
-                          : `${selNode.sla.defaultMinutes}m`}
+                  <div style={{ fontSize: 13, color: "#fbbf24", fontWeight: 600, marginBottom: 8 }}>{sla.label}</div>
+
+                  {/* Editable timer */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ fontSize: 9, color: "#52525b", width: 50 }}>TARGET</div>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={slaEdit!.value}
+                        onChange={e => setSlaEdit({ ...slaEdit!, value: parseInt(e.target.value) || 0 })}
+                        autoFocus
+                        style={{
+                          width: 60, padding: "4px 8px", backgroundColor: "#09090b",
+                          border: "1px solid #b45309", borderRadius: 4, color: "#fbbf24",
+                          fontSize: 16, fontWeight: 700, textAlign: "center", outline: "none",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        onClick={() => setSlaEdit({ id: sla.id, value: displayVal, unit: sla.unit })}
+                        style={{ fontSize: 20, fontWeight: 700, color: "#f87171", cursor: "pointer", padding: "2px 8px", borderRadius: 4, border: "1px dashed #451a03" }}
+                        title="Click to edit"
+                      >
+                        {displayVal}
                       </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 9, color: "#52525b" }}>WARNING</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>
-                        {selNode.sla.unit === "days" ? `${Math.round(selNode.sla.defaultMinutes * 0.6 / 1440)}d`
-                          : selNode.sla.unit === "hours" ? `${Math.round(selNode.sla.defaultMinutes * 0.5 / 60)}h`
-                          : `${Math.round(selNode.sla.defaultMinutes * 0.6)}m`}
-                      </div>
-                    </div>
+                    )}
+                    <span style={{ fontSize: 12, color: "#71717a" }}>{unitLabel}</span>
                   </div>
-                  <div style={{ fontSize: 10, color: "#71717a", marginTop: 8 }}>Configure in Settings → SLA Timers</div>
+
+                  {/* Warning threshold (read-only, calculated) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={{ fontSize: 9, color: "#52525b", width: 50 }}>WARN</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#fbbf24" }}>
+                      {Math.round((isEditing ? slaEdit!.value : displayVal) * 0.6)}
+                    </div>
+                    <span style={{ fontSize: 12, color: "#71717a" }}>{unitLabel}</span>
+                  </div>
+
+                  {/* Save button */}
+                  {isEditing && (
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={() => {
+                          saveSlaTimer(sla.id, toMinutes(slaEdit!.value));
+                          setSlaEdit(null);
+                        }}
+                        disabled={slaSaving}
+                        style={{
+                          padding: "6px 14px", borderRadius: 4, border: "none",
+                          backgroundColor: slaSaved ? "#166534" : "#b45309", color: "#fff",
+                          fontSize: 11, fontWeight: 600, cursor: "pointer",
+                        }}
+                      >{slaSaving ? "Saving..." : slaSaved ? "Saved" : "Save"}</button>
+                      <button
+                        onClick={() => setSlaEdit(null)}
+                        style={{
+                          padding: "6px 14px", borderRadius: 4, border: "1px solid #27272a",
+                          backgroundColor: "#18181b", color: "#71717a", fontSize: 11, cursor: "pointer",
+                        }}
+                      >Cancel</button>
+                    </div>
+                  )}
+
+                  {!isEditing && (
+                    <div style={{ fontSize: 10, color: "#71717a", marginTop: 4 }}>Click the number to edit · Also editable in Settings → SLA</div>
+                  )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* Legend */}
               <div style={{ marginTop: 20, paddingTop: 12, borderTop: "1px solid #1a1a22" }}>

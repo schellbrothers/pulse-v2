@@ -21,7 +21,7 @@ export const NAV_ITEMS = [
   { icon: "⊞", label: "Homeowners",      href: "/customers",          group: "pipeline" },
   // ── CRM: supporting data ──
   { icon: "◉", label: "Contacts",        href: "/contacts",           group: "crm" },
-  { icon: "✓", label: "Tasks",           href: "/tasks",              group: "crm" },
+  { icon: "✓", label: "Tasks",           href: "/crm-tasks",          group: "crm" },
   // ── REFERENCE: inventory + property data ──
   { icon: "⊞", label: "Divisions",       href: "/divisions",          group: "reference" },
   { icon: "⌂", label: "Communities",     href: "/communities",        group: "reference" },

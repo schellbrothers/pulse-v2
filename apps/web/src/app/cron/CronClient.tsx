@@ -17,7 +17,7 @@ type FeedDef = {
   schedule: string;
   script: string;
   /** Column to filter on in sync_log */
-  filterCol: "source" | "feed" | "channel";
+  filterCol: "source" | "feed";
   filterVal: string;
   times: string[];
 };
@@ -149,8 +149,8 @@ const FEEDS: FeedDef[] = [
     description: "Evaluates queue items, NR, and prospect follow-ups against SLA timers. Creates tasks on breach.",
     schedule: "Every 5 min (7am-8pm)",
     script: "hbx-sla-engine.py",
-    filterCol: "channel",
-    filterVal: "sla_breach",
+    filterCol: "source",
+    filterVal: "sla_engine",
     times: [],
   },
 ];

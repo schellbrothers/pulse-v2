@@ -8,30 +8,30 @@ interface Props {
 }
 
 export function GlobalFilterProvider({ children }: Props) {
-  const [labels, setLabels] = useState<{ division?: string; community?: string; plan?: string }>({});
+  const [labels, setLabels] = useState<{ division?: string; community?: string; user?: string }>({});
 
   const [filter, setFilter] = useState<GlobalFilter>({
     divisionId: null,
     communityId: null,
-    planModelId: null,
+    userId: null,
   });
 
   const setDivision = useCallback((id: string | null) => {
-    setFilter({ divisionId: id, communityId: null, planModelId: null });
-    setLabels((prev) => ({ ...prev, community: undefined, plan: undefined }));
+    setFilter({ divisionId: id, communityId: null, userId: null });
+    setLabels((prev) => ({ ...prev, community: undefined, user: undefined }));
   }, []);
 
   const setCommunity = useCallback((id: string | null) => {
-    setFilter((prev) => ({ ...prev, communityId: id, planModelId: null }));
-    setLabels((prev) => ({ ...prev, plan: undefined }));
+    setFilter((prev) => ({ ...prev, communityId: id, userId: null }));
+    setLabels((prev) => ({ ...prev, user: undefined }));
   }, []);
 
-  const setPlan = useCallback((id: string | null) => {
-    setFilter((prev) => ({ ...prev, planModelId: id }));
+  const setUser = useCallback((id: string | null) => {
+    setFilter((prev) => ({ ...prev, userId: id }));
   }, []);
 
   const clearFilter = useCallback(() => {
-    setFilter({ divisionId: null, communityId: null, planModelId: null });
+    setFilter({ divisionId: null, communityId: null, userId: null });
     setLabels({});
   }, []);
 
@@ -39,7 +39,7 @@ export function GlobalFilterProvider({ children }: Props) {
     filter,
     setDivision,
     setCommunity,
-    setPlan,
+    setUser,
     clearFilter,
     labels,
     setLabels,

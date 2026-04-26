@@ -6,9 +6,9 @@ import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { DivisionOption, CommunityOption } from "./GlobalFilterBar";
 
-interface CommunityPlanOption {
+interface UserOption {
   id: string;
-  plan_name: string;
+  full_name: string;
 }
 
 interface Props {
@@ -35,7 +35,6 @@ function CompoundFilter({ label, value, displayValue, count, options, onChange, 
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Pill button */}
       <div
         onClick={() => !disabled && setOpen(!open)}
         onTouchEnd={(e) => { if (!disabled) { e.preventDefault(); setOpen(!open); } }}
@@ -56,23 +55,19 @@ function CompoundFilter({ label, value, displayValue, count, options, onChange, 
           userSelect: "none" as const,
         }}
       >
-        {/* Top row: label + arrow */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: isActive ? "#80B602" : "#666" }}>
             {label}
           </span>
           <span style={{ fontSize: 10, color: isActive ? "#80B602" : "#666" }}>▾</span>
         </div>
-        {/* Bottom row: value or count */}
         <div style={{ fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? "#ededed" : "#888", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {isActive ? displayValue : `${count} available`}
         </div>
       </div>
 
-      {/* Dropdown list */}
       {open && (
         <>
-          {/* Backdrop */}
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
           <div style={{
             position: "absolute",
@@ -87,7 +82,6 @@ function CompoundFilter({ label, value, displayValue, count, options, onChange, 
             overflowY: "auto",
             boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
           }}>
-            {/* Clear option */}
             {isActive && (
               <div
                 onClick={() => { onChange(null); setOpen(false); }}
@@ -125,32 +119,59 @@ function CompoundFilter({ label, value, displayValue, count, options, onChange, 
 
 export default function GlobalFilterBarClient({ divisions, communities }: Props) {
   const isMobile = useIsMobile();
-  const { filter, setDivision, setCommunity, setPlan, setLabels } =
+  const { filter, setDivision, setCommunity, setUser, setLabels } =
     useGlobalFilter();
 
-  const [plans, setPlans] = useState<CommunityPlanOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
 
+  // Load users based on community or division selection
   useEffect(() => {
-    if (!filter.communityId) { setPlans([]); return; }
     const sb = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
     );
-    sb.from("community_plans")
-      .select("id,plan_name")
-      .eq("community_id", filter.communityId)
-      .order("plan_name")
-      .then(({ data }) => setPlans(data ?? []));
-  }, [filter.communityId]);
+
+    if (filter.communityId) {
+      // Get users assigned to this community via user_community_assignments
+      sb.from("user_community_assignments")
+        .select("user_id, users(id, full_name)")
+        .eq("community_id", filter.communityId)
+        .then(({ data }) => {
+          const userList: UserOption[] = (data ?? [])
+            .map((a: any) => {
+              const u = Array.isArray(a.users) ? a.users[0] : a.users;
+              return u ? { id: u.id, full_name: u.full_name } : null;
+            })
+            .filter(Boolean) as UserOption[];
+          // Deduplicate
+          const seen = new Set<string>();
+          setUsers(userList.filter(u => { if (seen.has(u.id)) return false; seen.add(u.id); return true; }));
+        });
+    } else if (filter.divisionId) {
+      // Get all users in this division
+      sb.from("users")
+        .select("id, full_name")
+        .eq("division_id", filter.divisionId)
+        .order("full_name")
+        .then(({ data }) => setUsers(data ?? []));
+    } else {
+      // No filter — get all users
+      sb.from("users")
+        .select("id, full_name")
+        .order("full_name")
+        .limit(100)
+        .then(({ data }) => setUsers(data ?? []));
+    }
+  }, [filter.communityId, filter.divisionId]);
 
   useEffect(() => {
     const divLabel = divisions.find(d => d.id === filter.divisionId)?.name;
     const commLabel = communities.find(c => c.id === filter.communityId)?.name;
-    const planLabel = plans.find(p => p.id === String(filter.planModelId))?.plan_name;
+    const userLabel = users.find(u => u.id === filter.userId)?.full_name;
     if (typeof setLabels === "function") {
-      setLabels({ division: divLabel, community: commLabel, plan: planLabel });
+      setLabels({ division: divLabel, community: commLabel, user: userLabel });
     }
-  }, [filter, divisions, communities, plans, setLabels]);
+  }, [filter, divisions, communities, users, setLabels]);
 
   const filteredCommunities = filter.divisionId
     ? communities.filter(c => c.division_id === filter.divisionId)
@@ -166,7 +187,6 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
       background: "#0d0d0d",
       borderBottom: "1px solid #222",
       flexShrink: 0,
-      overflowX: undefined,  // removed: was clipping dropdown menus on mobile
     }}>
       <CompoundFilter
         label="Division"
@@ -188,20 +208,19 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
       />
       {!isMobile && (
         <CompoundFilter
-          label="Floor Plan"
-          value={filter.planModelId}
-          displayValue={plans.find(p => p.id === filter.planModelId)?.plan_name ?? ""}
-          count={plans.length}
-          options={plans.map(p => ({ id: p.id, name: p.plan_name }))}
-          onChange={id => setPlan(id)}
-          disabled={!filter.communityId}
+          label="User"
+          value={filter.userId}
+          displayValue={users.find(u => u.id === filter.userId)?.full_name ?? ""}
+          count={users.length}
+          options={users.map(u => ({ id: u.id, name: u.full_name }))}
+          onChange={id => setUser(id)}
         />
       )}
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Right: bell + account */}
+      {/* Right: account */}
       {!isMobile && (
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#80B602", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff" }}>L</div>

@@ -84,7 +84,7 @@ export default function MobileNav() {
     const params = new URLSearchParams();
     if (filter.divisionId) params.set("div", filter.divisionId);
     if (filter.communityId) params.set("comm", filter.communityId);
-    if (filter.planModelId) params.set("plan", filter.planModelId);
+    if (filter.userId) params.set("user", filter.userId);
     const qs = params.toString();
     return qs ? `${base}?${qs}` : base;
   }

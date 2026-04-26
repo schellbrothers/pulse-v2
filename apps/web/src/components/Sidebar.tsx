@@ -181,7 +181,7 @@ export default function Sidebar() {
                 // Preserve global filter params from React context
                 if (filter.divisionId) params.set("div", filter.divisionId);
                 if (filter.communityId) params.set("comm", filter.communityId);
-                if (filter.planModelId) params.set("plan", filter.planModelId);
+                if (filter.userId) params.set("user", filter.userId);
                 // Apply item's own params (e.g. mode)
                 if (itemQuery) new URLSearchParams(itemQuery).forEach((v, k) => params.set(k, v));
                 const qs = params.toString();

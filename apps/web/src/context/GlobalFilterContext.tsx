@@ -5,17 +5,17 @@ import { createContext, useContext } from "react";
 export interface GlobalFilter {
   divisionId: string | null;
   communityId: string | null;
-  planModelId: string | null;
+  userId: string | null;
 }
 
 export interface GlobalFilterContextValue {
   filter: GlobalFilter;
   setDivision: (id: string | null) => void;
   setCommunity: (id: string | null) => void;
-  setPlan: (id: string | null) => void;
+  setUser: (id: string | null) => void;
   clearFilter: () => void;
-  labels: { division?: string; community?: string; plan?: string };
-  setLabels: (labels: { division?: string; community?: string; plan?: string }) => void;
+  labels: { division?: string; community?: string; user?: string };
+  setLabels: (labels: { division?: string; community?: string; user?: string }) => void;
 }
 
 export const GlobalFilterContext = createContext<GlobalFilterContextValue | null>(null);

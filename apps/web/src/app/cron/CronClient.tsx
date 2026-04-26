@@ -259,7 +259,7 @@ export default function CronClient() {
   }, [fetchData]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#09090b", color: "#fafafa", padding: "32px 40px" }}>
+    <div style={{ minHeight: "100vh", background: "#09090b", color: "#fafafa", padding: "32px 40px", overflow: "auto", height: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
         <div>

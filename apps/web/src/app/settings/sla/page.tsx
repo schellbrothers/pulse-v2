@@ -308,7 +308,7 @@ export default function SlaSettingsPage() {
   }
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 900, backgroundColor: "#09090b", minHeight: "100vh" }}>
+    <div style={{ padding: "32px 40px", maxWidth: 900, backgroundColor: "#09090b", minHeight: "100vh", overflow: "auto", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <h1 style={{ fontSize: 24, fontWeight: 600, color: "#fafafa", margin: 0 }}>SLA Timers</h1>
         <div style={{ display: "flex", gap: 8 }}>

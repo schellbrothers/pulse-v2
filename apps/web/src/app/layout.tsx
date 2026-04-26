@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Suspense fallback={null}>
                   <GlobalFilterBar />
                 </Suspense>
-                <main className="mobile-main" style={{ flex: 1, overflow: "hidden", background: "var(--bg)" }}>
+                <main className="mobile-main" style={{ flex: 1, overflow: "auto", background: "var(--bg)" }}>
                   {children}
                 </main>
               </div>

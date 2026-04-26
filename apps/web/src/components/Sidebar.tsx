@@ -40,6 +40,7 @@ export const NAV_ITEMS = [
   { icon: "", label: "AI & Automation",  href: "/settings/automation", group: "tools" },
   { icon: "", label: "Integrations",     href: "/settings/integrations", group: "tools" },
   { icon: "", label: "Team",             href: "/settings/team",       group: "tools" },
+  { icon: "", label: "SLA Timers",       href: "/settings/sla",        group: "tools" },
   { icon: "◈", label: "Status",          href: "/status",             group: "tools" },
   { icon: "◧", label: "Docs",            href: "/docs",               group: "tools" },
   { icon: "⬡", label: "MCP Tools",       href: "/tools/mcp",          group: "tools" },

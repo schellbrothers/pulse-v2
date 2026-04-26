@@ -899,6 +899,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [panelItem, setPanelItem] = useState<OpportunityPanelData | null>(null);
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
+  const [csmQueueItems, setCsmQueueItems] = useState<ProspectItem[]>([]);
   const [mobileTab, setMobileTab] = useState<"queue" | "comm">("queue");
 
 
@@ -930,14 +931,19 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       .eq("is_active", true);
     setCsmUsers((users as TeamUser[]) ?? []);
 
-    const [oppRes, , custRes, taskRes] = await Promise.all([
+    const [oppRes, csmQueueRes, custRes, taskRes] = await Promise.all([
       supabase
         .from("opportunities")
         .select("id, contact_id, crm_stage, community_id, division_id, csm_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone)")
         .eq("community_id", cid)
         .in("crm_stage", ["prospect_c", "prospect_b", "prospect_a"])
         .order("last_activity_at", { ascending: false }),
-      Promise.resolve({ data: [] }), // leads removed — CSM manages prospects only
+      supabase
+        .from("opportunities")
+        .select("id, contact_id, crm_stage, community_id, division_id, csm_id, source, opportunity_source, queue_source, notes, budget_min, budget_max, engagement_score, last_activity_at, created_at, contacts(first_name, last_name, email, phone)")
+        .eq("community_id", cid)
+        .eq("crm_stage", "csm_queue")
+        .order("created_at", { ascending: false }),
       supabase.from("home_owners").select("*, contacts(first_name, last_name, email, phone)").eq("community_id", cid),
       supabase
         .from("tasks")
@@ -954,12 +960,18 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       contacts: Array.isArray(item.contacts) ? (item.contacts as Record<string, unknown>[])[0] ?? null : item.contacts,
     })) as ProspectItem[];
 
+    const flatCsmQueue = (csmQueueRes.data ?? []).map((item: Record<string, unknown>) => ({
+      ...item,
+      contacts: Array.isArray(item.contacts) ? (item.contacts as Record<string, unknown>[])[0] ?? null : item.contacts,
+    })) as ProspectItem[];
+
     const flatTasks = (taskRes.data ?? []).map((t: Record<string, unknown>) => ({
       ...t,
       contacts: Array.isArray(t.contacts) ? (t.contacts as Record<string, unknown>[])[0] ?? null : t.contacts,
     })) as TaskItem[];
 
     setProspects(flatProspects);
+    setCsmQueueItems(flatCsmQueue);
     setCustomers(custRes.data ?? []);
     setTasks(flatTasks);
 
@@ -1003,14 +1015,20 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       .map(t => t.opportunity_id!)
   );
 
-  // Apply team filter
+  // Apply team filter to prospects (A/B/C ranked)
   const filteredProspects = teamFilter === "all"
     ? prospects
     : prospects.filter(p => p.csm_id === teamFilter);
-  // Bucket prospects
+
+  // CSM Queue items (csm_queue stage — promoted from OSC, not yet ranked)
+  const filteredCsmQueue = teamFilter === "all"
+    ? csmQueueItems
+    : csmQueueItems.filter(p => p.csm_id === teamFilter);
+
+  // Bucket CSM Queue items (not prospects — those are already ranked)
   const bucketCounts: Record<CsmBucket, number> = { new_from_osc: 0, stale: 0, ai_hot: 0, followup_due: 0 };
   const bucketedItems: Record<CsmBucket, ProspectItem[]> = { new_from_osc: [], stale: [], ai_hot: [], followup_due: [] };
-  for (const item of filteredProspects) {
+  for (const item of filteredCsmQueue) {
     const bucket = classifyBucket(item, todayTaskOppIds);
     bucketCounts[bucket]++;
     bucketedItems[bucket].push(item);
@@ -1232,7 +1250,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
               borderBottom: mobileTab === "queue" ? "2px solid #fafafa" : "2px solid transparent",
               background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
               minHeight: 44,
-            }}>CSM Queue <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa", marginLeft: 4 }}>{filteredProspects.length}</span></button>
+            }}>CSM Queue <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa", marginLeft: 4 }}>{filteredCsmQueue.length}</span></button>
             <button onClick={() => setMobileTab("comm")} style={{
               flex: 1, padding: "10px 0", fontSize: 13, fontWeight: mobileTab === "comm" ? 600 : 400,
               color: mobileTab === "comm" ? "#fafafa" : "#52525b",
@@ -1247,7 +1265,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
         <div style={isMobile ? { display: mobileTab === "queue" ? "block" : "none" } : { flex: "0 0 50%", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>CSM Queue</span>
-            <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa" }}>{filteredProspects.length}</span>
+            <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 3, fontWeight: 600, backgroundColor: "#172554", color: "#60a5fa" }}>{filteredCsmQueue.length}</span>
           </div>
 
           {/* Bucket tabs / Queue content */}

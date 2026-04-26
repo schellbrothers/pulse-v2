@@ -382,13 +382,18 @@ function ActionModal({
     ] : []),
     ...(currentStage === "prospect_b" ? [
       { value: "prospect_c", label: "Prospect C — Downgrade" },
+      { value: "lead", label: "Lead: Division — Back to division nurturing" },
       { value: "queue", label: "OSC Queue — Return to OSC" },
       { value: "archived", label: "Archive — Not a fit" },
+      { value: "deleted", label: "Delete — Remove entirely" },
     ] : []),
     ...(currentStage === "prospect_a" ? [
       { value: "prospect_b", label: "Prospect B — Downgrade" },
       { value: "prospect_c", label: "Prospect C — Downgrade" },
+      { value: "lead", label: "Lead: Division — Back to division nurturing" },
+      { value: "queue", label: "OSC Queue — Return to OSC" },
       { value: "archived", label: "Archive — Not a fit" },
+      { value: "deleted", label: "Delete — Remove entirely" },
     ] : []),
   ];
 

@@ -669,6 +669,50 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
           </div>
         </div>
 
+        {/* ── Quick Actions ──────────────────────────────────────────────── */}
+        <div style={{ padding: "0 20px 10px", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+          <select
+            value={opportunity.stage}
+            onChange={async (e) => {
+              const newStage = e.target.value;
+              if (newStage === opportunity.stage) return;
+              const { error } = await supabase.from("opportunities").update({ crm_stage: newStage }).eq("id", opportunity.id);
+              if (error) { alert(`Error: ${error.message}`); return; }
+              onClose();
+            }}
+            style={{
+              padding: "5px 10px", fontSize: 11, borderRadius: 4,
+              backgroundColor: "#18181b", border: "1px solid #27272a",
+              color: "#a1a1aa", outline: "none", cursor: "pointer",
+            }}
+          >
+            <option value="queue">OSC Queue</option>
+            <option value="csm_queue">CSM Queue</option>
+            <option value="lead">Lead</option>
+            <option value="lead_div">Lead: Division</option>
+            <option value="lead_com">Lead: Community</option>
+            <option value="prospect_c">Prospect C</option>
+            <option value="prospect_b">Prospect B</option>
+            <option value="prospect_a">Prospect A</option>
+            <option value="opportunity">Opportunity</option>
+            <option value="archived">Archived</option>
+            <option value="deleted">Deleted</option>
+          </select>
+          <button
+            onClick={() => {
+              const name = `${opportunity.first_name} ${opportunity.last_name}`;
+              window.open(`https://zoom.us/meeting/schedule?topic=${encodeURIComponent(`Meeting with ${name}`)}&email=${encodeURIComponent(opportunity.email || '')}`, '_blank');
+            }}
+            style={{
+              padding: "5px 10px", fontSize: 11, borderRadius: 4,
+              backgroundColor: "#172554", border: "1px solid #1e40af",
+              color: "#60a5fa", cursor: "pointer", fontWeight: 500,
+            }}
+          >
+            Schedule Meeting
+          </button>
+        </div>
+
         {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #27272a", padding: "0 16px", background: "#09090b", flexShrink: 0 }}>
           {(["CONTACT", "ACTIVITY", "HISTORY", "NOTES"] as const).map(tab => (

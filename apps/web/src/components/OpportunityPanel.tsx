@@ -343,6 +343,47 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
   const [savingNotes, setSavingNotes] = useState(false);
   const [localNotes, setLocalNotes] = useState<string | null>(null);
 
+  // Scheduler state
+  const [scheduleExpanded, setScheduleExpanded] = useState(false);
+  const [scheduleTab, setScheduleTab] = useState<"appointment" | "follow-up" | "traffic">("appointment");
+  const [scheduleCreating, setScheduleCreating] = useState(false);
+  
+  // Appointment form state
+  const [appointmentTitle, setAppointmentTitle] = useState("");
+  const [appointmentType, setAppointmentType] = useState("");
+  const [appointmentPurpose, setAppointmentPurpose] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentTime, setAppointmentTime] = useState("");
+  const [appointmentCustom, setAppointmentCustom] = useState(false);
+  const [appointmentSendEmail, setAppointmentSendEmail] = useState(false);
+  
+  // Follow-up form state
+  const [followUpTitle, setFollowUpTitle] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [followUpTime, setFollowUpTime] = useState("");
+  const [followUpNotes, setFollowUpNotes] = useState("");
+  
+  // Traffic form state
+  const [trafficDate, setTrafficDate] = useState("");
+  const [trafficNotes, setTrafficNotes] = useState("");
+
+  // Reset schedule forms
+  const resetScheduleForms = useCallback(() => {
+    setAppointmentTitle("");
+    setAppointmentType("");
+    setAppointmentPurpose("");
+    setAppointmentDate("");
+    setAppointmentTime("");
+    setAppointmentCustom(false);
+    setAppointmentSendEmail(false);
+    setFollowUpTitle("");
+    setFollowUpDate("");
+    setFollowUpTime("");
+    setFollowUpNotes("");
+    setTrafficDate("");
+    setTrafficNotes("");
+  }, []);
+
   // Close on Escape
   useEffect(() => {
     if (!open) return;
@@ -362,7 +403,9 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     setLocalNotes(opportunity?.notes ?? null);
     setExpandedActivityId(null);
     setTranscriptCache({});
-  }, [opportunity?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    setScheduleExpanded(false);
+    resetScheduleForms();
+  }, [opportunity?.id, resetScheduleForms]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resolve division name from opportunity's division_id
   useEffect(() => {
@@ -586,6 +629,136 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     setSavingNotes(false);
     setEditingNotes(false);
   }, [opportunity, newNoteText, localNotes]);
+
+  // Create appointment
+  const createAppointment = useCallback(async () => {
+    if (!opportunity || !appointmentTitle.trim() || !appointmentType || !appointmentDate || !appointmentTime) return;
+    setScheduleCreating(true);
+    
+    try {
+      const dateTime = new Date(`${appointmentDate}T${appointmentTime}:00`);
+      
+      // Parse appointment type to get category and duration
+      const [category, duration] = appointmentType.split('_');
+      const durationMinutes = duration === '15m' ? 15 : duration === '30m' ? 30 : duration === '1h' ? 60 : duration === '2h' ? 120 : 60;
+      
+      // If virtual meeting, create Zoom meeting
+      if (category === 'virtual' && opportunity.contact_id) {
+        await fetch('/api/meetings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            opportunity_id: opportunity.id,
+            contact_id: opportunity.contact_id,
+            topic: appointmentTitle,
+            start_time: dateTime.toISOString(),
+            duration_minutes: durationMinutes
+          })
+        });
+      }
+      
+      // Insert activity record
+      const channel = category === 'virtual' ? 'meeting' : category === 'in_person' ? 'appointment' : 'phone';
+      await supabase.from('activities').insert({
+        channel,
+        type: appointmentType,
+        subject: appointmentTitle,
+        body: appointmentPurpose,
+        occurred_at: dateTime.toISOString(),
+        direction: 'outbound',
+        contact_id: opportunity.contact_id,
+        opportunity_id: opportunity.id,
+        metadata: {
+          appointment_type: appointmentType,
+          purpose: appointmentPurpose,
+          duration_minutes: durationMinutes,
+          send_realtor_email: appointmentSendEmail,
+          custom: appointmentCustom
+        }
+      });
+      
+      resetScheduleForms();
+      setScheduleExpanded(false);
+      // Refresh activities if we're on the activity tab
+      if (activeTab === 'activity') {
+        window.location.reload(); // Quick refresh for now
+      }
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+    } finally {
+      setScheduleCreating(false);
+    }
+  }, [opportunity, appointmentTitle, appointmentType, appointmentPurpose, appointmentDate, appointmentTime, appointmentCustom, appointmentSendEmail, resetScheduleForms, activeTab]);
+
+  // Create follow-up
+  const createFollowUp = useCallback(async () => {
+    if (!opportunity || !followUpTitle.trim() || !followUpDate || !followUpTime) return;
+    setScheduleCreating(true);
+    
+    try {
+      const dateTime = new Date(`${followUpDate}T${followUpTime}:00`);
+      
+      await supabase.from('activities').insert({
+        channel: 'follow_up',
+        type: 'scheduled_follow_up',
+        subject: followUpTitle,
+        body: followUpNotes,
+        occurred_at: dateTime.toISOString(),
+        direction: 'outbound',
+        contact_id: opportunity.contact_id,
+        opportunity_id: opportunity.id,
+        metadata: {
+          scheduled: true,
+          notes: followUpNotes
+        }
+      });
+      
+      resetScheduleForms();
+      setScheduleExpanded(false);
+      if (activeTab === 'activity') {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error creating follow-up:', error);
+    } finally {
+      setScheduleCreating(false);
+    }
+  }, [opportunity, followUpTitle, followUpDate, followUpTime, followUpNotes, resetScheduleForms, activeTab]);
+
+  // Create traffic
+  const createTraffic = useCallback(async () => {
+    if (!opportunity || !trafficDate) return;
+    setScheduleCreating(true);
+    
+    try {
+      const dateTime = new Date(`${trafficDate}T12:00:00`);
+      
+      await supabase.from('activities').insert({
+        channel: 'traffic',
+        type: 'walk_in',
+        subject: 'Walk-in Traffic',
+        body: trafficNotes,
+        occurred_at: dateTime.toISOString(),
+        direction: 'inbound',
+        contact_id: opportunity.contact_id,
+        opportunity_id: opportunity.id,
+        metadata: {
+          traffic_type: 'walk_in',
+          notes: trafficNotes
+        }
+      });
+      
+      resetScheduleForms();
+      setScheduleExpanded(false);
+      if (activeTab === 'activity') {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error creating traffic entry:', error);
+    } finally {
+      setScheduleCreating(false);
+    }
+  }, [opportunity, trafficDate, trafficNotes, resetScheduleForms, activeTab]);
 
   if (!open || !opportunity) return null;
 
@@ -958,6 +1131,247 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
             {/* ── Activity Tab ─────────────────────────────────────────── */}
             {activeTab === "activity" && (
               <div style={{ margin: "0 -20px" }}>
+                {/* Schedule Section */}
+                <div style={{ padding: "0 20px", marginBottom: 16 }}>
+                  {!scheduleExpanded ? (
+                    <button
+                      onClick={() => setScheduleExpanded(true)}
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        border: "1px solid #27272a",
+                        background: "#18181b",
+                        color: "#a1a1aa",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4
+                      }}
+                    >
+                      + Schedule
+                    </button>
+                  ) : (
+                    <div style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 6, padding: 12 }}>
+                      {/* Schedule Sub-tabs */}
+                      <div style={{ display: "flex", gap: 0, marginBottom: 12, borderBottom: "1px solid #27272a" }}>
+                        {(["appointment", "follow-up", "traffic"] as const).map(tab => (
+                          <button
+                            key={tab}
+                            onClick={() => setScheduleTab(tab)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: scheduleTab === tab ? "#fafafa" : "#71717a",
+                              borderBottom: scheduleTab === tab ? "2px solid #fafafa" : "2px solid transparent",
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Appointment Form */}
+                      {scheduleTab === "appointment" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <input
+                              style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                              placeholder="Title"
+                              value={appointmentTitle}
+                              onChange={e => setAppointmentTitle(e.target.value)}
+                            />
+                            <select
+                              style={{ ...inputStyle, minWidth: 120 }}
+                              value={appointmentType}
+                              onChange={e => setAppointmentType(e.target.value)}
+                            >
+                              <option value="">Select Type</option>
+                              <optgroup label="In-Person">
+                                <option value="in_person_1h">1 hour</option>
+                                <option value="in_person_2h">2 hours</option>
+                              </optgroup>
+                              <optgroup label="Virtual">
+                                <option value="virtual_15m">15 minutes</option>
+                                <option value="virtual_30m">30 minutes</option>
+                                <option value="virtual_1h">1 hour</option>
+                              </optgroup>
+                              <optgroup label="Phone">
+                                <option value="phone_15m">15 minutes</option>
+                                <option value="phone_30m">30 minutes</option>
+                                <option value="phone_1h">1 hour</option>
+                              </optgroup>
+                            </select>
+                            <select
+                              style={{ ...inputStyle, minWidth: 140 }}
+                              value={appointmentPurpose}
+                              onChange={e => setAppointmentPurpose(e.target.value)}
+                            >
+                              <option value="">Select Purpose</option>
+                              <option value="Initial Visit">Initial Visit</option>
+                              <option value="Pricing Appointment">Pricing Appointment</option>
+                              <option value="Be Back">Be Back</option>
+                              <option value="Contract Appointment">Contract Appointment</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                            <input
+                              type="date"
+                              style={{ ...inputStyle, minWidth: 140 }}
+                              value={appointmentDate}
+                              onChange={e => setAppointmentDate(e.target.value)}
+                            />
+                            <input
+                              type="time"
+                              style={{ ...inputStyle, minWidth: 100 }}
+                              value={appointmentTime}
+                              onChange={e => setAppointmentTime(e.target.value)}
+                            />
+                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#a1a1aa", cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={appointmentCustom}
+                                onChange={e => setAppointmentCustom(e.target.checked)}
+                                style={{ marginRight: 4 }}
+                              />
+                              Custom
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#a1a1aa", cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={appointmentSendEmail}
+                                onChange={e => setAppointmentSendEmail(e.target.checked)}
+                                style={{ marginRight: 4 }}
+                              />
+                              Email Realtor
+                            </label>
+                            <button
+                              onClick={createAppointment}
+                              disabled={scheduleCreating || !appointmentTitle.trim() || !appointmentType || !appointmentDate || !appointmentTime}
+                              style={{
+                                ...smallBtnStyle,
+                                background: "#22c55e",
+                                color: "#000",
+                                border: "none",
+                                fontWeight: 600,
+                                opacity: scheduleCreating || !appointmentTitle.trim() || !appointmentType || !appointmentDate || !appointmentTime ? 0.5 : 1
+                              }}
+                            >
+                              {scheduleCreating ? "Creating..." : "Create"}
+                            </button>
+                            <button
+                              onClick={() => setScheduleExpanded(false)}
+                              style={smallBtnStyle}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Follow-up Form */}
+                      {scheduleTab === "follow-up" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <input
+                            style={inputStyle}
+                            placeholder="Title"
+                            value={followUpTitle}
+                            onChange={e => setFollowUpTitle(e.target.value)}
+                          />
+                          <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                            <input
+                              type="date"
+                              style={{ ...inputStyle, minWidth: 140 }}
+                              value={followUpDate}
+                              onChange={e => setFollowUpDate(e.target.value)}
+                            />
+                            <input
+                              type="time"
+                              style={{ ...inputStyle, minWidth: 100 }}
+                              value={followUpTime}
+                              onChange={e => setFollowUpTime(e.target.value)}
+                            />
+                            <button
+                              onClick={createFollowUp}
+                              disabled={scheduleCreating || !followUpTitle.trim() || !followUpDate || !followUpTime}
+                              style={{
+                                ...smallBtnStyle,
+                                background: "#22c55e",
+                                color: "#000",
+                                border: "none",
+                                fontWeight: 600,
+                                opacity: scheduleCreating || !followUpTitle.trim() || !followUpDate || !followUpTime ? 0.5 : 1
+                              }}
+                            >
+                              {scheduleCreating ? "Creating..." : "Create"}
+                            </button>
+                            <button
+                              onClick={() => setScheduleExpanded(false)}
+                              style={smallBtnStyle}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <textarea
+                            style={{ ...inputStyle, resize: "vertical", minHeight: 60 }}
+                            placeholder="Notes"
+                            value={followUpNotes}
+                            onChange={e => setFollowUpNotes(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Traffic Form */}
+                      {scheduleTab === "traffic" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                            <input
+                              type="date"
+                              style={{ ...inputStyle, minWidth: 140 }}
+                              value={trafficDate}
+                              onChange={e => setTrafficDate(e.target.value)}
+                            />
+                            <button
+                              onClick={createTraffic}
+                              disabled={scheduleCreating || !trafficDate}
+                              style={{
+                                ...smallBtnStyle,
+                                background: "#22c55e",
+                                color: "#000",
+                                border: "none",
+                                fontWeight: 600,
+                                opacity: scheduleCreating || !trafficDate ? 0.5 : 1
+                              }}
+                            >
+                              {scheduleCreating ? "Creating..." : "Create"}
+                            </button>
+                            <button
+                              onClick={() => setScheduleExpanded(false)}
+                              style={smallBtnStyle}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <textarea
+                            style={{ ...inputStyle, resize: "vertical", minHeight: 60 }}
+                            placeholder="Notes"
+                            value={trafficNotes}
+                            onChange={e => setTrafficNotes(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {activityLoading ? (
                   <p style={{ fontSize: 12, color: "#888", margin: 0, padding: "0 20px" }}>Loading…</p>
                 ) : activities.length === 0 ? (

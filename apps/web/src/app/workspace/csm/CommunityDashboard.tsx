@@ -1114,7 +1114,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
   // Execute promote/demote
   async function handleAction(oppId: string, newStage: string, reason: string) {
-    const item = prospects.find(p => p.id === oppId);
+    const item = prospects.find(p => p.id === oppId) || csmQueueItems.find(p => p.id === oppId);
     if (!item) return;
 
     const { error } = await supabase

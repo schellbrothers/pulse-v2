@@ -378,20 +378,27 @@ export default function WorkflowsPage() {
               const s = STYLES[node.type] || STYLES.process;
               const isSel = selNode?.id === node.id;
               return (
-                <g key={node.id} onClick={() => setSelNode(node)} style={{ cursor: "pointer" }}>
+                <g key={node.id} style={{ cursor: "pointer" }}>
+                  {/* Invisible click target covering entire node */}
+                  <rect
+                    x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx={12}
+                    fill="transparent" stroke="none"
+                    onClick={() => setSelNode(node)}
+                    style={{ cursor: "pointer" }}
+                  />
                   {/* Node body */}
                   <rect
                     x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx={12}
                     fill={s.bg}
                     stroke={isSel ? "#fafafa" : s.border}
                     strokeWidth={isSel ? 2 : 1}
-                    filter={isSel ? "" : ""}
+                    pointerEvents="none"
                   />
                   {/* Icon circle */}
-                  <circle cx={node.x + 24} cy={node.y + NODE_H / 2} r={14} fill={s.icon_bg} stroke={s.border} strokeWidth={0.5} />
-                  <text x={node.x + 24} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={12}>{node.icon}</text>
+                  <circle cx={node.x + 24} cy={node.y + NODE_H / 2} r={14} fill={s.icon_bg} stroke={s.border} strokeWidth={0.5} pointerEvents="none" />
+                  <text x={node.x + 24} y={node.y + NODE_H / 2 + 4} textAnchor="middle" fontSize={12} pointerEvents="none">{node.icon}</text>
                   {/* Label */}
-                  <text x={node.x + 50} y={node.y + NODE_H / 2 + 4} fontSize={10} fontWeight={600} fill={s.text} fontFamily="system-ui">
+                  <text x={node.x + 50} y={node.y + NODE_H / 2 + 4} fontSize={10} fontWeight={600} fill={s.text} fontFamily="system-ui" pointerEvents="none">
                     {node.label}
                   </text>
                 </g>

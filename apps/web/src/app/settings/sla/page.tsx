@@ -283,6 +283,9 @@ export default function SlaSettingsPage() {
   const [slas, setSlas] = useState<SlaTimer[]>(INITIAL_SLAS);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [bhStart, setBhStart] = useState("07:30");
+  const [bhEnd, setBhEnd] = useState("17:00");
+  const [bhTz, setBhTz] = useState("America/New_York");
 
   const categories = [...new Set(slas.map(s => s.category))];
 
@@ -323,6 +326,50 @@ export default function SlaSettingsPage() {
         Response time targets drive alerts, escalations, and dashboard indicators.
         Items turn yellow at the warning threshold and red when SLA is breached.
       </p>
+
+      {/* Business Hours */}
+      <div style={{ marginBottom: 32, padding: 20, backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <div style={{ width: 4, height: 20, borderRadius: 2, backgroundColor: "#fafafa" }} />
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: "#fafafa", margin: 0 }}>Business Hours</h2>
+        </div>
+        <p style={{ fontSize: 11, color: "#71717a", marginBottom: 16 }}>
+          SLA timers only count during business hours. Items arriving after hours start their clock at the next business day.
+        </p>
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>Start</label>
+            <input type="time" value={bhStart} onChange={e => setBhStart(e.target.value)} style={{
+              padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
+              borderRadius: 4, color: "#fafafa", fontSize: 14, fontWeight: 600, outline: "none",
+            }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>End</label>
+            <input type="time" value={bhEnd} onChange={e => setBhEnd(e.target.value)} style={{
+              padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
+              borderRadius: 4, color: "#fafafa", fontSize: 14, fontWeight: 600, outline: "none",
+            }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>Timezone</label>
+            <select value={bhTz} onChange={e => setBhTz(e.target.value)} style={{
+              padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
+              borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none",
+            }}>
+              <option value="America/New_York">Eastern (ET)</option>
+              <option value="America/Chicago">Central (CT)</option>
+              <option value="America/Denver">Mountain (MT)</option>
+              <option value="America/Los_Angeles">Pacific (PT)</option>
+              <option value="America/Boise">Boise (MT)</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>Work Days</label>
+            <span style={{ fontSize: 12, color: "#a1a1aa" }}>Mon–Fri</span>
+          </div>
+        </div>
+      </div>
 
       {categories.map(cat => (
         <div key={cat} style={{ marginBottom: 32 }}>

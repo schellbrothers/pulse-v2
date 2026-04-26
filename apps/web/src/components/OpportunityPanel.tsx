@@ -688,13 +688,11 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
           >
             <option value="queue">OSC Queue</option>
             <option value="csm_queue">CSM Queue</option>
-            <option value="lead">Lead</option>
             <option value="lead_div">Lead: Division</option>
             <option value="lead_com">Lead: Community</option>
             <option value="prospect_c">Prospect C</option>
             <option value="prospect_b">Prospect B</option>
             <option value="prospect_a">Prospect A</option>
-            <option value="opportunity">Opportunity</option>
             <option value="archived">Archived</option>
             <option value="deleted">Deleted</option>
           </select>

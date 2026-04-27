@@ -31,7 +31,7 @@ export const NAV_ITEMS = [
   { icon: "◈", label: "Quick Delivery",  href: "/quick-delivery",     group: "reference" },
   { icon: "◫", label: "Lots",            href: "/lots",               group: "reference" },
   // ── TOOLS ──
-  { icon: "⊡", label: "Agents",          href: "/tools/agents/schellie", group: "tools" },
+  { icon: "⊡", label: "Agents",          href: "/tools/agents", group: "tools" },
   { icon: "◷", label: "Calendar",        href: "/calendar",            group: "tools" },
   { icon: "⟳", label: "Cron",            href: "/cron",               group: "tools" },
   { icon: "◉", label: "Notifications",   href: "#",                   group: "tools" },

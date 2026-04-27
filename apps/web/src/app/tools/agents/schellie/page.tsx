@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
@@ -312,6 +313,34 @@ ALL factual answers require MCP tool calls — never answer from memory...`);
       display: "flex",
       flexDirection: "column"
     }}>
+      {/* Breadcrumb */}
+      <div style={{
+        padding: "12px 24px",
+        borderBottom: "1px solid #27272a",
+        backgroundColor: "#09090b",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+      }}>
+        <Link
+          href="/tools/agents"
+          style={{
+            color: "#71717a",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#a1a1aa"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "#71717a"; }}
+        >
+          ← Agents
+        </Link>
+        <span style={{ color: "#3f3f46" }}>/</span>
+        <span style={{ color: "#fafafa", fontWeight: 500 }}>Schellie</span>
+      </div>
+
       {/* Header */}
       <div style={{ 
         padding: "16px 24px", 
@@ -319,23 +348,43 @@ ALL factual answers require MCP tool calls — never answer from memory...`);
         backgroundColor: "#09090b"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 20 }}>🤖</span>
-          <div>
-            <h1 style={{ 
-              margin: 0, 
-              fontSize: 18, 
-              fontWeight: 600, 
-              color: "#fafafa" 
+          <span style={{ fontSize: 20 }}>🐚</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+            <div>
+              <h1 style={{ 
+                margin: 0, 
+                fontSize: 18, 
+                fontWeight: 600, 
+                color: "#fafafa" 
+              }}>
+                Schellie
+              </h1>
+              <p style={{ 
+                margin: 0, 
+                fontSize: 13, 
+                color: "#71717a" 
+              }}>
+                Customer-facing chat agent
+              </p>
+            </div>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              color: "#80B602",
+              fontWeight: 500,
+              marginLeft: 4,
             }}>
-              Schellie Admin
-            </h1>
-            <p style={{ 
-              margin: 0, 
-              fontSize: 13, 
-              color: "#71717a" 
-            }}>
-              Manage the Schellie AI chatbot configuration and performance
-            </p>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: "#80B602",
+                display: "inline-block",
+              }} />
+              Active
+            </span>
           </div>
         </div>
       </div>

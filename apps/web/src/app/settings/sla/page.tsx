@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ─── Supabase Client ──────────────────────────────────────────────────────────
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
+);
 
 // ─── SLA Timer Definition ─────────────────────────────────────────────────────
 
@@ -12,10 +20,11 @@ interface SlaTimer {
   defaultMinutes: number;
   currentMinutes: number;
   unit: "minutes" | "hours" | "days";
-  warningPct: number; // % of SLA before warning (yellow)
+  warningPct: number;
   escalateAction?: string;
 }
 
+// Template used for display order + defaults. DB values override currentMinutes/warningPct.
 const INITIAL_SLAS: SlaTimer[] = [
   // OSC Queue
   {
@@ -45,13 +54,12 @@ const INITIAL_SLAS: SlaTimer[] = [
     category: "OSC Queue",
     label: "After-Hours Queue Processing",
     description: "Items that arrive after 6pm must be processed by this time next business day",
-    defaultMinutes: 480, // 8am = 8 hours into next day
+    defaultMinutes: 480,
     currentMinutes: 480,
     unit: "minutes",
     warningPct: 80,
   },
-
-  // OSC Webform SLAs (form-type specific)
+  // OSC Webform SLAs
   {
     id: "osc_form_schedule_visit",
     category: "OSC Webform",
@@ -146,14 +154,13 @@ const INITIAL_SLAS: SlaTimer[] = [
     unit: "hours",
     warningPct: 50,
   },
-
   // CSM Queue
   {
     id: "csm_rank",
     category: "CSM Queue",
     label: "CSM Reviews and Ranks A/B/C",
     description: "Time for CSM to evaluate a promoted lead and assign prospect rank",
-    defaultMinutes: 1440, // 24 hours
+    defaultMinutes: 1440,
     currentMinutes: 1440,
     unit: "hours",
     warningPct: 50,
@@ -164,13 +171,12 @@ const INITIAL_SLAS: SlaTimer[] = [
     category: "CSM Queue",
     label: "First Outreach After Ranking",
     description: "Time for CSM to make first contact after assigning A/B/C rank",
-    defaultMinutes: 240, // 4 hours
+    defaultMinutes: 240,
     currentMinutes: 240,
     unit: "hours",
     warningPct: 50,
     escalateAction: "Notify DSM",
   },
-
   // Communication Response
   {
     id: "nr_sms",
@@ -202,14 +208,13 @@ const INITIAL_SLAS: SlaTimer[] = [
     unit: "minutes",
     warningPct: 60,
   },
-
   // Prospect Follow-up
   {
     id: "prospect_a_followup",
     category: "Prospect Follow-up",
     label: "Prospect A — Next Touch",
     description: "Maximum days between contacts for A-rank prospects (contract imminent)",
-    defaultMinutes: 1440, // 1 day
+    defaultMinutes: 1440,
     currentMinutes: 1440,
     unit: "days",
     warningPct: 50,
@@ -220,7 +225,7 @@ const INITIAL_SLAS: SlaTimer[] = [
     category: "Prospect Follow-up",
     label: "Prospect B — Next Touch",
     description: "Maximum days between contacts for B-rank prospects (intent within 30 days)",
-    defaultMinutes: 4320, // 3 days
+    defaultMinutes: 4320,
     currentMinutes: 4320,
     unit: "days",
     warningPct: 50,
@@ -231,7 +236,7 @@ const INITIAL_SLAS: SlaTimer[] = [
     category: "Prospect Follow-up",
     label: "Prospect C — Next Touch",
     description: "Maximum days between contacts for C-rank prospects (nurturing)",
-    defaultMinutes: 10080, // 7 days
+    defaultMinutes: 10080,
     currentMinutes: 10080,
     unit: "days",
     warningPct: 50,
@@ -241,7 +246,7 @@ const INITIAL_SLAS: SlaTimer[] = [
     category: "Prospect Follow-up",
     label: "Stale Prospect Alert",
     description: "Days of no activity before prospect is flagged as stale",
-    defaultMinutes: 20160, // 14 days
+    defaultMinutes: 20160,
     currentMinutes: 20160,
     unit: "days",
     warningPct: 70,
@@ -283,9 +288,62 @@ export default function SlaSettingsPage() {
   const [slas, setSlas] = useState<SlaTimer[]>(INITIAL_SLAS);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [bhStart, setBhStart] = useState("07:30");
   const [bhEnd, setBhEnd] = useState("17:00");
   const [bhTz, setBhTz] = useState("America/New_York");
+  const [bhWorkDays, setBhWorkDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [dirty, setDirty] = useState(false);
+
+  // ─── Load from Supabase on mount ────────────────────────────────────────────
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Fetch SLA config
+        const { data: slaData } = await supabase
+          .from("sla_config")
+          .select("id, target_minutes, warning_pct");
+
+        if (slaData && slaData.length > 0) {
+          const dbMap = new Map(slaData.map((r: { id: string; target_minutes: number; warning_pct: number }) => [r.id, r]));
+          setSlas(prev =>
+            prev.map(s => {
+              const db = dbMap.get(s.id);
+              if (db) {
+                return {
+                  ...s,
+                  currentMinutes: db.target_minutes ?? s.currentMinutes,
+                  warningPct: db.warning_pct ?? s.warningPct,
+                };
+              }
+              return s;
+            })
+          );
+        }
+
+        // Fetch business hours
+        const { data: bhData } = await supabase
+          .from("business_hours")
+          .select("*")
+          .eq("id", "default")
+          .single();
+
+        if (bhData) {
+          if (bhData.start_time) setBhStart(bhData.start_time.substring(0, 5));
+          if (bhData.end_time) setBhEnd(bhData.end_time.substring(0, 5));
+          if (bhData.timezone) setBhTz(bhData.timezone);
+          if (bhData.work_days) setBhWorkDays(bhData.work_days);
+        }
+      } catch (e) {
+        console.error("Failed to load SLA config:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const categories = [...new Set(slas.map(s => s.category))];
 
@@ -294,32 +352,92 @@ export default function SlaSettingsPage() {
       s.id === id ? { ...s, currentMinutes: toMinutes(value, s.unit) } : s
     ));
     setSaved(false);
+    setDirty(true);
   }
 
-  function handleSave() {
-    // TODO: persist to Supabase sla_config table
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  // ─── Save to Supabase ──────────────────────────────────────────────────────
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      // Upsert each SLA timer
+      const upsertRows = slas.map(s => ({
+        id: s.id,
+        category: s.category,
+        label: s.label,
+        description: s.description,
+        target_minutes: s.currentMinutes,
+        warning_pct: s.warningPct,
+        escalate_action: s.escalateAction || null,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error: slaError } = await supabase
+        .from("sla_config")
+        .upsert(upsertRows, { onConflict: "id" });
+
+      if (slaError) throw new Error(`SLA save failed: ${slaError.message}`);
+
+      // Save business hours
+      const { error: bhError } = await supabase
+        .from("business_hours")
+        .upsert({
+          id: "default",
+          start_time: bhStart,
+          end_time: bhEnd,
+          timezone: bhTz,
+          work_days: bhWorkDays,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+
+      if (bhError) throw new Error(`Business hours save failed: ${bhError.message}`);
+
+      setSaved(true);
+      setDirty(false);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      console.error("Save error:", e);
+      setSaveError(e instanceof Error ? e.message : "Save failed");
+      setTimeout(() => setSaveError(null), 5000);
+    } finally {
+      setSaving(false);
+    }
+  }, [slas, bhStart, bhEnd, bhTz, bhWorkDays]);
 
   function handleReset() {
     setSlas(prev => prev.map(s => ({ ...s, currentMinutes: s.defaultMinutes })));
     setSaved(false);
+    setDirty(true);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: "32px 40px", backgroundColor: "#09090b", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "#71717a", fontSize: 14 }}>Loading SLA configuration…</div>
+      </div>
+    );
   }
 
   return (
     <div style={{ padding: "32px 40px", maxWidth: 900, backgroundColor: "#09090b", minHeight: "100vh", overflow: "auto", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <h1 style={{ fontSize: 24, fontWeight: 600, color: "#fafafa", margin: 0 }}>SLA Timers</h1>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {saveError && (
+            <span style={{ fontSize: 11, color: "#f87171", marginRight: 8 }}>⚠ {saveError}</span>
+          )}
           <button onClick={handleReset} style={{
             padding: "8px 16px", borderRadius: 6, border: "1px solid #27272a",
             backgroundColor: "#18181b", color: "#a1a1aa", fontSize: 12, cursor: "pointer",
           }}>Reset to Defaults</button>
-          <button onClick={handleSave} style={{
+          <button onClick={handleSave} disabled={saving} style={{
             padding: "8px 16px", borderRadius: 6, border: "none",
-            backgroundColor: saved ? "#166534" : "#80B602", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer",
-          }}>{saved ? "Saved" : "Save Changes"}</button>
+            backgroundColor: saved ? "#166534" : saving ? "#3f3f46" : "#80B602",
+            color: "#fff", fontSize: 12, fontWeight: 600,
+            cursor: saving ? "wait" : "pointer",
+            opacity: saving ? 0.7 : 1,
+          }}>{saving ? "Saving…" : saved ? "Saved ✓" : "Save Changes"}</button>
         </div>
       </div>
       <p style={{ fontSize: 13, color: "#71717a", marginBottom: 32, lineHeight: 1.6 }}>
@@ -339,21 +457,21 @@ export default function SlaSettingsPage() {
         <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>Start</label>
-            <input type="time" value={bhStart} onChange={e => setBhStart(e.target.value)} style={{
+            <input type="time" value={bhStart} onChange={e => { setBhStart(e.target.value); setDirty(true); }} style={{
               padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
               borderRadius: 4, color: "#fafafa", fontSize: 14, fontWeight: 600, outline: "none",
             }} />
           </div>
           <div>
             <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>End</label>
-            <input type="time" value={bhEnd} onChange={e => setBhEnd(e.target.value)} style={{
+            <input type="time" value={bhEnd} onChange={e => { setBhEnd(e.target.value); setDirty(true); }} style={{
               padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
               borderRadius: 4, color: "#fafafa", fontSize: 14, fontWeight: 600, outline: "none",
             }} />
           </div>
           <div>
             <label style={{ fontSize: 10, color: "#71717a", display: "block", marginBottom: 4 }}>Timezone</label>
-            <select value={bhTz} onChange={e => setBhTz(e.target.value)} style={{
+            <select value={bhTz} onChange={e => { setBhTz(e.target.value); setDirty(true); }} style={{
               padding: "6px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
               borderRadius: 4, color: "#fafafa", fontSize: 12, outline: "none",
             }}>
@@ -421,6 +539,7 @@ export default function SlaSettingsPage() {
                             const pct = sla.currentMinutes > 0 ? Math.round(warnMins / sla.currentMinutes * 100) : 60;
                             setSlas(prev => prev.map(s => s.id === sla.id ? { ...s, warningPct: pct } : s));
                             setSaved(false);
+                            setDirty(true);
                           }}
                           onBlur={() => setEditingId(null)}
                           onKeyDown={e => e.key === "Enter" && setEditingId(null)}

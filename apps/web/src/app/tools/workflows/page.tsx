@@ -225,10 +225,10 @@ const WORKFLOWS: Workflow[] = [
       // Outputs
       { id: "warn", label: "Warning Badge", type: "output", icon: "🟡", desc: "Yellow badge on dashboard. Item approaching SLA.", x: 620, y: 140 },
       { id: "breach", label: "SLA Breach", type: "output", icon: "🔴", desc: "Red badge + counter. SLA exceeded.", x: 620, y: 290 },
-      { id: "task", label: "Auto-Create Task", type: "task", icon: "📋", desc: "Task assigned to responsible user. Only on breach.", x: 620, y: 440 },
+      { id: "task", label: "Auto-Create Violation", type: "task", icon: "📋", desc: "Violation assigned to responsible user. Only on breach.", x: 620, y: 440 },
       { id: "tasks", label: "tasks", type: "store", icon: "💾", desc: "title, assigned_to, opportunity_id, sla_id, breach_at", x: 870, y: 440, table: "tasks" },
       { id: "notify", label: "DSM Notification", type: "output", icon: "📱", desc: "SMS or push to DSM when escalation threshold hit", x: 620, y: 590 },
-      { id: "perf", label: "Performance Score", type: "ai", icon: "📊", desc: "Tasks created / items handled = breach rate per user", x: 870, y: 590 },
+      { id: "perf", label: "Performance Score", type: "ai", icon: "📊", desc: "Violations created / items handled = breach rate per user", x: 870, y: 590 },
       { id: "dsm", label: "DSM Dashboard", type: "output", icon: "📈", desc: "Breach counts, response times, team rankings", x: 1100, y: 440 },
     ],
     edges: [

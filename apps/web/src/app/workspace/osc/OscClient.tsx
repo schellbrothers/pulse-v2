@@ -1542,14 +1542,15 @@ function QueueCard({
   );
 }
 
-// ─── Task Card ────────────────────────────────────────────────────────────────
+// ─── Violation Card ───────────────────────────────────────────────────────────
 
-function TaskCard({
-  task, onComplete, onSnooze,
+function ViolationCard({
+  task, onComplete, onSnooze, onClick,
 }: {
   task: TaskItem;
   onComplete: () => void;
   onSnooze: (until: string) => void;
+  onClick?: () => void;
 }) {
   const [showSnooze, setShowSnooze] = useState(false);
   const pb = priorityBadge(task.priority);
@@ -1558,12 +1559,15 @@ function TaskCard({
     : null;
 
   return (
-    <div style={{
-      backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 8,
-      padding: "12px 14px", transition: "border-color 0.15s", position: "relative",
-    }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
+    <div
+      onClick={onClick}
+      style={{
+        backgroundColor: "#18181b", border: "1px solid #27272a", borderLeft: "3px solid #dc2626", borderRadius: 8,
+        padding: "12px 14px", transition: "background 0.15s, border-color 0.15s", position: "relative",
+        cursor: onClick ? "pointer" : "default",
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = "#3f3f46"; if (onClick) e.currentTarget.style.background = "#1c1c1e"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = "#27272a"; e.currentTarget.style.background = "#18181b"; }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", flex: 1 }}>
@@ -1885,6 +1889,7 @@ export default function OscClient() {
   const [assignItem, setAssignItem] = useState<QueueItem | null>(null);
   const [assignRec, setAssignRec] = useState<AgentRecommendation | null>(null);
   const [panelItem, setPanelItem] = useState<QueueItem | null>(null);
+  const [violationPanel, setViolationPanel] = useState<{ data: OpportunityPanelData; tab?: "contact" | "activity" } | null>(null);
   const [activeBucket, setActiveBucket] = useState<QueueBucket>("new_inbound");
   const [queueSearch, setQueueSearch] = useState("");
   const [schellieActiveCount, setSchellieActiveCount] = useState(0);
@@ -2273,7 +2278,7 @@ export default function OscClient() {
                 />
               ) : (
               <>
-              {/* Tasks Section */}
+              {/* Violations Section */}
               <div style={{ marginBottom: 16 }}>
                 <div 
                   onClick={() => setTasksExpanded(!tasksExpanded)}
@@ -2285,13 +2290,13 @@ export default function OscClient() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#fafafa" }}>Tasks</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#fafafa" }}>Violations</span>
                     <span style={{ 
                       fontSize: 10, padding: "1px 6px", borderRadius: 3, fontWeight: 600,
                       backgroundColor: oscTasks.length > 0 ? "#7f1d1d" : "#052e16",
                       color: oscTasks.length > 0 ? "#fca5a5" : "#4ade80"
                     }}>
-                      {oscTasks.length > 0 ? `${oscTasks.length} pending` : "0"}
+                      {oscTasks.length > 0 ? `${oscTasks.length} active` : "0"}
                     </span>
                   </div>
                   <span style={{ fontSize: 12, color: "#71717a" }}>{tasksExpanded ? "▼" : "▶"}</span>
@@ -2306,11 +2311,43 @@ export default function OscClient() {
                       
                       return (
                         <div 
-                          key={task.id} 
-                          style={{ 
-                            padding: "8px 12px", backgroundColor: "#09090b", border: "1px solid #27272a", 
-                            borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "space-between"
+                          key={task.id}
+                          onClick={async () => {
+                            if (!task.opportunity_id) return;
+                            const { data: opp } = await supabase
+                              .from("opportunities")
+                              .select("id, contact_id, crm_stage, source, community_id, division_id, budget_min, budget_max, notes, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name), divisions(name)")
+                              .eq("id", task.opportunity_id)
+                              .single();
+                            if (opp) {
+                              const c = Array.isArray(opp.contacts) ? opp.contacts[0] : opp.contacts;
+                              const comm = Array.isArray(opp.communities) ? opp.communities[0] : opp.communities;
+                              const div = Array.isArray(opp.divisions) ? opp.divisions[0] : opp.divisions;
+                              const tab = task.sla_id?.startsWith('nr_') || task.sla_id?.startsWith('prospect_') ? 'activity' as const : undefined;
+                              setViolationPanel({
+                                data: {
+                                  id: opp.id, contact_id: opp.contact_id,
+                                  first_name: c?.first_name ?? "\u2014", last_name: c?.last_name ?? "",
+                                  email: c?.email ?? null, phone: c?.phone ?? null,
+                                  stage: opp.crm_stage, source: opp.source ?? null,
+                                  community_name: comm?.name ?? null, division_name: div?.name ?? null,
+                                  budget_min: opp.budget_min ?? null, budget_max: opp.budget_max ?? null,
+                                  floor_plan_name: null, notes: opp.notes ?? null,
+                                  last_activity_at: opp.last_activity_at ?? null, created_at: opp.created_at,
+                                },
+                                tab,
+                              });
+                            }
                           }}
+                          style={{ 
+                            padding: "8px 12px", backgroundColor: "#09090b", border: "1px solid #27272a",
+                            borderLeft: "3px solid #dc2626",
+                            borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "space-between",
+                            cursor: task.opportunity_id ? "pointer" : "default",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={e => { if (task.opportunity_id) e.currentTarget.style.background = "#111"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "#09090b"; }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ 
@@ -2324,15 +2361,16 @@ export default function OscClient() {
                               <span>{age}</span>
                             </div>
                           </div>
-                          <div style={{ marginLeft: 8 }}>
+                          <div style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 3, backgroundColor: "#7f1d1d", color: "#fca5a5", fontWeight: 600 }}>Active</span>
+                            {task.opportunity_id && <span style={{ color: "#71717a", fontSize: 11 }}>\u2192</span>}
                           </div>
                         </div>
                       );
                     })}
                     {oscTasks.length > 5 && (
                       <div style={{ textAlign: "center", padding: "4px 0" }}>
-                        <span style={{ fontSize: 10, color: "#71717a" }}>+{oscTasks.length - 5} more tasks</span>
+                        <span style={{ fontSize: 10, color: "#71717a" }}>+{oscTasks.length - 5} more violations</span>
                       </div>
                     )}
                   </div>
@@ -2440,6 +2478,16 @@ export default function OscClient() {
             last_activity_at: panelItem.last_activity_at,
             created_at: panelItem.created_at,
           }}
+        />
+      )}
+
+      {/* ── Violation Deep-Link Panel ── */}
+      {violationPanel && (
+        <OpportunityPanel
+          open={!!violationPanel}
+          onClose={() => setViolationPanel(null)}
+          opportunity={violationPanel.data}
+          initialTab={violationPanel.tab}
         />
       )}
 

@@ -666,7 +666,7 @@ export default function DsmClient() {
                 <MetricCard label="Prospect B" value={pipeline.prospect_b} color="#60a5fa" />
                 <MetricCard label="Prospect C" value={pipeline.prospect_c} color="#fbbf24" />
                 <MetricCard 
-                  label="Tasks" 
+                  label="Violations" 
                   value={taskCount} 
                   color={taskCount > 0 ? "#f87171" : "#4ade80"}
                   subtitle="SLA breaches"

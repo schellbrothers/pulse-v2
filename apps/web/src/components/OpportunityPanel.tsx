@@ -37,6 +37,7 @@ interface OpportunityPanelProps {
   open: boolean;
   onClose: () => void;
   opportunity: OpportunityPanelData | null;
+  initialTab?: "contact" | "history" | "activity" | "notes";
 }
 
 interface StageTransition {
@@ -306,7 +307,7 @@ function parsePhoneParties(activity: Activity): { employee: string | null; exter
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function OpportunityPanel({ open, onClose, opportunity }: OpportunityPanelProps) {
+export default function OpportunityPanel({ open, onClose, opportunity, initialTab }: OpportunityPanelProps) {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"contact" | "history" | "activity" | "notes">("contact");
   const [history, setHistory] = useState<StageTransition[]>([]);
@@ -397,7 +398,7 @@ export default function OpportunityPanel({ open, onClose, opportunity }: Opportu
     setEditing(false);
     setEditingNotes(false);
     setNewNoteText("");
-    setActiveTab("contact");
+    setActiveTab(initialTab ?? "contact");
     setHistory([]);
     setActivities([]);
     setLocalNotes(opportunity?.notes ?? null);

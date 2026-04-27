@@ -676,27 +676,31 @@ function ProspectCard({
   );
 }
 
-// ─── Task Card ────────────────────────────────────────────────────────────────
+// ─── Violation Card ───────────────────────────────────────────────────────────
 
-function TaskCard({
-  task, onComplete, onSnooze, readOnly,
+function ViolationCard({
+  task, onComplete, onSnooze, readOnly, onClick,
 }: {
   task: TaskItem;
   onComplete: () => void;
   onSnooze: (until: string) => void;
   readOnly?: boolean;
+  onClick?: () => void;
 }) {
   const [showSnooze, setShowSnooze] = useState(false);
   const pb = priorityBadge(task.priority);
   const contactName = task.contacts ? `${task.contacts.first_name} ${task.contacts.last_name}` : null;
 
   return (
-    <div style={{
-      backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6,
-      padding: "12px 14px", transition: "border-color 0.15s", position: "relative",
-    }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = "#3f3f46")}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = "#27272a")}
+    <div
+      onClick={onClick}
+      style={{
+        backgroundColor: "#18181b", border: "1px solid #27272a", borderLeft: "3px solid #dc2626", borderRadius: 6,
+        padding: "12px 14px", transition: "background 0.15s, border-color 0.15s", position: "relative",
+        cursor: onClick ? "pointer" : "default",
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = "#3f3f46"; if (onClick) e.currentTarget.style.background = "#1c1c1e"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = "#27272a"; e.currentTarget.style.background = "#18181b"; }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", flex: 1 }}>
@@ -1199,7 +1203,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
           <MetricCard compact label="Prospect B" value={prospects.filter(p => p.crm_stage === "prospect_b").length} onClick={() => toggleDrill("prospects_b")} active={drill === "prospects_b"} />
           <MetricCard compact label="Prospect C" value={prospects.filter(p => p.crm_stage === "prospect_c").length} onClick={() => toggleDrill("prospects_c")} active={drill === "prospects_c"} />
           <MetricCard compact label="Customers" value={customers.length} onClick={() => toggleDrill("customers")} active={drill === "customers"} />
-          <MetricCard compact label="Tasks" value={tasks.length} subtitle={tasks.length > 0 ? "pending" : ""} />
+          <MetricCard compact label="Violations" value={tasks.length} subtitle={tasks.length > 0 ? "active" : ""} />
         </div>
       </div>
 
@@ -1314,22 +1318,22 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
       <div style={isMobile ? {} : { display: "flex", gap: 20, alignItems: "flex-start" }}>
         {/* LEFT: CSM Prospect Queue (50%) */}
         <div style={isMobile ? { display: mobileTab === "queue" ? "block" : "none" } : { flex: "0 0 50%", minWidth: 0 }}>
-          {/* Tasks Section */}
+          {/* Violations Section */}
           {csmTasks.length > 0 && (
             <div style={{ marginBottom: 16, padding: "12px", backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: 6 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#fafafa" }}>Tasks</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#fafafa" }}>Violations</span>
                   <span style={{ 
                     fontSize: 10, padding: "1px 6px", borderRadius: 3, fontWeight: 600,
                     backgroundColor: csmTasks.length > 0 ? "#7f1d1d" : "#052e16",
                     color: csmTasks.length > 0 ? "#fca5a5" : "#4ade80"
                   }}>
-                    {csmTasks.length > 0 ? `${csmTasks.length} pending` : "0"}
+                    {csmTasks.length > 0 ? `${csmTasks.length} active` : "0"}
                   </span>
                 </div>
                 {csmTasks.length > 5 && (
-                  <a href="/crm-tasks" style={{ fontSize: 10, color: "#60a5fa", textDecoration: "none" }}>View all →</a>
+                  <a href="/violations" style={{ fontSize: 10, color: "#60a5fa", textDecoration: "none" }}>View all →</a>
                 )}
               </div>
               
@@ -1344,11 +1348,40 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                   
                   return (
                     <div 
-                      key={task.id} 
-                      style={{ 
-                        padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #27272a", 
-                        borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "space-between"
+                      key={task.id}
+                      onClick={async () => {
+                        if (!task.opportunity_id) return;
+                        const { data: opp } = await supabase
+                          .from("opportunities")
+                          .select("id, contact_id, crm_stage, source, community_id, division_id, budget_min, budget_max, notes, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name), divisions(name)")
+                          .eq("id", task.opportunity_id)
+                          .single();
+                        if (opp) {
+                          const c = Array.isArray(opp.contacts) ? opp.contacts[0] : opp.contacts;
+                          const comm = Array.isArray(opp.communities) ? opp.communities[0] : opp.communities;
+                          const div = Array.isArray(opp.divisions) ? opp.divisions[0] : opp.divisions;
+                          const tab = task.sla_id?.startsWith('nr_') || task.sla_id?.startsWith('prospect_') ? 'activity' as const : undefined;
+                          setPanelItem({
+                            id: opp.id, contact_id: opp.contact_id,
+                            first_name: c?.first_name ?? "\u2014", last_name: c?.last_name ?? "",
+                            email: c?.email ?? null, phone: c?.phone ?? null,
+                            stage: opp.crm_stage, source: opp.source ?? null,
+                            community_name: comm?.name ?? null, division_name: div?.name ?? null,
+                            budget_min: opp.budget_min ?? null, budget_max: opp.budget_max ?? null,
+                            floor_plan_name: null, notes: opp.notes ?? null,
+                            last_activity_at: opp.last_activity_at ?? null, created_at: opp.created_at,
+                          } as any);
+                        }
                       }}
+                      style={{ 
+                        padding: "8px 10px", backgroundColor: "#09090b", border: "1px solid #27272a",
+                        borderLeft: "3px solid #dc2626",
+                        borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "space-between",
+                        cursor: task.opportunity_id ? "pointer" : "default",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={e => { if (task.opportunity_id) e.currentTarget.style.background = "#111"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#09090b"; }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ 
@@ -1358,11 +1391,12 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
                           {task.title}
                         </div>
                         <div style={{ fontSize: 9, color: "#71717a", marginTop: 2 }}>
-                          {contactName} • {age}
+                          {contactName} \u2022 {age}
                         </div>
                       </div>
-                      <div style={{ marginLeft: 8 }}>
+                      <div style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 3, backgroundColor: "#7f1d1d", color: "#fca5a5", fontWeight: 600 }}>Active</span>
+                        {task.opportunity_id && <span style={{ color: "#71717a", fontSize: 11 }}>\u2192</span>}
                       </div>
                     </div>
                   );

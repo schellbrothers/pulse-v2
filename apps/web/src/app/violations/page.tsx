@@ -81,14 +81,21 @@ const SLA_LABELS: Record<string, string> = {
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
 const STATS: StatConfig<TaskRow>[] = [
-  { label: "Pending", getValue: (r) => r.filter(x => x.status === "pending").length },
+  { label: "Active", getValue: (r) => r.filter(x => x.status === "pending").length },
   { label: "SLA Breach", getValue: (r) => r.filter(x => x.channel === "sla_breach").length },
   { label: "Completed", getValue: (r) => r.filter(x => x.status === "completed").length },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CrmTasksPage() {
+// ─── Deep-link helper: resolve the correct OpportunityPanel tab for an SLA violation ──
+function resolveViolationTab(slaId: string | null): "contact" | "activity" | undefined {
+  if (!slaId) return undefined;
+  if (slaId.startsWith("nr_") || slaId.startsWith("prospect_")) return "activity";
+  return undefined; // default tab for osc_*, csm_*
+}
+
+export default function ViolationsPage() {
   const { filter } = useGlobalFilter();
   const [tasks, setTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +104,7 @@ export default function CrmTasksPage() {
   const [pageSize, setPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState<"pending" | "completed" | "all">("pending");
   const [panelData, setPanelData] = useState<OpportunityPanelData | null>(null);
+  const [panelTab, setPanelTab] = useState<"contact" | "activity" | undefined>(undefined);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -176,11 +184,14 @@ export default function CrmTasksPage() {
 
   const columns: Column<TaskRow>[] = [
     {
-      key: "title", label: "Task", sortable: true,
+      key: "title", label: "Violation", sortable: true,
       render: (_v, row) => (
-        <div style={{ maxWidth: 300 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "#fafafa", lineHeight: 1.4 }}>{row.title}</div>
-          {row._contact !== "—" && <div style={{ fontSize: 10, color: "#52525b" }}>{row._contact}</div>}
+        <div style={{ maxWidth: 300, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "#fafafa", lineHeight: 1.4 }}>{row.title}</div>
+            {row._contact !== "—" && <div style={{ fontSize: 10, color: "#52525b" }}>{row._contact}</div>}
+          </div>
+          {row.opportunity_id && <span style={{ color: "#71717a", fontSize: 12, flexShrink: 0 }}>→</span>}
         </div>
       ),
     },
@@ -217,7 +228,7 @@ export default function CrmTasksPage() {
     <PageShell
       topBar={
         <TableSubHeader
-          title="CRM Tasks"
+          title="Violations"
           rows={tableRows}
           totalRows={tableRows.length}
           stats={STATS}
@@ -227,14 +238,14 @@ export default function CrmTasksPage() {
           onPageSizeChange={s => { setPageSize(s); setPage(0); }}
           search={search}
           onSearch={q => { setSearch(q); setPage(0); }}
-          searchPlaceholder="Search tasks…"
-          onExport={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "crm-tasks")}
-          onExportAll={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "crm-tasks-all")}
+          searchPlaceholder="Search violations…"
+          onExport={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "violations")}
+          onExportAll={() => exportToCSV(tableRows as unknown as Record<string, unknown>[], "violations-all")}
         />
       }
     >
       {loading ? (
-        <div style={{ textAlign: "center", color: "#52525b", padding: 48, fontSize: 13 }}>Loading tasks...</div>
+        <div style={{ textAlign: "center", color: "#52525b", padding: 48, fontSize: 13 }}>Loading violations...</div>
       ) : (
         <DataTable<TaskRow>
           columns={columns}
@@ -242,19 +253,47 @@ export default function CrmTasksPage() {
           controlledPage={page}
           controlledPageSize={pageSize}
           defaultPageSize={pageSize}
-          onRowClick={row => {
+          onRowClick={async (row) => {
             if (row.opportunity_id) {
-              // Could open opportunity panel — for now just log
-              console.log("Open opportunity:", row.opportunity_id);
+              // Fetch opportunity data and open panel
+              const { data: opp } = await supabase
+                .from("opportunities")
+                .select("id, contact_id, crm_stage, source, community_id, division_id, budget_min, budget_max, notes, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name), divisions(name)")
+                .eq("id", row.opportunity_id)
+                .single();
+              if (opp) {
+                const c = Array.isArray(opp.contacts) ? opp.contacts[0] : opp.contacts;
+                const comm = Array.isArray(opp.communities) ? opp.communities[0] : opp.communities;
+                const div = Array.isArray(opp.divisions) ? opp.divisions[0] : opp.divisions;
+                setPanelData({
+                  id: opp.id,
+                  contact_id: opp.contact_id,
+                  first_name: c?.first_name ?? "—",
+                  last_name: c?.last_name ?? "",
+                  email: c?.email ?? null,
+                  phone: c?.phone ?? null,
+                  stage: opp.crm_stage,
+                  source: opp.source ?? null,
+                  community_name: comm?.name ?? null,
+                  division_name: div?.name ?? null,
+                  budget_min: opp.budget_min ?? null,
+                  budget_max: opp.budget_max ?? null,
+                  floor_plan_name: null,
+                  notes: opp.notes ?? null,
+                  last_activity_at: opp.last_activity_at ?? null,
+                  created_at: opp.created_at,
+                });
+                setPanelTab(resolveViolationTab(row.sla_id) ?? undefined);
+              }
             }
           }}
-          emptyMessage={statusFilter === "pending" ? "No pending tasks — all clear" : "No tasks match the current filter"}
+          emptyMessage={statusFilter === "pending" ? "No violations — all clear" : "No violations match the current filter"}
           minWidth={1000}
         />
       )}
 
       {panelData && (
-        <OpportunityPanel open={!!panelData} onClose={() => setPanelData(null)} opportunity={panelData} />
+        <OpportunityPanel open={!!panelData} onClose={() => { setPanelData(null); setPanelTab(undefined); }} opportunity={panelData} initialTab={panelTab} />
       )}
     </PageShell>
   );

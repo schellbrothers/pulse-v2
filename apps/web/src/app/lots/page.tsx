@@ -18,6 +18,14 @@ export interface LotRow {
   lot_premium: number | null;
   foundation: string | null;
   synced_at: string | null;
+  backs_to_pond: boolean | null;
+  backs_to_woods: boolean | null;
+  backs_to_open_space: boolean | null;
+  backs_to_neighbor: boolean | null;
+  front_orientation: string | null;
+  home_orientation: string | null;
+  side_load_3_car: boolean | null;
+  courtyard: boolean | null;
   [key: string]: unknown;
 }
 

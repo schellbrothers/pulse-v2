@@ -82,6 +82,36 @@ function filterSelectStyle(active: boolean): React.CSSProperties {
   };
 }
 
+function BoolCell({ value }: { value: boolean | null }) {
+  return value ? (
+    <span style={{ color: "#80B602", fontSize: 13, fontWeight: 600 }}>✓</span>
+  ) : (
+    <span style={{ color: "#52525b", fontSize: 12 }}>—</span>
+  );
+}
+
+function AttrChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? "#162800" : "#161718",
+        border: `1px solid ${active ? "#80B602" : "#333"}`,
+        color: active ? "#80B602" : "#666",
+        borderRadius: 3,
+        height: 24,
+        fontSize: 11,
+        padding: "0 8px",
+        cursor: "pointer",
+        outline: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LotsClient({ lots, communities, divisions }: Props) {
@@ -95,6 +125,18 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
   const [selectedLot, setSelectedLot] = useState<LotTableRow | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+
+  // Attribute toggle filters
+  const [attrFilters, setAttrFilters] = useState<Record<string, boolean>>({
+    backs_to_pond: false,
+    backs_to_woods: false,
+    backs_to_open_space: false,
+    backs_to_neighbor: false,
+    side_load_3_car: false,
+    courtyard: false,
+  });
+  const [frontOrientFilter, setFrontOrientFilter] = useState("");
+  const [homeOrientFilter, setHomeOrientFilter] = useState("");
 
   // Sync local state when global filter changes
   useEffect(() => {
@@ -154,6 +196,12 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       if (!filter.communityId && commFilter && l.community_name_raw !== commFilter) return false;
       if (statusFilter && l.lot_status !== statusFilter) return false;
       if (constructionFilter && l.construction_status !== constructionFilter) return false;
+      // Attribute toggle filters
+      for (const key of Object.keys(attrFilters)) {
+        if (attrFilters[key] && !l[key]) return false;
+      }
+      if (frontOrientFilter && l.front_orientation !== frontOrientFilter) return false;
+      if (homeOrientFilter && l.home_orientation !== homeOrientFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -164,10 +212,20 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
       }
       return true;
     });
-  }, [lots, divFilter, commFilter, statusFilter, constructionFilter, search, communityMap, divisionMap, filter]);
+  }, [lots, divFilter, commFilter, statusFilter, constructionFilter, search, communityMap, divisionMap, filter, attrFilters, frontOrientFilter, homeOrientFilter]);
 
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [search, divFilter, commFilter, statusFilter, constructionFilter]);
+  useEffect(() => { setPage(0); }, [search, divFilter, commFilter, statusFilter, constructionFilter, attrFilters, frontOrientFilter, homeOrientFilter]);
+
+  // Orientation options
+  const frontOrientOptions = useMemo(
+    () => Array.from(new Set(lots.map((l) => l.front_orientation).filter(Boolean))).sort().map((s) => ({ value: s as string, label: s as string })),
+    [lots]
+  );
+  const homeOrientOptions = useMemo(
+    () => Array.from(new Set(lots.map((l) => l.home_orientation).filter(Boolean))).sort().map((s) => ({ value: s as string, label: s as string })),
+    [lots]
+  );
 
   function getDivisionName(lot: LotTableRow): string {
     const comm = lot.community_id ? communityMap.get(lot.community_id as string) : null;
@@ -245,47 +303,166 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
           <span style={{ color: "#333" }}>—</span>
         ),
     },
+    // ─── Backs To ─────────────────────────────────
+    {
+      key: "backs_to_pond",
+      label: "Pond",
+      sortable: true,
+      width: 46,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.backs_to_pond} />,
+    },
+    {
+      key: "backs_to_woods",
+      label: "Woods",
+      sortable: true,
+      width: 50,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.backs_to_woods} />,
+    },
+    {
+      key: "backs_to_open_space",
+      label: "Open",
+      sortable: true,
+      width: 46,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.backs_to_open_space} />,
+    },
+    {
+      key: "backs_to_neighbor",
+      label: "Nbr",
+      sortable: true,
+      width: 42,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.backs_to_neighbor} />,
+    },
+    // ─── Orientation ──────────────────────────────
+    {
+      key: "front_orientation",
+      label: "Front",
+      sortable: true,
+      filterable: true,
+      width: 60,
+      render: (_v, row) =>
+        row.front_orientation ? (
+          <span style={{ fontSize: 11, color: "#888" }}>{row.front_orientation as string}</span>
+        ) : (
+          <span style={{ color: "#333" }}>—</span>
+        ),
+    },
+    {
+      key: "home_orientation",
+      label: "Home",
+      sortable: true,
+      filterable: true,
+      width: 55,
+      render: (_v, row) =>
+        row.home_orientation ? (
+          <span style={{ fontSize: 11, color: "#888" }}>{row.home_orientation as string}</span>
+        ) : (
+          <span style={{ color: "#333" }}>—</span>
+        ),
+    },
+    // ─── Features ─────────────────────────────────
+    {
+      key: "side_load_3_car",
+      label: "3-Car",
+      sortable: true,
+      width: 46,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.side_load_3_car} />,
+    },
+    {
+      key: "courtyard",
+      label: "Crtyd",
+      sortable: true,
+      width: 46,
+      align: "center" as const,
+      render: (_v, row) => <BoolCell value={row.courtyard} />,
+    },
   ];
+
+  const toggleAttr = (key: string) => setAttrFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  const anyAttrActive = Object.values(attrFilters).some(Boolean) || !!frontOrientFilter || !!homeOrientFilter;
 
   // Local filter dropdowns
   const localFilters = (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      {!filter.divisionId && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {!filter.divisionId && (
+          <select
+            value={divFilter}
+            onChange={(e) => { setDivFilter(e.target.value); setCommFilter(""); }}
+            style={filterSelectStyle(!!divFilter)}
+          >
+            <option value="">All Divisions</option>
+            {divisionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        )}
+        {!filter.communityId && (
+          <select
+            value={commFilter}
+            onChange={(e) => setCommFilter(e.target.value)}
+            style={filterSelectStyle(!!commFilter)}
+          >
+            <option value="">All Communities</option>
+            {commOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        )}
         <select
-          value={divFilter}
-          onChange={(e) => { setDivFilter(e.target.value); setCommFilter(""); }}
-          style={filterSelectStyle(!!divFilter)}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={filterSelectStyle(!!statusFilter)}
         >
-          <option value="">All Divisions</option>
-          {divisionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="">All Statuses</option>
+          {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-      )}
-      {!filter.communityId && (
         <select
-          value={commFilter}
-          onChange={(e) => setCommFilter(e.target.value)}
-          style={filterSelectStyle(!!commFilter)}
+          value={constructionFilter}
+          onChange={(e) => setConstructionFilter(e.target.value)}
+          style={filterSelectStyle(!!constructionFilter)}
         >
-          <option value="">All Communities</option>
-          {commOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="">All Construction</option>
+          {constructionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-      )}
-      <select
-        value={statusFilter}
-        onChange={(e) => setStatusFilter(e.target.value)}
-        style={filterSelectStyle(!!statusFilter)}
-      >
-        <option value="">All Statuses</option>
-        {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <select
-        value={constructionFilter}
-        onChange={(e) => setConstructionFilter(e.target.value)}
-        style={filterSelectStyle(!!constructionFilter)}
-      >
-        <option value="">All Construction</option>
-        {constructionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      </div>
+      {/* Attribute chip filters */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: 1, marginRight: 2 }}>Backs To</span>
+        <AttrChip label="🌊 Pond" active={attrFilters.backs_to_pond} onClick={() => toggleAttr("backs_to_pond")} />
+        <AttrChip label="🌲 Woods" active={attrFilters.backs_to_woods} onClick={() => toggleAttr("backs_to_woods")} />
+        <AttrChip label="🏞️ Open" active={attrFilters.backs_to_open_space} onClick={() => toggleAttr("backs_to_open_space")} />
+        <AttrChip label="🏠 Neighbor" active={attrFilters.backs_to_neighbor} onClick={() => toggleAttr("backs_to_neighbor")} />
+        <span style={{ width: 1, height: 16, background: "#333", margin: "0 4px" }} />
+        <span style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: 1, marginRight: 2 }}>Features</span>
+        <AttrChip label="🚗 3-Car" active={attrFilters.side_load_3_car} onClick={() => toggleAttr("side_load_3_car")} />
+        <AttrChip label="🏡 Courtyard" active={attrFilters.courtyard} onClick={() => toggleAttr("courtyard")} />
+        <span style={{ width: 1, height: 16, background: "#333", margin: "0 4px" }} />
+        <select
+          value={frontOrientFilter}
+          onChange={(e) => setFrontOrientFilter(e.target.value)}
+          style={filterSelectStyle(!!frontOrientFilter)}
+        >
+          <option value="">Front Orient.</option>
+          {frontOrientOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select
+          value={homeOrientFilter}
+          onChange={(e) => setHomeOrientFilter(e.target.value)}
+          style={filterSelectStyle(!!homeOrientFilter)}
+        >
+          <option value="">Home Orient.</option>
+          {homeOrientOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {anyAttrActive && (
+          <button
+            onClick={() => { setAttrFilters({ backs_to_pond: false, backs_to_woods: false, backs_to_open_space: false, backs_to_neighbor: false, side_load_3_car: false, courtyard: false }); setFrontOrientFilter(""); setHomeOrientFilter(""); }}
+            style={{ background: "none", border: "none", color: "#E32027", fontSize: 11, cursor: "pointer", padding: "0 4px" }}
+          >
+            ✕ Clear
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -295,6 +472,7 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
 
   return (
     <PageShell
+      filtersBar={localFilters}
       topBar={
         <TableSubHeader
           title="Lots"
@@ -355,6 +533,39 @@ export default function LotsClient({ lots, communities, divisions }: Props) {
               </div>
               <Row label="Buildable" value={selectedLot.is_buildable != null ? (selectedLot.is_buildable ? "Yes" : "No") : null} />
               <Row label="Available" value={selectedLot.is_available != null ? (selectedLot.is_available ? "Yes" : "No") : null} />
+            </Section>
+            <Section title="Lot Attributes">
+              <Row label="Backs To" value={
+                <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {[
+                    { key: "backs_to_pond" as const, icon: "🌊", label: "Pond" },
+                    { key: "backs_to_woods" as const, icon: "🌲", label: "Woods" },
+                    { key: "backs_to_open_space" as const, icon: "🏞️", label: "Open Space" },
+                    { key: "backs_to_neighbor" as const, icon: "🏠", label: "Neighbor" },
+                  ].map((a) => (
+                    <span key={a.key} style={{ color: selectedLot[a.key] ? "#80B602" : "#52525b", fontSize: 12 }}>
+                      {selectedLot[a.key] ? "✓" : "—"} {a.icon} {a.label}
+                    </span>
+                  ))}
+                </span>
+              } />
+              <Row label="Orientation" value={
+                <span style={{ fontSize: 12, color: "#aaa" }}>
+                  Front: <strong>{selectedLot.front_orientation ?? "—"}</strong>
+                  <span style={{ color: "#333", margin: "0 6px" }}>|</span>
+                  Home: <strong>{selectedLot.home_orientation ?? "—"}</strong>
+                </span>
+              } />
+              <Row label="Features" value={
+                <span style={{ display: "flex", gap: 8 }}>
+                  <span style={{ color: selectedLot.side_load_3_car ? "#80B602" : "#52525b", fontSize: 12 }}>
+                    {selectedLot.side_load_3_car ? "✓" : "—"} Side Load/3-Car
+                  </span>
+                  <span style={{ color: selectedLot.courtyard ? "#80B602" : "#52525b", fontSize: 12 }}>
+                    {selectedLot.courtyard ? "✓" : "—"} Courtyard
+                  </span>
+                </span>
+              } />
             </Section>
             {selectedLot.synced_at && (
               <Section title="System">

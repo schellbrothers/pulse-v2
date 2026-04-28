@@ -49,6 +49,7 @@ type TaskRow = CrmTask & Record<string, unknown> & {
   _age: string;
   _sla_label: string;
   _overdue: string;
+  _sla_target: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,6 +188,13 @@ export default function ViolationsPage() {
     _division: t.divisions?.name ?? "—",
     _age: relativeTime(t.created_at),
     _sla_label: t.sla_id ? (SLA_LABELS[t.sla_id] ?? t.sla_id) : "Manual",
+    _sla_target: t.sla_target_minutes
+      ? t.sla_target_minutes >= 1440
+        ? `${Math.round(t.sla_target_minutes / 1440)}d`
+        : t.sla_target_minutes >= 60
+          ? `${Math.round(t.sla_target_minutes / 60)}h`
+          : `${t.sla_target_minutes}m`
+      : "—",
     _overdue: t.actual_minutes && t.sla_target_minutes
       ? `${Math.round(t.actual_minutes - t.sla_target_minutes)}m over`
       : "—",
@@ -218,6 +226,7 @@ export default function ViolationsPage() {
     { key: "_assignee", label: "Assigned To", sortable: true, filterable: true, render: (_v, row) => <span style={{ color: row._assignee === "Unassigned" ? "#f87171" : "#a1a1aa", fontSize: 12 }}>{row._assignee}</span> },
     { key: "_community", label: "Community", sortable: true, filterable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row._community}</span> },
     { key: "_division", label: "Division", sortable: true, filterable: true, render: (_v, row) => <span style={{ color: "#888", fontSize: 12 }}>{row._division}</span> },
+    { key: "_sla_target", label: "SLA Target", sortable: true, render: (_v, row) => <span style={{ color: "#a1a1aa", fontSize: 12, fontWeight: 500 }}>{row._sla_target}</span> },
     { key: "_overdue", label: "Over SLA", sortable: true, render: (_v, row) => <span style={{ color: row._overdue !== "—" ? "#f87171" : "#52525b", fontSize: 12 }}>{row._overdue}</span> },
     { key: "_age", label: "Created", sortable: true, render: (_v, row) => <span style={{ color: "#71717a", fontSize: 12 }}>{row._age}</span> },
     {

@@ -348,10 +348,7 @@ export default function SlaSettingsPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      // Only send timers that exist in DB (filter out osc_afterhours which isn't in sla_config)
-      const sla_timers = slas
-        .filter(s => s.id !== "osc_afterhours")
-        .map(s => ({
+      const sla_timers = slas.map(s => ({
           id: s.id,
           target_minutes: s.currentMinutes,
           warning_pct: s.warningPct,

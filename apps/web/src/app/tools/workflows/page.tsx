@@ -271,15 +271,21 @@ export default function WorkflowsPage() {
   const [slaSaved, setSlaSaved] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Save SLA timer to Supabase
+  // Save SLA timer via API route (bypasses RLS)
   const saveSlaTimer = useCallback(async (slaId: string, newMinutes: number) => {
     setSlaSaving(true);
     try {
-      const sb = (await import("@supabase/supabase-js")).createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
-      );
-      await sb.from("sla_config").update({ target_minutes: newMinutes, updated_at: new Date().toISOString() }).eq("id", slaId);
+      const res = await fetch("/api/sla", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sla_timers: [{ id: slaId, target_minutes: newMinutes, warning_pct: 60 }],
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Save failed");
+      }
       setSlaSaved(true);
       setTimeout(() => setSlaSaved(false), 2000);
     } catch (e) { console.error("SLA save error:", e); }

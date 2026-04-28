@@ -1,14 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// ─── Supabase Client ──────────────────────────────────────────────────────────
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mrpxtbuezqrlxybnhyne.supabase.co",
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_XGwL4p2FD0Af58_sidErwg_In1FU_9o"
-);
 
 // ─── SLA Timer Definition ─────────────────────────────────────────────────────
 
@@ -297,17 +289,18 @@ export default function SlaSettingsPage() {
   const [bhWorkDays, setBhWorkDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [dirty, setDirty] = useState(false);
 
-  // ─── Load from Supabase on mount ────────────────────────────────────────────
+  // ─── Load from API on mount ─────────────────────────────────────────────────
   useEffect(() => {
     async function loadData() {
       try {
-        // Fetch SLA config
-        const { data: slaData } = await supabase
-          .from("sla_config")
-          .select("id, target_minutes, warning_pct");
+        const res = await fetch("/api/sla");
+        if (!res.ok) throw new Error(`Load failed: ${res.statusText}`);
+        const data = await res.json();
 
-        if (slaData && slaData.length > 0) {
-          const dbMap = new Map(slaData.map((r: { id: string; target_minutes: number; warning_pct: number }) => [r.id, r]));
+        // Merge DB values into display template
+        if (data.sla_config && data.sla_config.length > 0) {
+          type SlaRow = { id: string; target_minutes: number; warning_pct: number };
+          const dbMap = new Map<string, SlaRow>(data.sla_config.map((r: SlaRow) => [r.id, r]));
           setSlas(prev =>
             prev.map(s => {
               const db = dbMap.get(s.id);
@@ -323,18 +316,13 @@ export default function SlaSettingsPage() {
           );
         }
 
-        // Fetch business hours
-        const { data: bhData } = await supabase
-          .from("business_hours")
-          .select("*")
-          .eq("id", "default")
-          .single();
-
-        if (bhData) {
-          if (bhData.start_time) setBhStart(bhData.start_time.substring(0, 5));
-          if (bhData.end_time) setBhEnd(bhData.end_time.substring(0, 5));
-          if (bhData.timezone) setBhTz(bhData.timezone);
-          if (bhData.work_days) setBhWorkDays(bhData.work_days);
+        // Load business hours
+        if (data.business_hours) {
+          const bh = data.business_hours;
+          if (bh.start_time) setBhStart(bh.start_time.substring(0, 5));
+          if (bh.end_time) setBhEnd(bh.end_time.substring(0, 5));
+          if (bh.timezone) setBhTz(bh.timezone);
+          if (bh.work_days) setBhWorkDays(bh.work_days);
         }
       } catch (e) {
         console.error("Failed to load SLA config:", e);
@@ -355,43 +343,36 @@ export default function SlaSettingsPage() {
     setDirty(true);
   }
 
-  // ─── Save to Supabase ──────────────────────────────────────────────────────
+  // ─── Save via API route (uses service role key server-side) ─────────────────
   const handleSave = useCallback(async () => {
     setSaving(true);
     setSaveError(null);
     try {
-      // Upsert each SLA timer
-      const upsertRows = slas.map(s => ({
-        id: s.id,
-        category: s.category,
-        label: s.label,
-        description: s.description,
-        target_minutes: s.currentMinutes,
-        warning_pct: s.warningPct,
-        escalate_action: s.escalateAction || null,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }));
+      // Only send timers that exist in DB (filter out osc_afterhours which isn't in sla_config)
+      const sla_timers = slas
+        .filter(s => s.id !== "osc_afterhours")
+        .map(s => ({
+          id: s.id,
+          target_minutes: s.currentMinutes,
+          warning_pct: s.warningPct,
+        }));
 
-      const { error: slaError } = await supabase
-        .from("sla_config")
-        .upsert(upsertRows, { onConflict: "id" });
+      const res = await fetch("/api/sla", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sla_timers,
+          business_hours: {
+            start_time: bhStart,
+            end_time: bhEnd,
+            timezone: bhTz,
+            work_days: bhWorkDays,
+          },
+        }),
+      });
 
-      if (slaError) throw new Error(`SLA save failed: ${slaError.message}`);
-
-      // Save business hours
-      const { error: bhError } = await supabase
-        .from("business_hours")
-        .upsert({
-          id: "default",
-          start_time: bhStart,
-          end_time: bhEnd,
-          timezone: bhTz,
-          work_days: bhWorkDays,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-
-      if (bhError) throw new Error(`Business hours save failed: ${bhError.message}`);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Save failed");
 
       setSaved(true);
       setDirty(false);

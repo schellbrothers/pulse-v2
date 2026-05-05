@@ -687,6 +687,14 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
     /^(no worries|no problem|all good|all set)/i,
     /^(see you|talk (to you )?soon|take care|ttyl)/i,
     /^(unsubscribe|remove me|stop)/i,
+    /^Liked\s/i,         // Zoom reaction: "Liked \"...\""
+    /^Reacted\s/i,       // Zoom reaction: "Reacted 👍 to \"...\""
+    /^Loved\s/i,         // Zoom reaction
+    /^Emphasized\s/i,    // Zoom reaction
+    /^Disliked\s/i,      // Zoom reaction
+    /^Laughed at\s/i,    // Zoom reaction
+    /^Questioned\s/i,    // Zoom reaction
+    /^Great!?\s*Thanks/i,  // "Great! Thanks!"
   ];
 
   // Broader patterns — check first 200 chars of email body

@@ -256,11 +256,11 @@ function ActivityCard({
     } catch { /* ignore */ }
   }
 
-  // Pre-fill AI reply when expanded — use pre-generated from metadata, fall back to templates
+  // Pre-fill AI reply when expanded — use Spark AI, fall back to pre-generated or templates
   const [aiLoading, setAiLoading] = useState(false);
   useEffect(() => {
     if (isExpanded && needsResponse && !replyText) {
-      // Check if metadata has a pre-generated AI reply from Spark
+      // Check if metadata has a pre-generated AI reply
       let preGenerated: string | null = null;
       try {
         const m = typeof activity.metadata === "string" ? JSON.parse(activity.metadata) : activity.metadata;
@@ -270,7 +270,27 @@ function ActivityCard({
       if (preGenerated) {
         setReplyText(preGenerated);
       } else {
-        setReplyText(generateAiReply(activity)); // Template fallback
+        // Call Spark AI for context-aware reply
+        setAiLoading(true);
+        setReplyText(generateAiReply(activity)); // Show template immediately
+        fetch("/api/ai-reply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contactName: activity.contacts ? `${activity.contacts.first_name} ${activity.contacts.last_name}` : "there",
+            channel: activity.channel,
+            direction: activity.direction,
+            subject: activity.subject,
+            body: activity.body,
+            employeeName: (() => { try { const m = typeof activity.metadata === "string" ? JSON.parse(activity.metadata) : activity.metadata; return (m as Record<string, unknown>)?.employee_name || "Grace"; } catch { return "Grace"; } })(),
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.reply) setReplyText(data.reply);
+          })
+          .catch(() => { /* keep template fallback */ })
+          .finally(() => setAiLoading(false));
       }
     }
   }, [isExpanded]); // eslint-disable-line react-hooks/exhaustive-deps

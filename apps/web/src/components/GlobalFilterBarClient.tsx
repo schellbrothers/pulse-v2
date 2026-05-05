@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useGlobalFilter } from "@/context/GlobalFilterContext";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { DivisionOption, CommunityOption } from "./GlobalFilterBar";
+import OpportunitySearch from "@/components/OpportunitySearch";
 
 type WorkspaceContext = "osc" | "csm" | "dsm" | "marketing" | "other";
 
@@ -306,6 +307,9 @@ export default function GlobalFilterBarClient({ divisions, communities }: Props)
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
+
+      {/* Opportunity Search */}
+      <OpportunitySearch />
 
       {/* Right: account */}
       {!isMobile && (

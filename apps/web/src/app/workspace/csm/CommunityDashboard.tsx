@@ -944,6 +944,7 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
   const isMobile = useIsMobile();
   const [drill, setDrill] = useState<DrillPanel>(null);
   const [panelItem, setPanelItem] = useState<OpportunityPanelData | null>(null);
+  const [commHubPanel, setCommHubPanel] = useState<OpportunityPanelData | null>(null);
   const [prospects, setProspects] = useState<ProspectItem[]>([]);
   const [csmQueueItems, setCsmQueueItems] = useState<ProspectItem[]>([]);
   const [mobileTab, setMobileTab] = useState<"queue" | "comm">("queue");
@@ -1480,7 +1481,31 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
 
         {/* RIGHT: Comm Hub (48%) */}
         <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none" } : { flex: "0 0 48%", minWidth: 0 }}>
-          <CommHub communityId={community.id} teamFilter={teamFilter} excludeChannel={["webform", "schellie"]} />
+          <CommHub communityId={community.id} teamFilter={teamFilter} excludeChannel={["webform", "schellie"]} onOpenOpportunity={async (oppId) => {
+                const { data: opp } = await supabase.from("opportunities").select("id, contact_id, crm_stage, source, community_id, division_id, budget_min, budget_max, notes, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name), divisions(name)").eq("id", oppId).single();
+                if (!opp) return;
+                const c = Array.isArray(opp.contacts) ? opp.contacts[0] : opp.contacts;
+                const comm = Array.isArray(opp.communities) ? opp.communities[0] : opp.communities;
+                const div = Array.isArray(opp.divisions) ? opp.divisions[0] : opp.divisions;
+                setCommHubPanel({
+                  id: opp.id,
+                  contact_id: opp.contact_id,
+                  first_name: (c as any)?.first_name ?? "\u2014",
+                  last_name: (c as any)?.last_name ?? "",
+                  email: (c as any)?.email ?? null,
+                  phone: (c as any)?.phone ?? null,
+                  stage: opp.crm_stage ?? "queue",
+                  source: opp.source ?? null,
+                  community_name: (comm as any)?.name ?? null,
+                  division_name: (div as any)?.name ?? null,
+                  budget_min: opp.budget_min ?? null,
+                  budget_max: opp.budget_max ?? null,
+                  floor_plan_name: null,
+                  notes: opp.notes ?? null,
+                  last_activity_at: opp.last_activity_at ?? null,
+                  created_at: opp.created_at,
+                });
+              }} />
         </div>
       </div>
       </div>
@@ -1491,6 +1516,15 @@ function CommunityView({ community, plans, lots, modelHome, specHomes, divisions
           open={!!panelItem}
           onClose={() => setPanelItem(null)}
           opportunity={panelItem}
+        />
+      )}
+
+      {/* ── Comm Hub Opportunity Panel ── */}
+      {commHubPanel && (
+        <OpportunityPanel
+          open={!!commHubPanel}
+          onClose={() => setCommHubPanel(null)}
+          opportunity={commHubPanel}
         />
       )}
 

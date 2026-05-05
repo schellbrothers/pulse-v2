@@ -19,6 +19,7 @@ export interface CommHubProps {
   divisionId?: string | null;   // for OSC scope
   teamFilter?: string;          // "all" or user ID
   excludeChannel?: string | string[];  // filter out activities with these channels
+  onOpenOpportunity?: (opportunityId: string) => void;  // callback to open OpportunityPanel
 }
 
 interface CommActivity {
@@ -201,6 +202,7 @@ function ActivityCard({
   onMarkRead,
   onSendReply,
   waitTimeMs,
+  onOpenOpportunity,
 }: {
   activity: CommActivity;
   isExpanded: boolean;
@@ -208,6 +210,7 @@ function ActivityCard({
   waitTimeMs?: number;
   onMarkRead: () => void;
   onSendReply: (text: string, channel: string) => void;
+  onOpenOpportunity?: (opportunityId: string) => void;
 }) {
   const meta = getChannelMeta(activity.channel);
   const actStyle = getActivityStyle(activity.channel, activity.type, activity.direction);
@@ -361,7 +364,14 @@ function ActivityCard({
           {/* Conversation header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fafafa" }}>
-              Conversation with {contactName}
+              Conversation with{" "}
+              {activity.opportunity_id && onOpenOpportunity ? (
+                <span
+                  onClick={(e) => { e.stopPropagation(); onOpenOpportunity(activity.opportunity_id!); }}
+                  style={{ color: "#f59e0b", cursor: "pointer", borderBottom: "1px dashed #f59e0b" }}
+                  title="Open opportunity panel"
+                >{contactName}</span>
+              ) : contactName}
             </span>
             <button onClick={onExpand} style={{
               padding: "4px 10px", borderRadius: 4, border: "1px solid #27272a",
@@ -566,7 +576,7 @@ function ActivityCard({
 
 // ─── CommHub Component ────────────────────────────────────────────────────────
 
-export default function CommHub({ communityId, divisionId, teamFilter, excludeChannel }: CommHubProps) {
+export default function CommHub({ communityId, divisionId, teamFilter, excludeChannel, onOpenOpportunity }: CommHubProps) {
   const isMobile = useIsMobile();
   const [activities, setActivities] = useState<CommActivity[]>([]);
   const [loading, setLoading] = useState(false);
@@ -987,6 +997,7 @@ export default function CommHub({ communityId, divisionId, teamFilter, excludeCh
               onMarkRead={() => handleMarkRead(a.id)}
               onSendReply={(text, channel) => handleSendReply(a, text, channel)}
               waitTimeMs={replyTimes[a.id]}
+              onOpenOpportunity={onOpenOpportunity}
             />
           ))
         )}

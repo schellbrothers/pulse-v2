@@ -1893,6 +1893,7 @@ export default function OscClient() {
   const [assignRec, setAssignRec] = useState<AgentRecommendation | null>(null);
   const [panelItem, setPanelItem] = useState<QueueItem | null>(null);
   const [violationPanel, setViolationPanel] = useState<{ data: OpportunityPanelData; tab?: "contact" | "activity" } | null>(null);
+  const [commHubPanel, setCommHubPanel] = useState<OpportunityPanelData | null>(null);
   const [activeBucket, setActiveBucket] = useState<QueueBucket>("new_inbound");
   const [queueSearch, setQueueSearch] = useState("");
   const [schellieActiveCount, setSchellieActiveCount] = useState(0);
@@ -2457,7 +2458,31 @@ export default function OscClient() {
 
             {/* ── RIGHT: Comm Hub (50%) — filters out webforms ── */}
             <div style={isMobile ? { display: mobileTab === "comm" ? "block" : "none", width: "100%" } : { flex: "0 0 48%", minWidth: 0 }}>
-              <CommHub divisionId={filter.divisionId ?? undefined} teamFilter={teamFilter} excludeChannel={["webform", "schellie"]} />
+              <CommHub divisionId={filter.divisionId ?? undefined} teamFilter={teamFilter} excludeChannel={["webform", "schellie"]} onOpenOpportunity={async (oppId) => {
+                const { data: opp } = await supabase.from("opportunities").select("id, contact_id, crm_stage, source, community_id, division_id, budget_min, budget_max, notes, last_activity_at, created_at, contacts(first_name, last_name, email, phone), communities(name), divisions(name)").eq("id", oppId).single();
+                if (!opp) return;
+                const c = Array.isArray(opp.contacts) ? opp.contacts[0] : opp.contacts;
+                const comm = Array.isArray(opp.communities) ? opp.communities[0] : opp.communities;
+                const div = Array.isArray(opp.divisions) ? opp.divisions[0] : opp.divisions;
+                setCommHubPanel({
+                  id: opp.id,
+                  contact_id: opp.contact_id,
+                  first_name: (c as any)?.first_name ?? "—",
+                  last_name: (c as any)?.last_name ?? "",
+                  email: (c as any)?.email ?? null,
+                  phone: (c as any)?.phone ?? null,
+                  stage: opp.crm_stage ?? "queue",
+                  source: opp.source ?? null,
+                  community_name: (comm as any)?.name ?? null,
+                  division_name: (div as any)?.name ?? null,
+                  budget_min: opp.budget_min ?? null,
+                  budget_max: opp.budget_max ?? null,
+                  floor_plan_name: null,
+                  notes: opp.notes ?? null,
+                  last_activity_at: opp.last_activity_at ?? null,
+                  created_at: opp.created_at,
+                });
+              }} />
             </div>
           </div>
           </>)
@@ -2502,6 +2527,15 @@ export default function OscClient() {
           onClose={() => setViolationPanel(null)}
           opportunity={violationPanel.data}
           initialTab={violationPanel.tab}
+        />
+      )}
+
+      {/* ── Comm Hub Opportunity Panel ── */}
+      {commHubPanel && (
+        <OpportunityPanel
+          open={!!commHubPanel}
+          onClose={() => setCommHubPanel(null)}
+          opportunity={commHubPanel}
         />
       )}
 

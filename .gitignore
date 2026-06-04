@@ -54,3 +54,4 @@ node_modules/
 # Editor
 .vscode/
 .cursor/
+*.idea

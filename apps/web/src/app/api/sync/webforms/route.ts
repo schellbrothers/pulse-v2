@@ -25,7 +25,6 @@ function getSupabase() {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const ORG_ID = "00000000-0000-0000-0000-000000000001";
-const HB_TOKEN = "b55895137b442f35a82f64c7bd254dcc5d2195218d6269e741309dbdc0463dad";
 const HB_BASE = "https://heartbeat.schellbrothers.com";
 
 /** Default start date — only pull forms from April 17 2026 onward */
@@ -473,10 +472,14 @@ export async function GET(request: Request) {
     const sinceEdt = lastHbTimestamp || DEFAULT_SINCE;
 
     // ── Step 2: Fetch from Heartbeat API
+    const hbToken = process.env.HB_TOKEN;
+    if (!hbToken) {
+      throw new Error("Missing HB_TOKEN: set the Heartbeat API token in the environment.");
+    }
     const url = new URL(HB_BASE);
     url.searchParams.set("engine", "data-warehouse");
     url.searchParams.set("opt", "pulse2-lead-forms");
-    url.searchParams.set("token", HB_TOKEN);
+    url.searchParams.set("token", hbToken);
     url.searchParams.set("since", sinceEdt);
     url.searchParams.set("maxrows", "100");
 

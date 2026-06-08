@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import QueueClient from "./QueueClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function QueuePage() {
   const supabase = createClient(

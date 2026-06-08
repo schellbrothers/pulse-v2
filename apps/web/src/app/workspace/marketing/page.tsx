@@ -1,6 +1,6 @@
 import MarketingDashboard from "./MarketingDashboard";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default function MarketingPage() {
   return <MarketingDashboard />;

@@ -45,7 +45,7 @@ export interface DivisionRow {
 }
 
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function LotsPage() {
   const supabase = createClient(

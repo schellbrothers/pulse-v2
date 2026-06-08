@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import CommunityDetailClient from "./CommunityDetailClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function CommunityDetailPage({
   params,

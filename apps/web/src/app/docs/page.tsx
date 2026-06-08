@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import DocsClient from "./DocsClient";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function DocsPage() {
   const supabase = createClient(

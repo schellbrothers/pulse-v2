@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import DivisionsClient from "./DivisionsClient";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface CommunityRef {
   id: string;

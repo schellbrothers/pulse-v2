@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import CommunityPlansClient from "./CommunityPlansClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export interface CommunityPlan {
   id: string;

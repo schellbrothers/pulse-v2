@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import TemplatesClient from "./TemplatesClient";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function TemplatesPage() {
   const supabase = createClient(

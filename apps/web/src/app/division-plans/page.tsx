@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import DivisionPlansClient from "./DivisionPlansClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export interface DivisionPlan {
   id: string;

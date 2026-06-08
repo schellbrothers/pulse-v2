@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import CommunitiesClient from "./CommunitiesClient";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

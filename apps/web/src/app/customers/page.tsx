@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import CustomersClient from "./CustomersClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
   const supabase = createClient(

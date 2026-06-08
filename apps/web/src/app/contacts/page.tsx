@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import ContactsClient from "./ContactsClient";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
   const supabase = createClient(

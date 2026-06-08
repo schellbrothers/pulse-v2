@@ -1,10 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-);
+let _supabase: ReturnType<typeof getClient>;
+function getClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  );
+}
+function supabase() {
+  return (_supabase ??= getClient());
+}
 
 // Zoom Server-to-Server OAuth
 const ZOOM_ACCOUNT_ID = "BJ0E4dt8TbSRwYEwXhydog";
@@ -54,19 +60,19 @@ export async function POST(req: NextRequest) {
     // Get the user's Zoom ID (the person scheduling the meeting)
     let zoomUserId = "me"; // default
     if (user_id) {
-      const { data: users } = await supabase.from("users").select("zoom_user_id, full_name").eq("id", user_id).limit(1);
+      const { data: users } = await supabase().from("users").select("zoom_user_id, full_name").eq("id", user_id).limit(1);
       if (users?.[0]?.zoom_user_id) {
         zoomUserId = users[0].zoom_user_id;
       }
     }
 
     // Get contact info for the topic
-    const { data: contacts } = await supabase.from("contacts").select("first_name, last_name, email").eq("id", contact_id).limit(1);
+    const { data: contacts } = await supabase().from("contacts").select("first_name, last_name, email").eq("id", contact_id).limit(1);
     const contact = contacts?.[0];
     const contactName = contact ? `${contact.first_name} ${contact.last_name}`.trim() : "Prospect";
 
     // Get opportunity's division/community
-    const { data: opps } = await supabase.from("opportunities").select("division_id, community_id").eq("id", opportunity_id).limit(1);
+    const { data: opps } = await supabase().from("opportunities").select("division_id, community_id").eq("id", opportunity_id).limit(1);
     const opp = opps?.[0];
 
     // Create Zoom meeting
@@ -90,12 +96,12 @@ export async function POST(req: NextRequest) {
     const joinUrl = meeting.join_url;
 
     // Store meeting on opportunity
-    await supabase.from("opportunities").update({
+    await supabase().from("opportunities").update({
       last_activity_at: new Date().toISOString(),
     }).eq("id", opportunity_id);
 
     // Create activity record
-    await supabase.from("activities").insert({
+    await supabase().from("activities").insert({
       org_id: "00000000-0000-0000-0000-000000000001",
       contact_id,
       opportunity_id,

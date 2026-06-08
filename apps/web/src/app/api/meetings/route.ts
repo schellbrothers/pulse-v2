@@ -12,22 +12,27 @@ function supabase() {
   return (_supabase ??= getClient());
 }
 
-// Zoom Server-to-Server OAuth
-const ZOOM_ACCOUNT_ID = "BJ0E4dt8TbSRwYEwXhydog";
-const ZOOM_CLIENT_ID = "8WW3agHRQPO2GuvFDlMIhQ";
-const ZOOM_CLIENT_SECRET = "hLiWtwSB5PJ3gWKwUJBIBv7mhCwY5ALD";
-
+// Zoom Server-to-Server OAuth — credentials come from env (server-only).
 let zoomToken: string | null = null;
 let zoomTokenExpiry = 0;
 
 async function getZoomToken(): Promise<string> {
   if (zoomToken && Date.now() < zoomTokenExpiry) return zoomToken;
 
-  const creds = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+  const accountId = process.env.ZOOM_ACCOUNT_ID;
+  const clientId = process.env.ZOOM_CLIENT_ID;
+  const clientSecret = process.env.ZOOM_CLIENT_SECRET;
+  if (!accountId || !clientId || !clientSecret) {
+    throw new Error(
+      "Missing Zoom credentials: set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET.",
+    );
+  }
+
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const res = await fetch("https://zoom.us/oauth/token", {
     method: "POST",
     headers: { Authorization: `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=account_credentials&account_id=${ZOOM_ACCOUNT_ID}`,
+    body: `grant_type=account_credentials&account_id=${accountId}`,
   });
   const data = await res.json();
   zoomToken = data.access_token;

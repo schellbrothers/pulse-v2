@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import CronClient from "./CronClient";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Cron — Pulse v2",
 };
 
